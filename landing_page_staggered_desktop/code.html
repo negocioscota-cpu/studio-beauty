@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VetConnect Pro - Clinical Vitality Systems</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "error": "#ba1a1a",
+              "surface-container": "#eceeec",
+              "surface-container-low": "#f2f4f2",
+              "primary-fixed-dim": "#90d970",
+              "on-tertiary-fixed": "#3d0027",
+              "on-primary-fixed-variant": "#175200",
+              "tertiary": "#9a356f",
+              "primary-fixed": "#abf689",
+              "background": "#f8faf8",
+              "on-secondary-container": "#730323",
+              "on-error-container": "#93000a",
+              "surface-variant": "#e1e3e1",
+              "on-primary": "#ffffff",
+              "on-tertiary-container": "#fffbff",
+              "surface-container-high": "#e6e9e7",
+              "primary-container": "#408326",
+              "outline-variant": "#c1c9b7",
+              "on-surface": "#191c1b",
+              "on-primary-container": "#f8ffee",
+              "error-container": "#ffdad6",
+              "secondary-fixed-dim": "#ffb2b9",
+              "on-tertiary": "#ffffff",
+              "on-primary-fixed": "#052100",
+              "on-background": "#191c1b",
+              "inverse-on-surface": "#eff1ef",
+              "on-surface-variant": "#41493b",
+              "on-secondary-fixed-variant": "#891931",
+              "inverse-surface": "#2e3130",
+              "tertiary-fixed-dim": "#ffafd5",
+              "secondary-container": "#ff7386",
+              "surface-container-lowest": "#ffffff",
+              "inverse-primary": "#90d970",
+              "tertiary-container": "#b94e89",
+              "on-secondary-fixed": "#40000f",
+              "surface-bright": "#f8faf8",
+              "surface": "#f8faf8",
+              "tertiary-fixed": "#ffd8e8",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#ffdadb",
+              "surface-container-highest": "#e1e3e1",
+              "secondary": "#a93247",
+              "surface-dim": "#d8dad9",
+              "on-tertiary-fixed-variant": "#801e59",
+              "outline": "#717a6a",
+              "primary": "#276a0b",
+              "on-error": "#ffffff",
+              "surface-tint": "#296c0e"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .vitality-gradient {
+        background: linear-gradient(135deg, #276a0b 0%, #408326 100%);
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full flex justify-between items-center px-8 py-4 max-w-screen-2xl mx-auto bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-md shadow-sm dark:shadow-none z-50">
+<div class="text-2xl font-extrabold tracking-tight text-emerald-800 dark:text-emerald-300 font-headline">
+            VetConnect Pro
+        </div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-emerald-700 dark:text-emerald-400 font-bold border-b-2 border-emerald-600 text-sm font-medium font-body" href="#">Features</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-300 text-sm font-medium font-body transition-colors duration-300" href="#">Pricing</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-300 text-sm font-medium font-body transition-colors duration-300" href="#">Resources</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-300 text-sm font-medium font-body transition-colors duration-300" href="#">Clinic Portal</a>
+</div>
+<div class="flex gap-4 items-center">
+<button class="px-5 py-2 text-sm font-semibold text-stone-600 hover:text-emerald-600 transition-opacity opacity-80 hover:opacity-100">Login</button>
+<button class="px-6 py-2 vitality-gradient text-on-primary rounded-xl text-sm font-bold shadow-md hover:scale-95 active:scale-90 duration-200 ease-in-out">Free Trial</button>
+</div>
+</nav>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative px-8 py-20 overflow-hidden">
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<div class="space-y-8">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container/10 text-primary font-semibold text-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        O futuro da gestão veterinária
+                    </div>
+<h1 class="font-headline text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-on-surface">
+                        Gestão <span class="text-primary">inteligente</span> para clínicas que priorizam o cuidado.
+                    </h1>
+<p class="text-lg text-on-surface-variant max-w-xl leading-relaxed">
+                        O VetConnect Pro unifica prontuários, agendamentos e gestão financeira em uma interface intuitiva, permitindo que você foque no que realmente importa: a saúde dos animais.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-4">
+<button class="px-8 py-4 vitality-gradient text-on-primary rounded-xl text-lg font-bold shadow-xl hover:scale-95 transition-transform">
+                            Começar Agora
+                        </button>
+<button class="px-8 py-4 bg-surface-container-high text-on-surface rounded-xl text-lg font-bold hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">play_circle</span>
+                            Ver Demonstração
+                        </button>
+</div>
+</div>
+<div class="relative">
+<div class="absolute -top-12 -right-12 w-64 h-64 bg-primary-container/20 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-12 -left-12 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl"></div>
+<div class="relative rounded-3xl overflow-hidden shadow-2xl rotate-2">
+<img alt="Veterinário atendendo Golden Retriever" class="w-full h-[500px] object-cover" data-alt="Modern veterinarian clinic with professional caring staff" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuLheFjHbJo2S4cdvB3QVMi8vuwnX8RXpSNc-Fx9w6npNITl26iJmcBvEYBT6PpfzLIaGGWyw7V5XVfOrjBtjDGEELHe1yna4TgbCaSxpgTk-zTMt3xDspETY5jVdB36BHZm5NSCfbmlf7IWC5sLmK4DJ7XKsrNAs_TWuRi3PiVaN8pgB4dxPfMf1Vmz1OsKc0sEXs4TtsO0gkcIV_WB587Yw-LF3FHcAh4tFV87uH7V5lyvg2kNK_felrfduzBKE1sEAklJz5iU0"/>
+<div class="absolute bottom-6 right-6 glass-card p-6 rounded-2xl shadow-lg border border-white/20 max-w-xs">
+<div class="flex items-center gap-4 mb-2">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">pets</span>
+</div>
+<span class="font-bold text-on-surface">Status Vital</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-2 flex-1 bg-surface-container rounded-full overflow-hidden">
+<div class="w-[85%] h-full vitality-gradient"></div>
+</div>
+<span class="text-xs font-bold text-primary">85% Saúde</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Staggered Section: Eficiência na Prática -->
+<section class="py-24 bg-surface-container-low">
+<div class="max-w-7xl mx-auto px-8">
+<div class="mb-16 text-center">
+<h2 class="font-headline text-4xl font-extrabold text-on-surface mb-4">Eficiência na Prática</h2>
+<p class="text-on-surface-variant max-w-2xl mx-auto">Fluxos de trabalho desenhados para reduzir a carga administrativa e maximizar o tempo de atendimento.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<!-- Staggered Card 1 -->
+<div class="space-y-6 lg:pr-12">
+<div class="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center text-on-secondary-container shadow-md">
+<span class="material-symbols-outlined text-3xl">assignment_add</span>
+</div>
+<h3 class="font-headline text-3xl font-bold">Cadastro Rápido e Completo</h3>
+<p class="text-on-surface-variant text-lg">Digitalize a entrada de pacientes com formulários inteligentes que aprendem as preferências de seus clientes frequentes.</p>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+<span class="text-on-surface">Reconhecimento automático de raças e históricos</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+<span class="text-on-surface">Integração com bancos de dados de microchips</span>
+</li>
+</ul>
+</div>
+<div class="relative rounded-[2rem] overflow-hidden shadow-xl aspect-video lg:aspect-square">
+<img alt="Pessoa sorridente com cachorro no colo" class="w-full h-full object-cover" data-alt="Happy pet owner at clinic reception area" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxNXztz28Ul1-IUfvNJjJkp-V3UgJ1YM3ecuVJpBX0HjJhgbpjbRq376Nc_ni4Lk-4dn1-vD3WkrgIKUbOTLTESKe8439RvAgTGB-REd4lAhdsM7zMbQRmoqvRiarFC04qU7GET_wD48wNSvsSQJNQ6pEcQeQAwLcRZxtmP6tbO0V8xusbuZUwMeovS_cIhEj2pVAyi_ANVUQuY0TZqpBffhuDHnt3-4QARHof-FwNlAP7aOLoBXhfxyYdgG6guQ2VPxeOS8XOxfc"/>
+</div>
+<!-- Staggered Card 2 (Inverted) -->
+<div class="relative rounded-[2rem] overflow-hidden shadow-xl aspect-video lg:aspect-square md:order-last lg:order-first">
+<img alt="Veterinária usando tablet em consulta" class="w-full h-full object-cover" data-alt="Vet professional using digital tablet with pets" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF_jFIG_8WcU2Ov6fV8-3UzykCbrpSJy6Hz9R0jINxAM6EPnNu0kbDnFXQW23NmIuGWHiDqg2k_Kwkv05vOy-siZ19frIz3JNcRNwY7lFF3Oq9SeQwShsra62PHfPGIfMRPLxIr4BqT00bsYIBK2-tfUHSM4SQA8gG9z_Q8mkL-scvPGawzxJu1XBMYUpGx2xZICABHK2-GQ9GRjN6aopn0hr8-vbALa3-Yz9EEYz-MYDRzlSPjljMfxDYWnm2PCC-ltdYeSPqwMA"/>
+</div>
+<div class="space-y-6 lg:pl-12">
+<div class="w-14 h-14 rounded-2xl bg-primary-container flex items-center justify-center text-on-primary-container shadow-md">
+<span class="material-symbols-outlined text-3xl">calendar_month</span>
+</div>
+<h3 class="font-headline text-3xl font-bold">Agendamento Inteligente</h3>
+<p class="text-on-surface-variant text-lg">Nosso algoritmo de IA sugere os melhores horários baseando-se na complexidade do procedimento e na disponibilidade da equipe.</p>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+<span class="text-on-surface">Lembretes via WhatsApp automáticos</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+<span class="text-on-surface">Gestão de fila de espera dinâmica</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="py-24 bg-surface">
+<div class="max-w-7xl mx-auto px-8">
+<div class="mb-16">
+<h2 class="font-headline text-4xl font-extrabold text-on-surface">Tecnologia que cuida de quem cuida</h2>
+<p class="text-on-surface-variant mt-2">Ferramentas poderosas em uma interface simples.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<!-- Feature 1: Large -->
+<div class="md:col-span-2 bg-surface-container-lowest p-8 rounded-[1.5rem] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+<div>
+<span class="material-symbols-outlined text-4xl text-primary mb-6 transition-transform group-hover:scale-110">event_note</span>
+<h4 class="text-2xl font-bold mb-4 font-headline">Agenda Online</h4>
+<p class="text-on-surface-variant leading-relaxed">Permita que seus clientes agendem consultas 24/7 através de um portal personalizado da sua clínica.</p>
+</div>
+<div class="mt-8 pt-8 border-t border-surface-variant flex items-center justify-between">
+<span class="text-sm font-bold text-primary">Explorar Funcionalidade</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</div>
+</div>
+<!-- Feature 2: Tall -->
+<div class="bg-surface-container-high p-8 rounded-[1.5rem] flex flex-col items-center text-center justify-center gap-6">
+<div class="w-20 h-20 rounded-full vitality-gradient flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-4xl">medical_services</span>
+</div>
+<h4 class="text-xl font-bold font-headline">Prontuário Digital</h4>
+<p class="text-sm text-on-surface-variant">Acesso instantâneo a todo o histórico médico em qualquer dispositivo.</p>
+</div>
+<!-- Feature 3: Small Square -->
+<div class="bg-white p-8 rounded-[1.5rem] shadow-sm flex flex-col justify-between">
+<span class="material-symbols-outlined text-3xl text-secondary">dashboard</span>
+<div>
+<h4 class="text-lg font-bold font-headline">Dashboard</h4>
+<p class="text-xs text-on-surface-variant mt-1">Métricas em tempo real.</p>
+</div>
+</div>
+<!-- Feature 4: Small Square -->
+<div class="bg-secondary-container/10 p-8 rounded-[1.5rem] flex flex-col justify-between">
+<span class="material-symbols-outlined text-3xl text-secondary">groups</span>
+<div>
+<h4 class="text-lg font-bold font-headline">Clientes</h4>
+<p class="text-xs text-on-surface-variant mt-1">CRM veterinário completo.</p>
+</div>
+</div>
+<!-- Feature 5: Wide -->
+<div class="md:col-span-3 bg-stone-900 text-white p-12 rounded-[1.5rem] flex items-center gap-12">
+<div class="flex-1">
+<h4 class="text-3xl font-bold font-headline mb-4">Relatórios de Alta Precisão</h4>
+<p class="text-stone-400">Analise a rentabilidade por procedimento e o desempenho da equipe com um clique.</p>
+</div>
+<div class="hidden lg:block w-48 h-32 bg-stone-800 rounded-xl overflow-hidden">
+<!-- Abstract graph pattern decoration -->
+<div class="w-full h-full flex items-end gap-1 px-4 pb-4">
+<div class="w-4 h-12 bg-emerald-500 rounded-t-md opacity-40"></div>
+<div class="w-4 h-20 bg-emerald-500 rounded-t-md opacity-60"></div>
+<div class="w-4 h-16 bg-emerald-500 rounded-t-md opacity-80"></div>
+<div class="w-4 h-24 bg-emerald-500 rounded-t-md"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonial Section -->
+<section class="py-24 bg-surface-container-low relative overflow-hidden">
+<div class="max-w-4xl mx-auto px-8 text-center relative z-10">
+<div class="flex justify-center gap-1 mb-8 text-amber-500">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<blockquote class="font-headline text-3xl font-bold italic text-on-surface leading-tight mb-10">
+                    "O VetConnect Pro transformou completamente a dinâmica da nossa clínica. O tempo que economizamos com burocracia agora é dedicado inteiramente ao bem-estar dos nossos pacientes."
+                </blockquote>
+<div class="flex items-center justify-center gap-4">
+<div class="w-14 h-14 rounded-full overflow-hidden shadow-lg border-2 border-primary">
+<img alt="Dra. Mariana Silva" class="w-full h-full object-cover" data-alt="Professional female veterinarian portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcPAbMDcr5mh7Mb7GEYuVvVp1DY9waDGVuhkfD6ZmGnvTkmExT54-dXlJsAKru1Mmwt5_VfdEj0fqFsAEfrf7twfh2sUmvfzRA21Sab9_sO5TX4R_fHKOt7btzhEzSh9ByTzsMMAdq9h8UHQALApJG7TdCOYBgt-XcKThy1JmyEnq9GoS__6z8FRGyIwLcK51s01JghK00Gv3IpqvNvKhivXvPjVVrQ7DUvUSqpXL9l7-TPc56KYV4TCn1ZBe8XDYU6-d2Z2po9NQ"/>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface text-lg">Dra. Mariana Silva</p>
+<p class="text-sm text-on-surface-variant font-medium">Diretora Clínica • Centro Vitality</p>
+</div>
+</div>
+</div>
+<!-- Decorative Large Quotes -->
+<span class="absolute top-10 left-10 text-[15rem] font-serif text-primary/5 select-none pointer-events-none">“</span>
+<span class="absolute bottom-10 right-10 text-[15rem] font-serif text-primary/5 select-none pointer-events-none">”</span>
+</section>
+<!-- Final CTA -->
+<section class="py-32 px-8">
+<div class="max-w-5xl mx-auto vitality-gradient rounded-[2.5rem] p-12 md:p-20 text-center text-on-primary shadow-2xl relative overflow-hidden">
+<!-- Background decoration -->
+<div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold mb-6">Pronto para elevar o nível da sua clínica?</h2>
+<p class="text-xl text-primary-fixed opacity-90 mb-12 max-w-2xl mx-auto">Comece seu teste gratuito de 14 dias hoje mesmo. Sem compromisso, sem necessidade de cartão de crédito.</p>
+<div class="flex flex-col sm:flex-row gap-6 justify-center">
+<button class="px-12 py-5 bg-white text-primary rounded-xl text-xl font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                        Começar Agora Grátis
+                    </button>
+<button class="px-12 py-5 border-2 border-white/30 text-white rounded-xl text-xl font-bold hover:bg-white/10 transition-colors">
+                        Falar com Especialista
+                    </button>
+</div>
+<p class="mt-8 text-sm opacity-70">Junte-se a mais de 2.000 profissionais em todo o Brasil.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 px-12 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-7xl mx-auto bg-stone-100 dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 font-label">
+<div class="col-span-2 md:col-span-1">
+<div class="text-lg font-bold text-stone-900 dark:text-stone-100 mb-4">VetConnect Pro</div>
+<p class="text-stone-500 dark:text-stone-400 text-xs tracking-wide uppercase font-semibold leading-relaxed">
+                © 2024 Clinical Vitality Systems. All rights reserved. Precision Care for Every Patient.
+            </p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase">Plataforma</div>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Medical Records</a>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Lab Integration</a>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Telehealth</a>
+</div>
+<div class="flex flex-col gap-4">
+<div class="text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase">Legal</div>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Privacy Policy</a>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Terms of Service</a>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">HIPAA Compliance</a>
+</div>
+<div class="flex flex-col gap-4">
+<div class="text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase">Suporte</div>
+<a class="text-stone-500 dark:text-stone-400 text-xs hover:underline decoration-emerald-500 underline-offset-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Contact Support</a>
+<div class="mt-4 flex gap-4">
+<span class="material-symbols-outlined text-stone-400 hover:text-emerald-600 cursor-pointer">social_leaderboard</span>
+<span class="material-symbols-outlined text-stone-400 hover:text-emerald-600 cursor-pointer">share</span>
+<span class="material-symbols-outlined text-stone-400 hover:text-emerald-600 cursor-pointer">alternate_email</span>
+</div>
+</div>
+</footer>
+</body></html>

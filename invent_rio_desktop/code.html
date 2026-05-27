@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Inventário | VetConnect Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "#abf689",
+                        "on-background": "#191c1b",
+                        "secondary-fixed": "#ffdadb",
+                        "on-primary-fixed": "#052100",
+                        "surface-variant": "#e1e3e1",
+                        "background": "#f8faf8",
+                        "tertiary-container": "#b94e89",
+                        "surface-dim": "#d8dad9",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffd8e8",
+                        "surface-container-low": "#f2f4f2",
+                        "secondary": "#a93247",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8faf8",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#408326",
+                        "on-secondary-container": "#730323",
+                        "surface": "#f8faf8",
+                        "outline-variant": "#c1c9b7",
+                        "surface-tint": "#296c0e",
+                        "primary": "#276a0b",
+                        "secondary-container": "#ff7386",
+                        "inverse-surface": "#2e3130",
+                        "secondary-fixed-dim": "#ffb2b9",
+                        "outline": "#717a6a",
+                        "on-tertiary-fixed-variant": "#801e59",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#90d970",
+                        "on-surface-variant": "#41493b",
+                        "on-secondary-fixed-variant": "#891931",
+                        "surface-container-high": "#e6e9e7",
+                        "on-tertiary-fixed": "#3d0027",
+                        "tertiary-fixed-dim": "#ffafd5",
+                        "on-primary-container": "#f8ffee",
+                        "tertiary": "#9a356f",
+                        "surface-container-highest": "#e1e3e1",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#191c1b",
+                        "inverse-on-surface": "#eff1ef",
+                        "primary-fixed-dim": "#90d970",
+                        "error": "#ba1a1a",
+                        "surface-container": "#eceeec",
+                        "on-secondary-fixed": "#40000f",
+                        "on-primary-fixed-variant": "#175200"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8faf8;
+            color: #191c1b;
+        }
+        .vitality-gradient {
+            background: linear-gradient(135deg, #276a0b 0%, #408326 100%);
+        }
+        .glass-panel {
+            background: rgba(248, 250, 248, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        /* Custom scrollbar for data density */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e1e3e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen bg-background text-on-background">
+<!-- SideNavBar (Execution from JSON) -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 bg-emerald-50 flex flex-col py-8 gap-4 border-r border-zinc-200/50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 vitality-gradient rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+</div>
+<div>
+<h2 class="font-manrope font-black text-emerald-900 text-lg leading-tight">Clinical Vitality</h2>
+<p class="text-[10px] font-semibold text-zinc-500 tracking-wider uppercase">V01 Main Campus</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-6 py-3 text-zinc-500 hover:text-emerald-600 transition-transform duration-200 hover:translate-x-1 font-manrope font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-6 py-3 text-zinc-500 hover:text-emerald-600 transition-transform duration-200 hover:translate-x-1 font-manrope font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                Clients
+            </a>
+<a class="flex items-center gap-3 px-6 py-3 text-zinc-500 hover:text-emerald-600 transition-transform duration-200 hover:translate-x-1 font-manrope font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="pets">pets</span>
+                Patients
+            </a>
+<a class="flex items-center gap-3 px-6 py-3 text-zinc-500 hover:text-emerald-600 transition-transform duration-200 hover:translate-x-1 font-manrope font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+                Appointments
+            </a>
+<!-- Active State: Inventário maps to Patients/Dashboard context but here we define it as specific -->
+<a class="flex items-center gap-3 px-6 py-3 bg-white text-emerald-700 rounded-r-full mr-4 shadow-sm font-bold font-manrope text-sm translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+                Inventário
+            </a>
+<a class="flex items-center gap-3 px-6 py-3 text-zinc-500 hover:text-emerald-600 transition-transform duration-200 hover:translate-x-1 font-manrope font-semibold text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+                Billing
+            </a>
+</nav>
+<div class="px-4 mt-auto space-y-4">
+<button class="w-full py-3 px-4 bg-secondary text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="emergency">emergency</span>
+                Emergency Alert
+            </button>
+<div class="pt-4 border-t border-zinc-200">
+<a class="flex items-center gap-3 px-2 py-2 text-zinc-500 hover:text-emerald-600 font-manrope font-semibold text-xs" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="settings">settings</span>
+                    Settings
+                </a>
+<a class="flex items-center gap-3 px-2 py-2 text-zinc-500 hover:text-emerald-600 font-manrope font-semibold text-xs" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="logout">logout</span>
+                    Sign Out
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Execution from JSON) -->
+<header class="fixed top-0 right-0 left-64 z-30 h-16 bg-emerald-50/50 backdrop-blur-md flex items-center justify-between px-8 shadow-sm">
+<div class="flex items-center gap-6 flex-1">
+<h1 class="font-manrope font-extrabold text-xl tracking-tight text-emerald-800">VetConnect Pro</h1>
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg" data-icon="search">search</span>
+<input class="w-full bg-white/50 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-emerald-600/20 transition-all outline-none" placeholder="Buscar no inventário..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 mr-4 border-r border-emerald-200 pr-4">
+<button class="p-2 text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<button class="vitality-gradient text-white px-5 py-2 rounded-xl font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                    Novo Item
+                </button>
+<div class="w-9 h-9 rounded-full bg-emerald-200 overflow-hidden ml-2">
+<img class="w-full h-full object-cover" data-alt="Female veterinary doctor profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI_P5xGasCUI9WWp506HdJSnvNm4b5e-FVGJVljiABcjJO65YEJ-9bBHXpXDU-16Qs5uD4vwfSpZRFpCkX0aZkpUj9mibEFAN1rxCsiwbudo5sWXur3yx0u63I7-ovVtBT_MlErLECYIp_iLQRHYeAyrCMB_QzwC83e3M4i0_0_2HDGmcwkJWDiovtJWaia8V-un_l8uKochgRhIuleCcJeyQH5UUPZLfnQRXm1Rr3ro4PZg-9KdQlraT4eloebRHDRPCuBhNkeSg"/>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 bg-gradient-to-r from-emerald-600/10 to-transparent h-[1px] w-full"></div>
+</header>
+<!-- Inventory Body Area -->
+<section class="mt-16 p-8 space-y-8 flex-1">
+<!-- Page Header / Stats (Asymmetric Layout) -->
+<div class="grid grid-cols-12 gap-8 items-end">
+<div class="col-span-12 lg:col-span-7">
+<nav class="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
+<span>Dashboard</span>
+<span class="material-symbols-outlined text-[10px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-emerald-700">Gestão de Inventário</span>
+</nav>
+<h2 class="font-headline font-extrabold text-4xl text-on-background tracking-tight">Inventário Geral</h2>
+<p class="font-body text-on-surface-variant mt-2 max-w-xl">Acompanhe o fluxo de medicamentos, suprimentos cirúrgicos e vacinas. Mantenha os níveis de estoque otimizados para o atendimento clínico.</p>
+</div>
+<div class="col-span-12 lg:col-span-5 flex justify-end gap-3">
+<button class="bg-surface-container-high text-on-surface px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-surface-dim transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="picture_as_pdf">picture_as_pdf</span>
+                        PDF
+                    </button>
+<button class="bg-surface-container-high text-on-surface px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-surface-dim transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="file_download">file_download</span>
+                        Excel
+                    </button>
+</div>
+</div>
+<!-- Bento Filter Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-emerald-100/30 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Total de Itens</span>
+<div class="p-2 bg-emerald-50 rounded-lg text-emerald-700">
+<span class="material-symbols-outlined text-lg" data-icon="inventory">inventory</span>
+</div>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-bold">1,284</span>
+<div class="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="arrow_upward">arrow_upward</span>
+                            +12% este mês
+                        </div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-red-100/30 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Estoque Crítico</span>
+<div class="p-2 bg-red-50 rounded-lg text-red-700">
+<span class="material-symbols-outlined text-lg" data-icon="report_problem">report_problem</span>
+</div>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-bold">14</span>
+<div class="text-[10px] text-red-600 font-bold flex items-center gap-1 mt-1">
+                            Ação imediata necessária
+                        </div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-amber-100/30 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Próximos do Vencimento</span>
+<div class="p-2 bg-amber-50 rounded-lg text-amber-700">
+<span class="material-symbols-outlined text-lg" data-icon="event_busy">event_busy</span>
+</div>
+</div>
+<div class="mt-4">
+<span class="text-3xl font-headline font-bold">08</span>
+<div class="text-[10px] text-amber-600 font-bold mt-1">
+                            Nos próximos 30 dias
+                        </div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Valor do Estoque</span>
+<div class="p-2 bg-zinc-50 rounded-lg text-zinc-700">
+<span class="material-symbols-outlined text-lg" data-icon="payments">payments</span>
+</div>
+</div>
+<div class="mt-4">
+<span class="text-2xl font-headline font-bold">R$ 42.150</span>
+<div class="text-[10px] text-zinc-500 font-medium mt-1">
+                            Preço de custo atualizado
+                        </div>
+</div>
+</div>
+</div>
+<!-- Main Inventory Grid/Table Container -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden border border-zinc-100">
+<!-- Filters Bar -->
+<div class="px-6 py-4 bg-white/40 flex items-center justify-between border-b border-zinc-100">
+<div class="flex items-center gap-4">
+<select class="bg-white border-none rounded-lg text-xs font-semibold px-4 py-2 ring-1 ring-zinc-200 focus:ring-emerald-500 transition-all outline-none">
+<option>Todas Categorias</option>
+<option>Medicamentos</option>
+<option>Suprimentos</option>
+<option>Vacinas</option>
+</select>
+<select class="bg-white border-none rounded-lg text-xs font-semibold px-4 py-2 ring-1 ring-zinc-200 focus:ring-emerald-500 transition-all outline-none">
+<option>Nível de Estoque</option>
+<option>Crítico</option>
+<option>Alerta</option>
+<option>Normal</option>
+</select>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-zinc-400 uppercase mr-2">Visualização:</span>
+<button class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+<span class="material-symbols-outlined text-sm" data-icon="list">list</span>
+</button>
+<button class="p-2 hover:bg-zinc-100 text-zinc-400 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="grid_view">grid_view</span>
+</button>
+</div>
+</div>
+<!-- Table Content -->
+<div class="overflow-x-auto">
+<table class="w-full border-collapse">
+<thead>
+<tr class="bg-zinc-50/50">
+<th class="text-left px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Item</th>
+<th class="text-left px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Categoria</th>
+<th class="text-left px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Lote/Validade</th>
+<th class="text-left px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center">Quantidade</th>
+<th class="text-left px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Status</th>
+<th class="text-right px-6 py-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-zinc-100 bg-white">
+<!-- Item 1: Crítico -->
+<tr class="hover:bg-emerald-50/20 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined" data-icon="vaccines">vaccines</span>
+</div>
+<div>
+<div class="text-sm font-bold text-on-surface">Vacina V10 Importada</div>
+<div class="text-[10px] text-zinc-400">Ref: VAC-001-B</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-zinc-100 text-zinc-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Imunobiológicos</span>
+</td>
+<td class="px-6 py-4">
+<div class="text-xs font-semibold text-on-surface">L#2024-X1</div>
+<div class="text-[10px] text-zinc-400">Venc: 12 Out 2024</div>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="text-sm font-bold text-red-600">04 un</div>
+<div class="text-[10px] text-red-400">Min: 15 un</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+<span class="text-[10px] font-bold text-red-600 uppercase">Estoque Baixo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="edit">edit</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 2: Alerta Validade -->
+<tr class="hover:bg-emerald-50/20 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+<span class="material-symbols-outlined" data-icon="medication">medication</span>
+</div>
+<div>
+<div class="text-sm font-bold text-on-surface">Amoxicilina 250mg</div>
+<div class="text-[10px] text-zinc-400">Ref: MED-552-A</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-zinc-100 text-zinc-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Antibióticos</span>
+</td>
+<td class="px-6 py-4">
+<div class="text-xs font-semibold text-amber-700">L#889-Z</div>
+<div class="text-[10px] text-amber-600 font-bold">Venc: 02 Abr 2024</div>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="text-sm font-bold text-on-surface">42 un</div>
+<div class="text-[10px] text-zinc-400">Min: 20 un</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-amber-500"></div>
+<span class="text-[10px] font-bold text-amber-600 uppercase">Vencendo Logo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="edit">edit</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 3: Saudável -->
+<tr class="hover:bg-emerald-50/20 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined" data-icon="content_cut">content_cut</span>
+</div>
+<div>
+<div class="text-sm font-bold text-on-surface">Kit Cirúrgico Estéril</div>
+<div class="text-[10px] text-zinc-400">Ref: SUP-102-K</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-zinc-100 text-zinc-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Suprimentos</span>
+</td>
+<td class="px-6 py-4">
+<div class="text-xs font-semibold text-on-surface">L#KIT-99</div>
+<div class="text-[10px] text-zinc-400">Venc: Indeterminada</div>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="text-sm font-bold text-on-surface">125 un</div>
+<div class="text-[10px] text-zinc-400">Min: 50 un</div>
+</td>
+<td class="px-6 py-4">
+<div class="inline-flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+<div class="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+<span class="text-[10px] font-bold text-emerald-700 uppercase">Saudável</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="edit">edit</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 4: Saudável -->
+<tr class="hover:bg-emerald-50/20 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined" data-icon="water_drop">water_drop</span>
+</div>
+<div>
+<div class="text-sm font-bold text-on-surface">Soro Fisiológico 500ml</div>
+<div class="text-[10px] text-zinc-400">Ref: SOR-101</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="bg-zinc-100 text-zinc-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Hospitalar</span>
+</td>
+<td class="px-6 py-4">
+<div class="text-xs font-semibold text-on-surface">L#920-SF</div>
+<div class="text-[10px] text-zinc-400">Venc: 15 Dez 2025</div>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="text-sm font-bold text-on-surface">200 un</div>
+<div class="text-[10px] text-zinc-400">Min: 40 un</div>
+</td>
+<td class="px-6 py-4">
+<div class="inline-flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+<div class="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
+<span class="text-[10px] font-bold text-emerald-700 uppercase">Saudável</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="edit">edit</span>
+</button>
+<button class="p-2 text-zinc-400 hover:text-emerald-600 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 bg-zinc-50/50 flex items-center justify-between">
+<span class="text-[11px] font-medium text-zinc-500">Exibindo 4 de 1.284 itens</span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-200">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 text-white font-bold text-[11px]">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-200 font-bold text-[11px]">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-200 font-bold text-[11px]">3</button>
+<span class="px-1 text-zinc-400">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-200 font-bold text-[11px]">42</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-200">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contextual Insight Footer -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-primary-container p-6 rounded-2xl relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-headline font-bold text-white text-xl">Previsão de Reposição</h3>
+<p class="text-emerald-100 text-sm mt-1 mb-4">Com base no consumo médio dos últimos 30 dias.</p>
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-white text-2xl font-bold">12 dias</span>
+<span class="text-[10px] text-emerald-200 uppercase font-bold tracking-widest">Até ruptura total</span>
+</div>
+<button class="bg-white text-emerald-800 px-4 py-2 rounded-xl text-xs font-black shadow-md hover:scale-105 transition-transform active:scale-95">
+                                Ver Pedido Sugerido
+                            </button>
+</div>
+</div>
+<!-- Abstract Background Pattern -->
+<div class="absolute right-0 top-0 bottom-0 w-1/3 bg-white/10 -skew-x-12 translate-x-12 group-hover:translate-x-8 transition-transform"></div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-2xl border border-zinc-200 flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+<span class="material-symbols-outlined text-3xl" data-icon="bolt">bolt</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-on-surface">Insight da Vitality AI</h3>
+<p class="text-on-surface-variant text-xs leading-relaxed">
+                            "O item <strong>Vacina V10</strong> teve um aumento de demanda de 22% esta semana devido à campanha local. Recomendamos aumentar o estoque mínimo de 15 para 25 unidades."
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button (FAB) - Suppression Logic Checked (Relevant to Inventory Task) -->
+<button class="fixed bottom-8 right-8 vitality-gradient w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform z-50">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</body></html>

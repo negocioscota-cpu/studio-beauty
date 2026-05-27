@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Agendar Consulta — Studiobeauty</title>
+    <meta name="description" content="Agende sua consulta de forma rápida e prática."/>
+    <meta property="og:title" content="Agende sua consulta — Studiobeauty"/>
+    <meta property="og:description" content="Escolha o melhor horário e agende online."/>
+    <meta property="og:image" content="https://clientehubclin.web.app/img/og-preview.png"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d7377",
+                        "primary-container": "#14919b",
+                        "surface": "#f5fafa",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e4eae9",
+                        "on-surface": "#191c1c",
+                        "on-surface-variant": "#3b4947",
+                        "outline-variant": "#b7c9c6",
+                    },
+                    fontFamily: { "headline": ["Manrope"], "body": ["Inter"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        .vitality-gradient { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { min-height: 100vh; }
+    </style>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-surface font-body text-on-surface">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white/80 backdrop-blur-md border-b border-outline-variant/20 px-6 py-4 sticky top-0 z-50">
+            <div class="max-w-2xl mx-auto flex items-center gap-3">
+                <div class="w-10 h-10 vitality-gradient rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings: 'FILL' 1;">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="bk-company" class="font-headline font-bold text-lg text-on-surface">Studiobeauty</h1>
+                    <p class="text-xs text-on-surface-variant">Agendamento Online</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex items-start justify-center px-4 py-8">
+            <div class="w-full max-w-2xl space-y-6">
+                <!-- Loading State -->
+                <div id="bk-loading" class="text-center py-20">
+                    <div class="inline-block w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+                    <p class="text-on-surface-variant font-medium">Carregando agenda...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="bk-error" class="hidden text-center py-20">
+                    <span class="material-symbols-outlined text-6xl text-on-surface-variant/30 mb-4">error_outline</span>
+                    <h2 class="font-headline font-bold text-xl mb-2">Link inválido</h2>
+                    <p class="text-on-surface-variant">Este link de agendamento não foi encontrado.</p>
+                </div>
+
+                <!-- Booking Form -->
+                <div id="bk-form" class="hidden space-y-6">
+                    <!-- Welcome -->
+                    <div class="text-center">
+                        <h2 class="font-headline text-2xl font-extrabold tracking-tight mb-1">Agende sua consulta</h2>
+                        <p class="text-on-surface-variant text-sm">Escolha o tipo de atendimento, a data e o melhor horário para você.</p>
+                    </div>
+
+                    <!-- Step 1: Service -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/15">
+                        <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+                            <span class="w-7 h-7 vitality-gradient text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+                            Tipo de Atendimento
+                        </h3>
+                        <div id="bk-services" class="grid grid-cols-2 gap-3">
+                            <button class="bk-service-btn p-4 rounded-xl border-2 border-outline-variant/20 hover:border-primary hover:bg-primary/5 text-left transition-all" data-service="Consulta">
+                                <span class="material-symbols-outlined text-primary mb-1">stethoscope</span>
+                                <p class="font-bold text-sm">Consulta</p>
+                            </button>
+                            <button class="bk-service-btn p-4 rounded-xl border-2 border-outline-variant/20 hover:border-primary hover:bg-primary/5 text-left transition-all" data-service="Retorno">
+                                <span class="material-symbols-outlined text-primary mb-1">replay</span>
+                                <p class="font-bold text-sm">Retorno</p>
+                            </button>
+                            <button class="bk-service-btn p-4 rounded-xl border-2 border-outline-variant/20 hover:border-primary hover:bg-primary/5 text-left transition-all" data-service="Exame">
+                                <span class="material-symbols-outlined text-primary mb-1">biotech</span>
+                                <p class="font-bold text-sm">Exame</p>
+                            </button>
+                            <button class="bk-service-btn p-4 rounded-xl border-2 border-outline-variant/20 hover:border-primary hover:bg-primary/5 text-left transition-all" data-service="Procedimento">
+                                <span class="material-symbols-outlined text-primary mb-1">medical_services</span>
+                                <p class="font-bold text-sm">Procedimento</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Date -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/15">
+                        <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+                            <span class="w-7 h-7 vitality-gradient text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+                            Data
+                        </h3>
+                        <input type="date" id="bk-date" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl text-on-surface font-medium" />
+                    </div>
+
+                    <!-- Step 3: Time -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/15">
+                        <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+                            <span class="w-7 h-7 vitality-gradient text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                            Horário
+                        </h3>
+                        <div id="bk-times" class="grid grid-cols-3 md:grid-cols-4 gap-2">
+                            <!-- Generated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Info -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/15">
+                        <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+                            <span class="w-7 h-7 vitality-gradient text-white text-xs font-bold rounded-full flex items-center justify-center">4</span>
+                            Seus dados
+                        </h3>
+                        <div class="space-y-4">
+                            <input type="text" id="bk-name" placeholder="Seu nome completo" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl text-on-surface" required />
+                            <input type="tel" id="bk-phone" placeholder="(00) 00000-0000" maxlength="15" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl text-on-surface" required />
+                            <textarea id="bk-notes" placeholder="Observações (opcional)" rows="2" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl text-on-surface resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button id="bk-submit" onclick="BookingPage.submit()" class="w-full py-4 vitality-gradient text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.01] transition-transform text-lg flex items-center justify-center gap-2" disabled>
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Confirmar Consulta
+                    </button>
+                </div>
+
+                <!-- Success State -->
+                <div id="bk-success" class="hidden text-center py-16">
+                    <div class="w-20 h-20 vitality-gradient rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="material-symbols-outlined text-white text-4xl" style="font-variation-settings: 'FILL' 1;">check</span>
+                    </div>
+                    <h2 class="font-headline text-2xl font-extrabold mb-2">Consulta agendada! 🏥✨</h2>
+                    <p class="text-on-surface-variant mb-1">Seu horário foi reservado com sucesso.</p>
+                    <p id="bk-success-detail" class="text-sm font-semibold text-primary"></p>
+                    <p class="text-xs text-on-surface-variant mt-6">Você receberá uma confirmação em breve.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center py-4 text-xs text-on-surface-variant/60">
+            Powered by <strong>Studiobeauty</strong> 🏥
+        </footer>
+    </div>
+
+<script>
+// Firebase Config
+firebase.initializeApp({
+    apiKey: "AIzaSyDz9eBhERuxJ_Q5D55oDGb6KRelqHXk5_k",
+    authDomain: "clientehubclin.firebaseapp.com",
+    projectId: "clientehubclin",
+    storageBucket: "clientehubclin.firebasestorage.app",
+    messagingSenderId: "820282988034",
+    appId: "1:820282988034:web:79af13eae338026577f91b"
+});
+const db = firebase.firestore();
+
+const BookingPage = {
+    slug: null,
+    ownerUid: null,
+    selectedService: null,
+    selectedTime: null,
+    settings: null,
+
+    async init() {
+        // Get slug from URL path
+        const path = window.location.pathname;
+        const match = path.match(/\/booking\/(.+)/);
+        if (!match) { this.showError(); return; }
+        this.slug = match[1];
+
+        // Find owner by slug in Firestore
+        try {
+            const snap = await db.collection('bookingLinks').where('slug', '==', this.slug).limit(1).get();
+            if (snap.empty) { this.showError(); return; }
+            const doc = snap.docs[0];
+            this.ownerUid = doc.data().uid;
+            this.settings = doc.data().settings || {};
+
+            // Show company name
+            if (this.settings.company) {
+                document.getElementById('bk-company').textContent = this.settings.company;
+                document.title = `Agendar — ${this.settings.company}`;
+            }
+
+            this.showForm();
+            this.setupDatePicker();
+            this.setupServiceButtons();
+            this.setupPhoneMask();
+            this.generateTimeSlots();
+        } catch (e) {
+            console.error('Booking init error:', e);
+            this.showError();
+        }
+    },
+
+    showError() {
+        document.getElementById('bk-loading').classList.add('hidden');
+        document.getElementById('bk-error').classList.remove('hidden');
+    },
+
+    showForm() {
+        document.getElementById('bk-loading').classList.add('hidden');
+        document.getElementById('bk-form').classList.remove('hidden');
+    },
+
+    setupDatePicker() {
+        const input = document.getElementById('bk-date');
+        const today = new Date();
+        const min = today.toISOString().split('T')[0];
+        const maxDate = new Date(today); maxDate.setDate(today.getDate() + 30);
+        input.min = min;
+        input.max = maxDate.toISOString().split('T')[0];
+        input.value = min;
+        input.addEventListener('change', () => this.generateTimeSlots());
+    },
+
+    setupServiceButtons() {
+        document.querySelectorAll('.bk-service-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.bk-service-btn').forEach(b => {
+                    b.classList.remove('border-primary', 'bg-primary/5', 'ring-2', 'ring-primary/20');
+                    b.classList.add('border-outline-variant/20');
+                });
+                btn.classList.add('border-primary', 'bg-primary/5', 'ring-2', 'ring-primary/20');
+                btn.classList.remove('border-outline-variant/20');
+                this.selectedService = btn.dataset.service;
+                this.validateForm();
+            });
+        });
+    },
+
+    setupPhoneMask() {
+        document.getElementById('bk-phone')?.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 6) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+            else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+            else if (v.length > 0) v = `(${v}`;
+            e.target.value = v;
+        });
+    },
+
+    generateTimeSlots() {
+        const container = document.getElementById('bk-times');
+        const fs = this.settings?.flexSchedule;
+        const dateVal = document.getElementById('bk-date')?.value;
+        const selectedDay = dateVal ? new Date(dateVal + 'T12:00:00').getDay() : new Date().getDay();
+        // Convert JS day (0=Sun) to our index (0=Mon)
+        const dayIdx = selectedDay === 0 ? 6 : selectedDay - 1;
+
+        let startH = 8, endH = 18;
+        if (fs && fs[dayIdx]) {
+            if (!fs[dayIdx].active) {
+                container.innerHTML = '<p class="col-span-full text-center text-on-surface-variant text-sm py-4">Não há horários disponíveis neste dia.</p>';
+                return;
+            }
+            startH = parseInt(fs[dayIdx].start?.split(':')[0]) || 8;
+            endH = parseInt(fs[dayIdx].end?.split(':')[0]) || 18;
+        }
+
+        // Lunch break
+        const lunchEnabled = this.settings?.lunchEnabled !== false;
+        const lunchStartH = parseInt(this.settings?.lunchStart?.split(':')[0]) || 12;
+        const lunchEndH = parseInt(this.settings?.lunchEnd?.split(':')[0]) || 13;
+        const duration = parseInt(this.settings?.duration) || 60;
+        const interval = duration >= 60 ? 60 : 30;
+
+        let html = '';
+        for (let h = startH; h < endH; h++) {
+            for (let m = 0; m < 60; m += interval) {
+                if (lunchEnabled && h >= lunchStartH && h < lunchEndH) continue;
+                const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                html += `<button class="bk-time-btn py-3 px-2 rounded-xl border-2 border-outline-variant/20 hover:border-primary hover:bg-primary/5 text-sm font-bold transition-all" data-time="${time}">${time}</button>`;
+            }
+        }
+        container.innerHTML = html || '<p class="col-span-full text-center text-on-surface-variant text-sm py-4">Nenhum horário disponível.</p>';
+
+        container.querySelectorAll('.bk-time-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('.bk-time-btn').forEach(b => {
+                    b.classList.remove('border-primary', 'bg-primary/5', 'ring-2', 'ring-primary/20', 'text-primary');
+                    b.classList.add('border-outline-variant/20');
+                });
+                btn.classList.add('border-primary', 'bg-primary/5', 'ring-2', 'ring-primary/20', 'text-primary');
+                btn.classList.remove('border-outline-variant/20');
+                this.selectedTime = btn.dataset.time;
+                this.validateForm();
+            });
+        });
+    },
+
+    validateForm() {
+        const name = document.getElementById('bk-name')?.value?.trim();
+        const phone = document.getElementById('bk-phone')?.value?.trim();
+        const valid = this.selectedService && this.selectedTime && name && phone;
+        document.getElementById('bk-submit').disabled = !valid;
+        document.getElementById('bk-submit').classList.toggle('opacity-50', !valid);
+    },
+
+    async submit() {
+        const btn = document.getElementById('bk-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Agendando...';
+
+        const name = document.getElementById('bk-name').value.trim();
+        const phone = document.getElementById('bk-phone').value.trim();
+        const notes = document.getElementById('bk-notes').value.trim();
+        const date = document.getElementById('bk-date').value;
+        const dateObj = new Date(date + 'T' + this.selectedTime + ':00');
+
+        try {
+            // Salvar agendamento
+            const appRef = await db.collection('users').doc(this.ownerUid).collection('appointments').add({
+                clientName: name,
+                clientPhone: phone,
+                service: this.selectedService,
+                date: dateObj,
+                time: this.selectedTime,
+                notes: notes,
+                status: 'pending',
+                source: 'online_booking',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Verificar se o serviço tem preço configurado
+            const prices = this.settings?.servicePrices || {};
+            const price = prices[this.selectedService];
+            const paymentEnabled = this.settings?.paymentEnabled === true;
+
+            if (paymentEnabled && price && price > 0) {
+                // Criar pedido para checkout
+                const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' às ' + this.selectedTime;
+                const orderRef = await db.collection('orders').add({
+                    ownerUid: this.ownerUid,
+                    appointmentId: appRef.id,
+                    clientName: name,
+                    clientPhone: phone,
+                    service: this.selectedService,
+                    amount: Math.round(price * 100), // centavos
+                    currency: 'BRL',
+                    status: 'pending',
+                    dateFormatted: dateFormatted,
+                    time: this.selectedTime,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Redirecionar para checkout
+                window.location.href = `/checkout/?orderId=${orderRef.id}`;
+                return;
+            }
+
+            // Sem pagamento — fluxo original
+            document.getElementById('bk-form').classList.add('hidden');
+            document.getElementById('bk-success').classList.remove('hidden');
+            document.getElementById('bk-success-detail').textContent = 
+                `${this.selectedService} • ${new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })} às ${this.selectedTime}`;
+        } catch (e) {
+            console.error('Booking submit error:', e);
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Confirmar Agendamento';
+            alert('Erro ao agendar. Tente novamente.');
+        }
+    }
+};
+
+// Listen for form input changes to validate
+document.addEventListener('input', () => BookingPage.validateForm());
+// Init on load
+BookingPage.init();
+</script>
+</body>
+</html>

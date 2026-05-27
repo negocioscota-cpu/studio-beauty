@@ -1,0 +1,304 @@
+{
+  "product": {
+    "name": "Kit Labial Lash and Beauty Lips",
+    "shortName": "Kit Lips",
+    "description": "Solução completa e premium de cuidados labiais em 4 etapas sinérgicas, proporcionando suavidade extrema, hidratação profunda, nutrição celular e selagem antioxidante sob a chancela da marca Studiobeauty.",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Esfoliação (Scrub de Arroz)",
+        "purpose": "Remover células mortas de forma suave e natural sem ser abrasivo, preparando os lábios para os ativos."
+      },
+      {
+        "step": 2,
+        "name": "Hidratação e Nutrição profunda (Sérum Coco Boost)",
+        "purpose": "Permeação de ativos nanotecnológicos de altíssima performance para restabelecer a maciez e contorno labial."
+      },
+      {
+        "step": 3,
+        "name": "Proteção e Regeneração (Butter Coco e Vanilla)",
+        "purpose": "Aplicação de um blend ultra-emoliente de manteigas e óleos nobres para criar barreira física hidratante duradoura."
+      },
+      {
+        "step": 4,
+        "name": "Finalização e Selagem (Gloss Reconstrutor)",
+        "purpose": "Película protetora ultraconfortável com brilho tridimensional espelhado que retém os ativos sem pesar."
+      }
+    ],
+    "targetAudience": {
+      "homeCare": "Consumidoras finais para uso doméstico diário e rotina noturna de regeneração profunda labial.",
+      "professional": "Profissionais de beleza (Lashers, Designers de Sobrancelhas, Lip Designers, Esteticistas Faciais) do Studiobeauty para uso em cabine em procedimentos como Spa dos Lábios avançado, Hidra Gloss e preparação de maquiagem ou micropigmentação."
+    },
+    "benefitsOfCare": "Lábios são altamente expostos a sol, vento, clima e poluição. Cuidados preventivos são essenciais para evitar ressecamento, descamação e fissuras dolorosas.",
+    "keyIngredients": [
+      {
+        "name": "RAFFERMINE®",
+        "benefits": "Ativo inovador de reestruturação celular que renova a matriz extracelular, combate a flacidez dérmica nos lábios e previne sinais de envelhecimento precoce."
+      },
+      {
+        "name": "Ácido Hialurônico",
+        "benefits": "Capacidade de reter até 1.000 vezes seu peso em água. Confere efeito de preenchimento e volumetria visual imediata por hidratação profunda, impedindo rachaduras."
+      },
+      {
+        "name": "Pantenol (Vitamina B5)",
+        "benefits": "Poderoso hidratante com fortes propriedades calmantes, cicatrizantes e anti-inflamatórias. Excelente na regeneração celular pós-esfoliação."
+      },
+      {
+        "name": "Vitamina C",
+        "benefits": "Antioxidante de alta performance que estimula o colágeno, clareia hiperpigmentações e uniformiza perfeitamente o tom dos lábios contra agressões climáticas."
+      },
+      {
+        "name": "Niacinamida (Vitamina B3)",
+        "benefits": "Ativo multifuncional que melhora a flexibilidade da barreira lipídica, uniformiza o tom da pele e possui excelente ação calmante."
+      },
+      {
+        "name": "Squalane (Esqualano)",
+        "benefits": "Emoliente de altíssimo padrão que restaura a barreira de hidratação lipídica e prolonga a retenção hídrica, prevenindo a perda transepidérmica de água."
+      },
+      {
+        "name": "Manteiga de Cacau",
+        "benefits": "Altamente nutritiva, cria uma camada física protetora que retém a umidade e previne o ressecamento precoce."
+      },
+      {
+        "name": "Manteiga de Karité",
+        "benefits": "Ação nutritiva celular e anti-inflamatória em lábios severamente machucados, oferecendo emoliência extrema e regeneração tecidual."
+      },
+      {
+        "name": "Óleo de Coco",
+        "benefits": "Hidratante natural potente com propriedades antibacterianas e antioxidantes, protege contra irritações externas."
+      },
+      {
+        "name": "Óleo de Pracaxi",
+        "benefits": "Óleo amazônico cicatrizante que restaura profundamente a elasticidade e regenera rachaduras profundas nos lábios."
+      },
+      {
+        "name": "Óleo de Macadâmia",
+        "benefits": "Leve e de absorção rápida, rico em ácidos graxos essenciais para fortificar o manto lipídico."
+      },
+      {
+        "name": "Óleo de Semente de Uva",
+        "benefits": "Forte antioxidante natural que combate radicais livres causados por poluição e radiação UV, melhorando a elasticidade."
+      },
+      {
+        "name": "Vitamina E",
+        "benefits": "Acelera a regeneração tecidual em sinergia com outros ativos, retém a umidade e protege a barreira labial."
+      }
+    ],
+    "glossDetails": {
+      "description": "Gloss de tratamento luxuoso que sela a hidratação e dá brilho tridimensional, enriquecido com Ácido Hialurônico, Squalane e Vitamina E. Não resseca com o uso prolongado.",
+      "usage": "Pode ser usado isoladamente ou após a aplicação da Butter Labial para criar uma selagem blindada.",
+      "versions": [
+        {
+          "name": "Fresh Mint",
+          "characteristics": "Translúcido, mentolado e extremamente refrescante, não altera a cor de batons."
+        },
+        {
+          "name": "Coco & Vanilla",
+          "characteristics": "Aroma doce de sorvete, possui um tom avermelhado translúcido elegante que traz aspecto saudável imediato."
+        }
+      ]
+    },
+    "protocols": {
+      "cleaning": "Higienização profunda com a Espuma de Limpeza TOTAL CARE para otimizar em até 300% a absorção dos ativos.",
+      "exfoliationOptimization": "Equipamentos específicos para afinar o estrato córneo e aumentar a absorção celular.",
+      "boost": "Nanoagulhamento com Sérum Coco Boost usando agulhas nano (sem cortes ou sangramentos) para indução profunda de ativos.",
+      "sobrancelhasUsage": "A Butter Coco e Vanilla possui ação regeneradora profunda e pode ser aplicada nas sobrancelhas para hidratar e acalmar a pele pós-procedimentos.",
+      "weatherCare": {
+        "coldOrDry": "Frequência intensificada do uso do sérum e butter no dia a dia e rotina noturna facial/labial.",
+        "hotOrSunny": "Uso constante do gloss labial como escudo protetor contra calor e desidratação."
+      },
+      "nightRoutine": "Limpeza + aplicação combinada de Sérum Coco Boost e Butter Coco e Vanilla antes de dormir para regeneração intensa."
+    },
+    "commercial": {
+      "coupon": "LIPS10",
+      "whatsappContacts": [
+        "(37) 99134-2113",
+        "(31) 98772-9581"
+      ],
+      "officialWebsite": "www.lashshopbrasil.com.br"
+    }
+  },
+  "studiobeautySpecialties": {
+    "lash": {
+      "techniques": [
+        {
+          "name": "Clássico Fio a Fio",
+          "thickness": "0.15mm",
+          "description": "Acoplagem milimétrica de 1 fio sintético sobre 1 fio natural saudável, preservando as fases de crescimento naturais com curvatura anatômica e efeito rímel sofisticado."
+        },
+        {
+          "name": "Volume Russo",
+          "thickness": "0.05mm a 0.07mm",
+          "description": "Fans artesanais de 3 a 6 fios ultrafinos acoplados com precisão cirúrgica na base do fio natural, proporcionando densidade profunda e leveza folicular."
+        },
+        {
+          "name": "Volume Brasileiro",
+          "thickness": "0.07mm ou 0.15mm",
+          "description": "Fios em formato de Y de PBT nobre, facilitando a acoplagem e garantindo um volume tridimensional marcante de alta durabilidade."
+        }
+      ],
+      "retentionSecrets": {
+        "preparation": "Higienização rigorosa dos cílios com Espuma de Limpeza TOTAL CARE (remove biofilme e gordura dos fios) seguida de Lash Primer desengordurante.",
+        "idealHumidity": "45% a 65% (dependendo do adesivo)",
+        "idealTemperature": "19°C a 23°C",
+        "highHumidityConsequences": "Choque térmico e de polimerização instantâneo, deixando a cola esbranquiçada e quebradiça, levando à queda precoce (falsa retenção).",
+        "lowHumidityConsequences": "Retardo excessivo na cura do adesivo, provocando vapores ardidos irritantes para a cliente e instabilidade física da acoplagem."
+      },
+      "reconstructionTreatment": {
+        "product": "Máscara LASH FILLER (Complex 3D)",
+        "actives": ["Peptídeos", "Queratina vegetal hidrolisada", "Pantenol"],
+        "efficacy": "Encorpa em até 24% a espessura da haste natural após 3 aplicações, blinda cutículas e trata cílios danificados por químicas."
+      }
+    },
+    "brows": {
+      "techniques": [
+        {
+          "name": "Brow Mapping (Mapeamento Facial)",
+          "tools": ["Linha pigmentada", "Paquímetro digital"],
+          "description": "Traçado de proporção áurea facial (Proporção PHI) e visagismo personalizado para definir início, ponto alto e final ideal."
+        },
+        {
+          "name": "Design Simples",
+          "description": "Remoção milimétrica de pelos em excesso com pinça de precisão e linha orgânica egípcia."
+        },
+        {
+          "name": "Design com Henna",
+          "description": "Aplicação de pigmento temporário orgânico enriquecido com ativos de tratamento para efeito sombreado natural degradê."
+        }
+      ],
+      "browLamination": {
+        "definition": "Alinhamento e alisamento químico temporário dos pelos das sobrancelhas para cima com tioglicolato de amônia, cobrindo falhas com efeito fluffy moderno.",
+        "postCare24h": [
+          "Não molhar ou expor a vapor quente",
+          "Evitar suor excessivo (exercícios intensos)",
+          "Não deitar com o rosto pressionado contra o travesseiro",
+          "Escovar diariamente e aplicar óleos nutritivos"
+        ]
+      },
+      "dailyNutrition": {
+        "product": "Balm Fix",
+        "ingredients": ["Biotina", "Óleo de Rícino", "Pantenol", "Manteiga de Karité"],
+        "benefits": "Modelagem prolongada com efeito Brow Lamination temporário, nutrindo o bulbo e estimulando o crescimento saudável de novos fios sem deixar resíduos brancos."
+      },
+      "soothingCare": {
+        "product": "Butter Coco e Vanilla",
+        "usage": "Aplicação imediata pós-design ou pós-depilação facial",
+        "benefits": "Ação anti-inflamatória e regeneradora com óleo de pracaxi e coco, acalmando a derme traumatizada e reduzindo a vermelhidão instantaneamente."
+      }
+    },
+    "skincare": {
+      "preparation": {
+        "product": "Espuma de Limpeza TOTAL CARE",
+        "actives": ["Camomila", "Calêndula", "Ácido Hialurônico"],
+        "benefits": "Limpeza micelar suave com pH balanceado que controla o excesso de oleosidade e otimiza a absorção de ativos em até 300%."
+      },
+      "deepCleaningProtocol": {
+        "name": "Limpeza de Pele Profunda em Cabine (7 Passos)",
+        "steps": [
+          {
+            "step": 1,
+            "name": "Higienização Ativa",
+            "description": "Remoção de impurezas e poluição microscópica com a Espuma TOTAL CARE."
+          },
+          {
+            "step": 2,
+            "name": "Afinamento Epitelial",
+            "description": "Esfoliação física leve com Scrub de Arroz para remover células queratinizadas."
+          },
+          {
+            "step": 3,
+            "name": "Emoliência Facilitada",
+            "description": "Aplicação de creme emoliente com trietanolamina sob vapor de ozônio por 15 minutos."
+          },
+          {
+            "step": 4,
+            "name": "Extração Científica",
+            "description": "Remoção manual minuciosa de comedões abertos/fechados e miliuns com gaze esterilizada."
+          },
+          {
+            "step": 5,
+            "name": "Alta Frequência Antisséptica",
+            "description": "Geração de ozônio na epiderme para ação bactericida, fungicida, antisséptica e cicatrizante rápida."
+          },
+          {
+            "step": 6,
+            "name": "Calmante Dérmico",
+            "description": "Aplicação fina de Butter Coco e Vanilla nas áreas irritadas para aceleração da regeneração celular e redução imediata do eritema."
+          },
+          {
+            "step": 7,
+            "name": "Nutrição e Proteção",
+            "description": "Aplicação de Sérum Coco Boost (Ácido Hialurônico + Niacinamida) e finalização com protetor solar FPS 50+."
+          }
+        ]
+      }
+    },
+    "specialtiesPremium": {
+      "unhas": {
+        "techniques": [
+          {
+            "name": "Alongamento em Gel",
+            "description": "Gel autonivelante sob tips ou moldes curados sob LED/UV, garantindo durabilidade e brilho permanente."
+          },
+          {
+            "name": "Alongamento em Fibra de Vidro",
+            "description": "Filamentos ultrafinos integrados com gel construtor, alcançando resistência ímpar e a espessura mais natural do mercado."
+          }
+        ],
+        "biosafety": {
+          "autoclave": "Esterilização obrigatória de ferramentas metálicas (alicates, espátulas) em autoclave regulamentada sob ciclos de vapor sob pressão com testes classe 5.",
+          "epi": "Uso obrigatório de máscara tripla descartável ou PFF2/N95, óculos de proteção e luvas de nitrilo contra inalação de pó de lixamento de gel acrílico (previne pneumoconiose e alergias severas).",
+          "pathologyPrevention": "Prevenção activa contra infiltrações causadoras de fungos (Candida) e bactérias oportunistas (Pseudomonas aeruginosa, causadora de manchas esverdeadas)."
+        }
+      },
+      "maquiagem": {
+        "skinPrep": "Preparação premium de pele e lábios (Skin Prep) voltada para casamentos e formandas (eventos de gala), com fixação estendida por mais de 12 horas.",
+        "boostSerum": "Aplicação de Sérum Coco Boost para preenchimento de linhas finas por hidratação celular e controle sebáceo pré-maquiagem.",
+        "butterBarrier": "Uso estratégico de Butter Coco e Vanilla em zonas propensas ao ressecamento extremo (área dos olhos, cantos do nariz) para blindar a maquiagem e impedir o craquelamento da base nas linhas de expressão."
+      }
+    }
+  },
+  "otherProducts": [
+    {
+      "name": "Balm Fix (Modeladora para Sobrancelhas)",
+      "description": "Pomada modeladora super inovadora enriquecida com ativos hidratantes e nutritivos para cuidar da fibra das sobrancelhas ao mesmo tempo em que alinha os pelos.",
+      "keyIngredients": [
+        "Biotina",
+        "Óleo de Rícino",
+        "Pantenol",
+        "Manteiga de Karité"
+      ],
+      "activesBenefit": "Nutre o bulbo e estimula o crescimento saudável de novos fios.",
+      "effects": "Efeito de Brow Lamination temporário com fixação prolongada de alto rendimento.",
+      "usage": "Finalização de procedimentos em cabine e home care diário."
+    },
+    {
+      "name": "Máscara de Cílios LASH FILLER (Complex 3D)",
+      "description": "Tratamento diário de alta tecnologia para cílios naturais finos ou sensibilizados, ideal para pós-Lash Lifting.",
+      "keyIngredients": [
+        "Peptídeos",
+        "Queratina vegetal hidrolisada",
+        "Pantenol"
+      ],
+      "activesBenefit": "Restaura o córtex e blinda as cutículas ciliares.",
+      "effects": "Encorpa os cílios em até 24% após 3 aplicações e previne a queda folicular.",
+      "removal": "No-Smudge (resistente a água fria/suor, removível em tubinhos com água morna)."
+    },
+    {
+      "name": "Espuma de Limpeza TOTAL CARE",
+      "description": "Espuma de higienização micelar avançada e balanceada, essencial como pré-procedimento em cabine.",
+      "keyIngredients": [
+        "Camomila",
+        "Calêndula",
+        "Ácido Hialurônico"
+      ],
+      "activesBenefit": "Remove poluição, sebo e impurezas sem ressecar a pele delicada.",
+      "effects": "Desobstrui óstios foliculares e otimiza a permeação de ativos subsequentes em até 300%."
+    },
+    {
+      "name": "ReVita Sérum Capilar",
+      "volume": "30ml",
+      "description": "Loção científica premium de alta performance voltada ao estímulo do bulbo capilar, fortalecimento da fibra e combate acelerado à queda dos cabelos."
+    }
+  ]
+}
