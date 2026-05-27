@@ -90,6 +90,31 @@ const ClientFormPage = {
                             </div>
                         </div>
                         <div>
+                            <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+                                <span class="inline-flex items-center gap-1">📍 Como conheceu o Studio?</span>
+                            </label>
+                            <select id="cf-source" class="w-full px-4 py-4 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface">
+                                <option value="">Selecione a origem...</option>
+                                <option value="instagram">📸 Instagram</option>
+                                <option value="facebook">👤 Facebook</option>
+                                <option value="tiktok">🎵 TikTok</option>
+                                <option value="google">🔍 Google / Pesquisa</option>
+                                <option value="indicacao_cliente">🤝 Indicação de Cliente</option>
+                                <option value="indicacao_amigo">👯 Indicação de Amigo</option>
+                                <option value="bolsa_beleza">💰 Bolsa da Beleza (Programa de Indicações)</option>
+                                <option value="whatsapp">💬 WhatsApp</option>
+                                <option value="passou_na_frente">🚶 Passou na Frente</option>
+                                <option value="panfleto">📄 Panfleto / Flyer</option>
+                                <option value="evento">🎪 Evento / Feira</option>
+                                <option value="retorno">🔄 Cliente Retornando</option>
+                                <option value="outro">📌 Outro</option>
+                            </select>
+                        </div>
+                        <div id="cf-source-other-wrap" class="hidden">
+                            <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Especifique a Origem</label>
+                            <input type="text" id="cf-source-other" class="w-full px-4 py-4 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="De onde veio esse cliente?"/>
+                        </div>
+                        <div>
                             <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Observações</label>
                             <textarea id="cf-notes" rows="3" class="w-full px-4 py-4 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface resize-none" placeholder="Anotações importantes sobre o cliente..."></textarea>
                         </div>
@@ -149,6 +174,19 @@ const ClientFormPage = {
                     document.getElementById('cf-notes').value = client.notes || '';
                     document.getElementById('client-status').value = client.status || 'active';
 
+                    // Campo de origem
+                    if (client.source) {
+                        const sourceSelect = document.getElementById('cf-source');
+                        const hasOption = [...sourceSelect.options].some(o => o.value === client.source);
+                        if (hasOption) {
+                            sourceSelect.value = client.source;
+                        } else {
+                            sourceSelect.value = 'outro';
+                            document.getElementById('cf-source-other').value = client.source;
+                            document.getElementById('cf-source-other-wrap').classList.remove('hidden');
+                        }
+                    }
+
                     // Status button
                     document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('bg-primary', 'text-white', 'shadow-sm'));
                     const activeBtn = document.querySelector(`.status-btn[data-status="${client.status}"]`);
@@ -158,6 +196,17 @@ const ClientFormPage = {
                 console.error('Error loading client:', e);
             }
         }
+
+        // Mostrar/ocultar campo "outro" quando selecionado
+        document.getElementById('cf-source')?.addEventListener('change', (e) => {
+            const wrap = document.getElementById('cf-source-other-wrap');
+            if (e.target.value === 'outro') {
+                wrap.classList.remove('hidden');
+                document.getElementById('cf-source-other').focus();
+            } else {
+                wrap.classList.add('hidden');
+            }
+        });
 
         // Form submit
         const form = document.getElementById('client-form');
@@ -184,7 +233,10 @@ const ClientFormPage = {
                 serviceType: document.getElementById('cf-service-type').value,
                 category: document.getElementById('cf-category').value,
                 notes: document.getElementById('cf-notes').value,
-                status: document.getElementById('client-status').value
+                status: document.getElementById('client-status').value,
+                source: document.getElementById('cf-source').value === 'outro'
+                    ? (document.getElementById('cf-source-other').value.trim() || 'outro')
+                    : document.getElementById('cf-source').value
             };
 
             // Show loading state

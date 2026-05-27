@@ -15,7 +15,10 @@ const ClientsPage = {
                 <div class="flex items-center gap-2 flex-wrap">
                     <!-- 1. Import/Export -->
                     <button id="btn-import-csv" class="px-4 py-2.5 bg-surface-container-low text-on-surface-variant rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors">
-                        <span class="material-symbols-outlined text-lg">upload_file</span>Importar
+                        <span class="material-symbols-outlined text-lg">upload_file</span>CSV
+                    </button>
+                    <button id="btn-import-phone" class="px-4 py-2.5 bg-surface-container-low text-on-surface-variant rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors">
+                        <span class="material-symbols-outlined text-lg">contacts</span>Celular
                     </button>
                     <button id="btn-export-csv" class="px-4 py-2.5 bg-surface-container-low text-on-surface-variant rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors">
                         <span class="material-symbols-outlined text-lg">file_download</span>Exportar
@@ -137,6 +140,9 @@ const ClientsPage = {
 
         // 1. Export CSV
         document.getElementById('btn-export-csv')?.addEventListener('click', () => ClientsPage.exportCSV());
+
+        // Import from Phone
+        document.getElementById('btn-import-phone')?.addEventListener('click', () => ClientsPage.importFromPhone());
 
         // 2. Manage Tags
         document.getElementById('btn-manage-tags')?.addEventListener('click', () => ClientsPage.openTagManager());
@@ -379,6 +385,7 @@ const ClientsPage = {
                 <div class="flex items-center gap-2 flex-wrap mb-1">
                     ${client.phone ? `<span class="text-[11px] text-on-surface-variant"><span class="material-symbols-outlined text-xs align-middle mr-0.5">phone</span>${client.phone}</span>` : ''}
                     ${lastInteractionHtml}
+                    ${client.source ? `<span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-purple-600 bg-purple-50" title="Origem"><span class="material-symbols-outlined text-[10px] align-middle">pin_drop</span> ${ClientsPage.getSourceLabel(client.source)}</span>` : ''}
                 </div>
 
                 ${leadScoreHtml}
@@ -439,13 +446,137 @@ const ClientsPage = {
         await this.loadClients('all');
     },
 
+    // === Import from Phone (Contact Picker API) ===
+    async importFromPhone() {
+        // Verificar suporte à API
+        if (!('contacts' in navigator && 'ContactsManager' in window)) {
+            // Fallback: mostrar modal com instruções
+            const modal = document.getElementById('modal-content');
+            modal.innerHTML = `
+            <div class="p-8">
+                <h3 class="font-headline font-bold text-2xl mb-2 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">contacts</span>
+                    Importar Contatos do Celular
+                </h3>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                    <p class="text-sm text-amber-800 flex items-start gap-2">
+                        <span class="material-symbols-outlined text-amber-600 text-base mt-0.5">info</span>
+                        <span>A importação direta de contatos está disponível apenas no <strong>Chrome para Android</strong>. Para usar em outro navegador, exporte seus contatos como <strong>CSV</strong> e use o botão "Importar CSV".</span>
+                    </p>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-surface-container-high rounded-xl p-4">
+                        <h4 class="font-bold text-sm mb-2">📱 No celular Android:</h4>
+                        <ol class="text-sm text-on-surface-variant space-y-1 list-decimal pl-5">
+                            <li>Abra o site pelo <strong>Chrome</strong></li>
+                            <li>Vá em <strong>Clientes</strong></li>
+                            <li>Toque em <strong>"Celular"</strong></li>
+                            <li>Selecione os contatos desejados</li>
+                        </ol>
+                    </div>
+                    <div class="bg-surface-container-high rounded-xl p-4">
+                        <h4 class="font-bold text-sm mb-2">💻 No computador:</h4>
+                        <ol class="text-sm text-on-surface-variant space-y-1 list-decimal pl-5">
+                            <li>Exporte os contatos do celular como <strong>CSV</strong></li>
+                            <li>Use o botão <strong>"CSV"</strong> para importar</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-4 mt-4 border-t border-outline-variant/10">
+                    <button type="button" onclick="App.closeModal()" class="px-6 py-3 vitality-gradient text-white font-bold rounded-xl">Entendi</button>
+                </div>
+            </div>`;
+            App.openModal();
+            return;
+        }
+
+        try {
+            const props = ['name', 'email', 'tel'];
+            const opts = { multiple: true };
+            const contacts = await navigator.contacts.select(props, opts);
+
+            if (!contacts || contacts.length === 0) {
+                App.showToast('Nenhum contato selecionado.', 'info');
+                return;
+            }
+
+            // Confirmar importação
+            if (!confirm(`Importar ${contacts.length} contato(s) para o sistema?`)) return;
+
+            App.showToast(`Importando ${contacts.length} contato(s)...`, 'info');
+            let imported = 0;
+            let skipped = 0;
+
+            for (const contact of contacts) {
+                const name = contact.name?.[0] || '';
+                if (!name) { skipped++; continue; }
+
+                // Verificar se já existe pelo telefone ou nome
+                const phone = contact.tel?.[0] || '';
+                const exists = this.allClients.some(c =>
+                    (phone && c.phone && c.phone.replace(/\D/g, '') === phone.replace(/\D/g, '')) ||
+                    (c.name && c.name.toLowerCase() === name.toLowerCase())
+                );
+
+                if (exists) { skipped++; continue; }
+
+                const data = {
+                    name,
+                    email: contact.email?.[0] || '',
+                    phone: phone,
+                    status: 'prospect',
+                    source: 'contato_celular',
+                    tags: ['Importado']
+                };
+
+                try {
+                    await Store.addClient(data);
+                    imported++;
+                } catch (e) {
+                    console.warn('Erro ao importar contato:', name, e);
+                }
+            }
+
+            let msg = `${imported} contato(s) importado(s) com sucesso!`;
+            if (skipped > 0) msg += ` ${skipped} ignorado(s) (duplicados ou sem nome).`;
+            App.showToast(msg, 'success');
+            await this.loadClients('all');
+
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                App.showToast('Erro ao importar contatos: ' + e.message, 'error');
+            }
+        }
+    },
+
+    // === Mapa de labels de origem ===
+    getSourceLabel(source) {
+        const labels = {
+            instagram: 'Instagram',
+            facebook: 'Facebook',
+            tiktok: 'TikTok',
+            google: 'Google',
+            indicacao_cliente: 'Indicação',
+            indicacao_amigo: 'Indicação',
+            bolsa_beleza: 'Bolsa Beleza',
+            whatsapp: 'WhatsApp',
+            passou_na_frente: 'Passou na frente',
+            panfleto: 'Panfleto',
+            evento: 'Evento',
+            retorno: 'Retornando',
+            contato_celular: 'Celular',
+            outro: 'Outro'
+        };
+        return labels[source] || source;
+    },
+
     // === 1. Export CSV ===
     exportCSV() {
         if (this.allClients.length === 0) { App.showToast('Nenhum cliente para exportar.', 'error'); return; }
 
-        let csv = 'Nome,E-mail,Telefone,Status,Tags,Lead Score\n';
+        let csv = 'Nome,E-mail,Telefone,Status,Tags,Lead Score,Origem\n';
         this.allClients.forEach(c => {
-            csv += `"${c.name || ''}","${c.email || ''}","${c.phone || ''}","${c.status || ''}","${(c.tags || []).join('; ')}","${c.leadScore || ''}"\n`;
+            csv += `"${c.name || ''}","${c.email || ''}","${c.phone || ''}","${c.status || ''}","${(c.tags || []).join('; ')}","${c.leadScore || ''}","${ClientsPage.getSourceLabel(c.source || '')}"\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -691,6 +822,16 @@ const ClientsPage = {
                 <div class="bg-surface-container-low rounded-xl p-3">
                     <p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Última Interação</p>
                     <p class="font-bold text-on-surface text-sm">${lastInteractionText}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-purple-50 rounded-xl p-3 border border-purple-100">
+                    <p class="text-[10px] uppercase tracking-wider text-purple-700 font-bold mb-1">📍 Origem</p>
+                    <p class="font-bold text-purple-900 text-sm">${client.source ? ClientsPage.getSourceLabel(client.source) : 'Não informada'}</p>
+                </div>
+                <div class="bg-surface-container-low rounded-xl p-3">
+                    <p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Categoria</p>
+                    <p class="font-bold text-on-surface text-sm">${client.category || '—'}</p>
                 </div>
             </div>
 
