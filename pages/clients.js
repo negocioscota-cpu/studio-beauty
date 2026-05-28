@@ -2,6 +2,23 @@
 const Clients = {
     currentClients: [],
     editingId: null,
+    activeTagFilter: null,
+    _selectedTags: [],
+
+    // Tags pré-definidas
+    TAGS: ['VIP', 'Nova', 'Recorrente', 'Fiel', 'Pós-operatório', 'Retorno pendente', 'Indicação'],
+    TAG_COLORS: {
+        'VIP': '#a855f7', 'Nova': '#22c55e', 'Recorrente': '#3b82f6',
+        'Fiel': '#f59e0b', 'Pós-operatório': '#ef4444', 'Retorno pendente': '#f97316', 'Indicação': '#ec4899'
+    },
+
+    // Mapa de origens
+    SOURCE_MAP: {
+        'instagram': '📸 Instagram', 'facebook': '👤 Facebook', 'tiktok': '🎵 TikTok',
+        'google': '🔍 Google', 'indicacao': '🤝 Indicação', 'panfleto': '📄 Panfleto',
+        'passando': '🚶 Passando na frente', 'whatsapp': '💬 WhatsApp',
+        'celular': '📱 Contato Celular', 'outro': '📌 Outro'
+    },
 
     async render(container) {
         container.innerHTML = `
@@ -12,9 +29,12 @@ const Clients = {
               <span class="material-symbols-outlined search-icon">search</span>
               <input class="search-input" id="clients-search" placeholder="Buscar clientes..." oninput="Clients.filterClients()" />
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="Clients.importFromPhone()" title="Importar contatos do celular">
+                <span class="material-symbols-outlined" style="font-size:18px">contacts</span> Importar
+              </button>
               <button class="btn-export-excel" onclick="Clients.exportExcel()">
-                <span class="material-symbols-outlined" style="font-size:18px">download</span> Exportar Excel
+                <span class="material-symbols-outlined" style="font-size:18px">download</span> Exportar
               </button>
               <button class="btn btn-primary" id="btn-new-client" onclick="Clients.openModal()">
                 <span class="material-symbols-outlined">person_add</span> Nova Cliente
@@ -22,12 +42,15 @@ const Clients = {
             </div>
           </div>
 
+          <!-- Tags Filter Bar -->
+          <div id="tags-filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
+
           <!-- Table -->
           <div class="card">
             <div class="table-wrapper">
               <table>
                 <thead><tr>
-                  <th>Nome</th><th>Telefone</th><th>Email</th><th>Procedimento</th><th>Status</th><th>Ações</th>
+                  <th>Nome</th><th>Telefone</th><th>Origem</th><th>Tags</th><th>Status</th><th>Ações</th>
                 </tr></thead>
                 <tbody id="clients-tbody">
                   <tr><td colspan="6" class="text-center" style="padding:32px;color:var(--text-muted)">Carregando...</td></tr>
@@ -82,6 +105,25 @@ const Clients = {
                     <option value="inactive">Inativa</option>
                   </select>
                 </div>
+                <div class="form-group">
+                  <label class="form-label">Como conheceu o studio</label>
+                  <select class="form-control" id="client-source">
+                    <option value="">-- Selecione --</option>
+                    <option value="instagram">📸 Instagram</option>
+                    <option value="facebook">👤 Facebook</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                    <option value="google">🔍 Google</option>
+                    <option value="indicacao">🤝 Indicação</option>
+                    <option value="panfleto">📄 Panfleto</option>
+                    <option value="passando">🚶 Passando na frente</option>
+                    <option value="whatsapp">💬 WhatsApp</option>
+                    <option value="outro">📌 Outro</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tags / Etiquetas</label>
+                  <div id="client-tags-selector" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+                </div>
                 <div class="form-group form-group-full">
                   <label class="form-label">Observações / Alergias</label>
                   <textarea class="form-control" id="client-notes" rows="3" placeholder="Alergias, preferências, observações..."></textarea>
@@ -128,6 +170,7 @@ const Clients = {
         </div>`;
 
         await Clients.loadClients();
+        Clients._renderTagFilterBar();
     },
 
     async loadClients() {
@@ -135,7 +178,38 @@ const Clients = {
         Clients.renderTable(Clients.currentClients);
     },
 
-    renderTable(clients) {
+    // === TAG FILTER BAR ===
+    _renderTagFilterBar() {
+        const bar = document.getElementById('tags-filter-bar');
+        if (!bar) return;
+        const allTags = new Set();
+        Clients.currentClients.forEach(c => (c.tags || []).forEach(t => allTags.add(t)));
+        Clients.TAGS.forEach(t => allTags.add(t));
+
+        bar.innerHTML = `
+          <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600">🏷️ Filtrar:</span>
+          <button onclick="Clients.filterByTag(null)"
+            style="font-size:0.72rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:${!Clients.activeTagFilter ? 'var(--primary)' : 'var(--bg-secondary)'};color:${!Clients.activeTagFilter ? '#fff' : 'var(--text-primary)'};cursor:pointer;transition:all 0.2s;font-weight:600">Todas</button>
+          ${[...allTags].map(tag => {
+            const color = Clients.TAG_COLORS[tag] || '#6b7280';
+            const isActive = Clients.activeTagFilter === tag;
+            return `<button onclick="Clients.filterByTag('${tag}')"
+              style="font-size:0.72rem;padding:4px 12px;border-radius:20px;border:1px solid ${color}40;background:${isActive ? color : color+'15'};color:${isActive ? '#fff' : color};cursor:pointer;transition:all 0.2s;font-weight:600">${tag}</button>`;
+          }).join('')}
+        `;
+    },
+
+    filterByTag(tag) {
+        Clients.activeTagFilter = tag;
+        Clients._renderTagFilterBar();
+        Clients.filterClients();
+    },
+
+    renderTable(list) {
+        let clients = list;
+        if (Clients.activeTagFilter) {
+            clients = clients.filter(c => (c.tags || []).includes(Clients.activeTagFilter));
+        }
         const tbody = document.getElementById('clients-tbody');
         if (!tbody) return;
         if (!clients.length) {
@@ -146,27 +220,34 @@ const Clients = {
             </td></tr>`;
             return;
         }
-        tbody.innerHTML = clients.map(c => `
-        <tr>
-          <td><strong>${c.name}</strong></td>
-          <td>${c.phone || '-'}</td>
-          <td>${c.email || '-'}</td>
-          <td>${c.procedure || '-'}</td>
-          <td><span class="badge ${c.status === 'active' ? 'badge-green' : 'badge-brown'}">${c.status === 'active' ? 'Ativa' : 'Inativa'}</span></td>
-          <td>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-primary btn-sm" onclick="Clients.openDrawer('${c.id}')" title="Ver Perfil" style="gap:4px">
-                <span class="material-symbols-outlined" style="font-size:16px">person_search</span> Perfil
-              </button>
-              <button class="btn btn-ghost btn-sm" onclick="Clients.openModal('${c.id}')" title="Editar">
-                <span class="material-symbols-outlined">edit</span>
-              </button>
-              <button class="btn btn-ghost btn-sm" onclick="Clients.deleteClient('${c.id}','${c.name}')" title="Excluir" style="color:var(--danger)">
-                <span class="material-symbols-outlined">delete</span>
-              </button>
-            </div>
-          </td>
-        </tr>`).join('');
+        tbody.innerHTML = clients.map(c => {
+          const srcLabel = Clients.SOURCE_MAP[c.source] || (c.source ? '📌 ' + c.source : '—');
+          const tagsHTML = (c.tags || []).map(t => {
+            const col = Clients.TAG_COLORS[t] || '#6b7280';
+            return `<span style="font-size:0.65rem;padding:2px 8px;border-radius:12px;background:${col}18;color:${col};font-weight:600;white-space:nowrap">${t}</span>`;
+          }).join(' ');
+          return `
+          <tr>
+            <td><strong>${c.name}</strong></td>
+            <td>${c.phone || '-'}</td>
+            <td style="font-size:0.82rem">${srcLabel}</td>
+            <td><div style="display:flex;gap:4px;flex-wrap:wrap">${tagsHTML || '<span style="color:var(--text-muted);font-size:0.78rem">—</span>'}</div></td>
+            <td><span class="badge ${c.status === 'active' ? 'badge-green' : 'badge-brown'}">${c.status === 'active' ? 'Ativa' : 'Inativa'}</span></td>
+            <td>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-primary btn-sm" onclick="Clients.openDrawer('${c.id}')" title="Ver Perfil" style="gap:4px">
+                  <span class="material-symbols-outlined" style="font-size:16px">person_search</span> Perfil
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="Clients.openModal('${c.id}')" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="Clients.deleteClient('${c.id}','${c.name}')" title="Excluir" style="color:var(--danger)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
     },
 
     filterClients() {
@@ -194,14 +275,12 @@ const Clients = {
         document.getElementById('drawer-client-sub').textContent =
             [c.procedure, c.phone].filter(Boolean).join(' · ') || 'Sem dados adicionais';
 
-        // Mostrar drawer
         document.getElementById('client-drawer-overlay').classList.remove('hidden');
         document.getElementById('client-drawer').classList.remove('hidden');
         requestAnimationFrame(() => {
             document.getElementById('client-drawer').classList.add('open');
         });
 
-        // Resetar tabs
         document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-btn-resumo').classList.add('active');
 
@@ -257,6 +336,15 @@ const Clients = {
         const since = c.createdAt?.toDate
             ? c.createdAt.toDate().toLocaleDateString('pt-BR')
             : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('pt-BR') : '—');
+        const srcLabel = Clients.SOURCE_MAP[c.source] || (c.source || '—');
+
+        const tagsHTML = (c.tags || []).length > 0 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${(c.tags || []).map(t => {
+            const col = Clients.TAG_COLORS[t] || '#6b7280';
+            return `<span style="font-size:0.72rem;padding:3px 10px;border-radius:14px;background:${col}18;color:${col};font-weight:600">${t}</span>`;
+          }).join('')}
+        </div>` : '';
 
         const loyaltyHTML = loyalty ? `
         <div class="card" style="background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(201,169,110,0.03));border:1px solid rgba(201,169,110,0.3)">
@@ -286,6 +374,7 @@ const Clients = {
               <span class="badge ${c.status === 'active' ? 'badge-green' : 'badge-brown'}" style="margin-top:4px">
                 ${c.status === 'active' ? 'Ativa' : 'Inativa'}
               </span>
+              ${tagsHTML}
             </div>
           </div>
 
@@ -310,6 +399,10 @@ const Clients = {
               <span class="material-symbols-outlined drawer-info-icon">calendar_today</span>
               <div><div class="drawer-info-label">Cliente desde</div><div class="drawer-info-value">${since}</div></div>
             </div>
+            <div class="drawer-info-item">
+              <span class="material-symbols-outlined drawer-info-icon">campaign</span>
+              <div><div class="drawer-info-label">Como conheceu</div><div class="drawer-info-value">${srcLabel}</div></div>
+            </div>
           </div>
 
           ${loyaltyHTML}
@@ -324,7 +417,7 @@ const Clients = {
             <button class="btn btn-primary btn-sm" onclick="Clients.openModal('${c.id}');Clients.closeDrawer()">
               <span class="material-symbols-outlined">edit</span> Editar
             </button>
-            ${c.phone ? `<a class="btn btn-wa btn-sm" href="https://wa.me/55${c.phone.replace(/\D/g,'')}" target="_blank">
+            ${c.phone ? `<a class="btn btn-wa btn-sm" href="https://wa.me/55${c.phone.replace(/\\D/g,'')}" target="_blank">
               📲 WhatsApp
             </a>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="Clients.switchTab('historico')" style="color:var(--primary)">
@@ -370,7 +463,6 @@ const Clients = {
             const isFicha = item.type === 'ficha';
             const detailId = `tl-detail-${idx}`;
 
-            // Detalhes extras para fichas técnicas
             const fichaDetails = isFicha ? `
               <div id="${detailId}" class="timeline-detail hidden">
                 ${item.ph ? `<div class="timeline-detail-row"><span>pH</span><strong>${item.ph}</strong></div>` : ''}
@@ -514,6 +606,26 @@ const Clients = {
         </div>`;
     },
 
+    // ===== TAG SELECTOR (no modal) =====
+    _renderTagSelector(selected = []) {
+        Clients._selectedTags = [...selected];
+        const container = document.getElementById('client-tags-selector');
+        if (!container) return;
+        container.innerHTML = Clients.TAGS.map(tag => {
+            const col = Clients.TAG_COLORS[tag] || '#6b7280';
+            const isSelected = Clients._selectedTags.includes(tag);
+            return `<button type="button" onclick="Clients._toggleTag('${tag}')"
+              style="font-size:0.72rem;padding:4px 12px;border-radius:16px;border:1.5px solid ${col};background:${isSelected ? col : 'transparent'};color:${isSelected ? '#fff' : col};cursor:pointer;transition:all 0.2s;font-weight:600">${isSelected ? '✓ ' : ''}${tag}</button>`;
+        }).join('');
+    },
+
+    _toggleTag(tag) {
+        const idx = Clients._selectedTags.indexOf(tag);
+        if (idx >= 0) Clients._selectedTags.splice(idx, 1);
+        else Clients._selectedTags.push(tag);
+        Clients._renderTagSelector(Clients._selectedTags);
+    },
+
     // ===== MODAL CADASTRO/EDIÇÃO =====
     async openModal(id = null) {
         Clients.editingId = id;
@@ -521,6 +633,7 @@ const Clients = {
         const form = document.getElementById('client-form');
         form.reset();
 
+        let selectedTags = [];
         if (id) {
             const c = await Store.getClient(id);
             if (c) {
@@ -531,8 +644,11 @@ const Clients = {
                 document.getElementById('client-procedure').value = c.procedure || '';
                 document.getElementById('client-status').value = c.status || 'active';
                 document.getElementById('client-notes').value = c.notes || '';
+                document.getElementById('client-source').value = c.source || '';
+                selectedTags = c.tags || [];
             }
         }
+        Clients._renderTagSelector(selectedTags);
         document.getElementById('client-modal').classList.remove('hidden');
     },
 
@@ -553,7 +669,9 @@ const Clients = {
             birthday:  document.getElementById('client-birthday').value,
             procedure: document.getElementById('client-procedure').value,
             status:    document.getElementById('client-status').value,
-            notes:     document.getElementById('client-notes').value.trim()
+            notes:     document.getElementById('client-notes').value.trim(),
+            source:    document.getElementById('client-source').value,
+            tags:      Clients._selectedTags
         };
         try {
             if (Clients.editingId) await Store.updateClient(Clients.editingId, data);
@@ -561,6 +679,7 @@ const Clients = {
             document.getElementById('client-modal').classList.add('hidden');
             App.showToast('Cliente salva com sucesso!', 'success');
             await Clients.loadClients();
+            Clients._renderTagFilterBar();
         } catch (err) {
             App.showToast('Erro ao salvar: ' + err.message, 'error');
         } finally {
@@ -575,6 +694,7 @@ const Clients = {
             await Store.deleteClient(id);
             App.showToast('Cliente removida.', 'success');
             await Clients.loadClients();
+            Clients._renderTagFilterBar();
         } catch (err) {
             App.showToast('Erro ao excluir.', 'error');
         }
@@ -588,8 +708,57 @@ const Clients = {
             'Procedimento': c.procedure || '',
             'Data Nascimento': c.birthday || '',
             'Status': c.status === 'active' ? 'Ativa' : 'Inativa',
+            'Origem': Clients.SOURCE_MAP[c.source] || c.source || '',
+            'Tags': (c.tags || []).join(', '),
             'Observações': c.notes || ''
         }));
         ExcelExport.fromData(data, `clientes_${new Date().toISOString().slice(0,10)}`, 'Clientes');
+    },
+
+    // ===== IMPORTAÇÃO DE CONTATOS DO CELULAR =====
+    async importFromPhone() {
+        if (!('contacts' in navigator && 'ContactsManager' in window)) {
+            App.showToast('📱 A importação de contatos só funciona no celular (Chrome Android). Abra o sistema no celular para usar essa função.', 'info');
+            return;
+        }
+        try {
+            const props = ['name', 'tel', 'email'];
+            const opts = { multiple: true };
+            const contacts = await navigator.contacts.select(props, opts);
+            if (!contacts || contacts.length === 0) {
+                App.showToast('Nenhum contato selecionado.', 'info');
+                return;
+            }
+
+            let imported = 0;
+            let skipped = 0;
+            for (const contact of contacts) {
+                const name = contact.name?.[0] || '';
+                const phone = contact.tel?.[0] || '';
+                const email = contact.email?.[0] || '';
+                if (!name) { skipped++; continue; }
+
+                const exists = Clients.currentClients.find(c =>
+                    c.name?.toLowerCase() === name.toLowerCase() ||
+                    (phone && c.phone?.replace(/\D/g, '') === phone.replace(/\D/g, ''))
+                );
+                if (exists) { skipped++; continue; }
+
+                await Store.addClient({
+                    name, phone, email,
+                    status: 'active',
+                    source: 'celular',
+                    tags: ['Nova']
+                });
+                imported++;
+            }
+
+            App.showToast(`✅ ${imported} contato${imported !== 1 ? 's' : ''} importado${imported !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} já existiam)` : ''}`, 'success');
+            await Clients.loadClients();
+            Clients._renderTagFilterBar();
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            App.showToast('Erro na importação: ' + err.message, 'error');
+        }
     }
 };
