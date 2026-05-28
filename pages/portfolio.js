@@ -9,6 +9,16 @@ const Portfolio = {
         Portfolio.currentClients = await Store.getClients();
         let items = await Store.getPortfolio();
 
+        // Carrega dados do estúdio para marca d'água e links
+        try {
+            const uid = Store._uid();
+            const studioDoc = await db.collection('studios').doc(uid).get();
+            Portfolio.studioData = studioDoc.exists ? studioDoc.data() : {};
+        } catch (e) {
+            console.error('Erro ao carregar dados do estúdio:', e);
+            Portfolio.studioData = {};
+        }
+
         // Limpeza automática: remover imagens com mais de 100 dias
         await Portfolio._cleanupExpiredImages(items);
         // Recalcula dias restantes para cada item
@@ -296,6 +306,9 @@ const Portfolio = {
                 ${hasPhotos ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();Portfolio.downloadImages('${p.id}')" title="Baixar fotos" style="color:#1d6f42">
                   <span class="material-symbols-outlined" style="font-size:16px">download</span>
                 </button>` : ''}
+                <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();Portfolio.copyDirectLink('${p.id}')" title="Copiar link de divulgação" style="color:var(--primary)">
+                  <span class="material-symbols-outlined" style="font-size:16px">link</span>
+                </button>
                 <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();Portfolio.shareItem('${p.id}')" title="Compartilhar">
                   <span class="material-symbols-outlined" style="font-size:16px">share</span>
                 </button>
@@ -331,19 +344,92 @@ const Portfolio = {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
-                img.onload = () => {
+                img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
                     if (w > maxWidth) { h = (maxWidth / w) * h; w = maxWidth; }
                     canvas.width = w;
                     canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    const studioName = Portfolio.studioData?.studioName || "Studio Beauty";
+                    const logoUrl = Portfolio.studioData?.logoUrl;
+
+                    if (logoUrl) {
+                        try {
+                            const logoImg = await new Promise((resLogo, rejLogo) => {
+                                const lImg = new Image();
+                                lImg.crossOrigin = "anonymous";
+                                lImg.onload = () => resLogo(lImg);
+                                lImg.onerror = (err) => rejLogo(err);
+                                lImg.src = logoUrl;
+                            });
+
+                            const minDimension = Math.min(w, h);
+                            const logoSize = Math.round(minDimension * 0.15);
+                            const logoRatio = logoImg.height / logoImg.width;
+                            const logoW = logoSize;
+                            const logoH = logoSize * logoRatio;
+
+                            const margin = Math.max(10, Math.round(minDimension * 0.03));
+                            const posX = w - logoW - margin;
+                            const posY = h - logoH - margin;
+
+                            ctx.save();
+                            ctx.globalAlpha = 0.45;
+                            ctx.drawImage(logoImg, posX, posY, logoW, logoH);
+                            ctx.restore();
+                        } catch (err) {
+                            console.warn("Falha ao carregar logo para marca d'água, usando texto:", err);
+                            Portfolio._drawTextWatermark(ctx, w, h, `© ${studioName}`);
+                        }
+                    } else {
+                        Portfolio._drawTextWatermark(ctx, w, h, `© ${studioName}`);
+                    }
+
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         });
+    },
+
+    _drawTextWatermark(ctx, w, h, text) {
+        ctx.save();
+
+        const fontSize = Math.max(12, Math.round(w * 0.03));
+        ctx.font = `bold ${fontSize}px "Inter", sans-serif`;
+        ctx.textBaseline = 'middle';
+
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        const textHeight = fontSize;
+
+        const paddingX = Math.max(6, Math.round(fontSize * 0.4));
+        const paddingY = Math.max(4, Math.round(fontSize * 0.3));
+        const margin = Math.max(10, Math.round(w * 0.02));
+
+        const rectW = textWidth + paddingX * 2;
+        const rectH = textHeight + paddingY * 2;
+
+        const rectX = w - rectW - margin;
+        const rectY = h - rectH - margin;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(rectX, rectY, rectW, rectH, Math.max(3, Math.round(fontSize * 0.2)));
+            ctx.fill();
+        } else {
+            ctx.fillRect(rectX, rectY, rectW, rectH);
+        }
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.fillText(text, rectX + paddingX, rectY + rectH / 2);
+
+        ctx.restore();
     },
 
     filterItems() {
@@ -412,6 +498,9 @@ const Portfolio = {
             </button>` : ''}
             <button class="btn btn-outline" onclick="Portfolio.shareItem('${p.id}')">
               <span class="material-symbols-outlined">share</span> Compartilhar WhatsApp
+            </button>
+            <button class="btn btn-outline" onclick="Portfolio.copyDirectLink('${p.id}')" style="border-color:var(--primary);color:var(--primary)">
+              <span class="material-symbols-outlined">link</span> Copiar Link de Divulgação
             </button>
           </div>
         </div>`;
@@ -601,5 +690,22 @@ const Portfolio = {
         if (expiredItems.length > 0) {
             App.showToast(`🗑️ ${expiredItems.length} registro(s) tiveram fotos removidas após ${Portfolio.RETENTION_DAYS} dias.`, 'info');
         }
+    },
+
+    copyDirectLink(id) {
+        const slug = Portfolio.studioData?.bookingSlug || '';
+        if (!slug) {
+            App.showToast('Configure o slug de agendamento nas configurações primeiro!', 'warning');
+            return;
+        }
+        const link = `${window.location.origin}/portfolio.html?slug=${slug}&ver=${id}`;
+        // Ajustamos para suportar portfolio.html?slug=bookingSlug&ver=id para o ambiente local, ou se preferir no link amigável caso configurado. Vamos gerar o link amigável ou padrão amigável base:
+        const friendlyLink = `${window.location.origin}/portfolio/${slug}?ver=${id}`;
+        
+        navigator.clipboard.writeText(friendlyLink).then(() => {
+            App.showToast('🔗 Link direto copiado para a área de transferência!', 'success');
+        }).catch(err => {
+            App.showToast('Erro ao copiar link.', 'error');
+        });
     }
 };

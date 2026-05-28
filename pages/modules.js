@@ -1,5 +1,6 @@
 // === CENTRAL FINANCEIRA ===
 const Invoices = {
+    _allInvoices: [],
     PAYMENT_METHODS: {
         pix:      { label: 'PIX',            icon: '⚡', color: '#00BCAF' },
         credit:   { label: 'Cartão Crédito', icon: '💳', color: '#7B61FF' },
@@ -25,6 +26,15 @@ const Invoices = {
     _activeTab: 'receitas', // 'receitas' | 'despesas'
 
     async render(container) {
+        try {
+            const uid = Store._uid();
+            const studioDoc = await db.collection('studios').doc(uid).get();
+            Invoices.studioData = studioDoc.exists ? studioDoc.data() : {};
+        } catch (e) {
+            console.error('Erro ao carregar dados do estúdio:', e);
+            Invoices.studioData = {};
+        }
+
         container.innerHTML = `<div style="display:flex;flex-direction:column;gap:20px">
           <!-- Título Central Financeira -->
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -33,13 +43,37 @@ const Invoices = {
               <p style="font-size:0.82rem;color:var(--text-muted);margin:0">Gerencie receitas e contas a pagar em um só lugar</p>
             </div>
           </div>
+          <!-- Painel DRE Consolidado (Balanço de Caixa) -->
+          <div id="cf-dre-panel" class="card" style="background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);border-color:var(--border)">
+            <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">📊</span>
+                <div>
+                  <div style="font-size:0.75rem;color:var(--text-muted)">Balanço de Caixa (Mês Atual)</div>
+                  <div id="dre-saldo" style="font-size:1.3rem;font-weight:800;color:var(--text)">R$ 0,00</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:24px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:0.72rem;color:var(--text-muted)">📥 Total Recebido</div>
+                  <div id="dre-receitas" style="font-size:0.95rem;font-weight:700;color:#28a745">R$ 0,00</div>
+                </div>
+                <div>
+                  <div style="font-size:0.72rem;color:var(--text-muted)">📤 Total Pago (Despesas)</div>
+                  <div id="dre-despesas" style="font-size:0.95rem;font-weight:700;color:var(--danger)">R$ 0,00</div>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- Abas -->
           <div style="display:flex;gap:4px;background:var(--surface);border-radius:var(--radius-sm);padding:4px;width:fit-content">
             <button id="tab-receitas" onclick="Invoices.switchTab('receitas')" style="padding:8px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-weight:600;font-size:0.88rem;transition:all .2s;background:var(--primary);color:#fff">📥 Contas a Receber</button>
             <button id="tab-despesas" onclick="Invoices.switchTab('despesas')" style="padding:8px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-weight:600;font-size:0.88rem;transition:all .2s;background:transparent;color:var(--text-secondary)">📤 Contas a Pagar</button>
+            <button id="tab-inadimplencias" onclick="Invoices.switchTab('inadimplencias')" style="padding:8px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-weight:600;font-size:0.88rem;transition:all .2s;background:transparent;color:var(--text-secondary)">⚠️ Pendências de Cobrança</button>
           </div>
           <div id="cf-tab-receitas"></div>
           <div id="cf-tab-despesas" style="display:none"></div>
+          <div id="cf-tab-inadimplencias" style="display:none"></div>
         </div>`;
         try { await Invoices._renderReceitas(); } catch(e) {
             const p = document.getElementById('cf-tab-receitas');
@@ -49,12 +83,17 @@ const Invoices = {
             const p = document.getElementById('cf-tab-despesas');
             if (p) p.innerHTML = `<div class="card" style="padding:24px;color:var(--danger)">⚠️ Erro ao carregar despesas: ${e.message}${e.message.includes('index')||e.message.includes('Index')?'<br><small>O banco de dados está criando o índice. Aguarde 1-2 min e tente novamente.</small>':''}</div>`;
         }
+        try { await Invoices._renderInadimplencias(); } catch(e) {
+            const p = document.getElementById('cf-tab-inadimplencias');
+            if (p) p.innerHTML = `<div class="card" style="padding:24px;color:var(--danger)">⚠️ Erro ao carregar pendências: ${e.message}</div>`;
+        }
         Invoices.switchTab(Invoices._activeTab || 'receitas');
+        await Invoices.updateDRE();
     },
 
     switchTab(tab) {
         Invoices._activeTab = tab;
-        const tabs = ['receitas','despesas'];
+        const tabs = ['receitas','despesas','inadimplencias'];
         tabs.forEach(t => {
             const btn = document.getElementById('tab-'+t);
             const pane = document.getElementById('cf-tab-'+t);
@@ -67,6 +106,39 @@ const Invoices = {
                 pane.style.display = 'none';
             }
         });
+    },
+
+    async updateDRE() {
+        try {
+            const invoices = await Store.getInvoices();
+            const expenses = await Store.getExpenses();
+            
+            const today = new Date();
+            const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            const totalReceived = invoices
+                .filter(i => i.status === 'paid' && (i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt || 0)) >= startMonth)
+                .reduce((s, i) => s + (i.value || 0), 0);
+                
+            const totalPaid = expenses
+                .filter(e => e.status === 'paid' && (e.dueDate?.toDate ? e.dueDate.toDate() : new Date(e.dueDate || 0)) >= startMonth)
+                .reduce((s, e) => s + (e.value || 0), 0);
+                
+            const balance = totalReceived - totalPaid;
+            
+            const saldoEl = document.getElementById('dre-saldo');
+            const recEl = document.getElementById('dre-receitas');
+            const expEl = document.getElementById('dre-despesas');
+            
+            if (saldoEl) {
+                saldoEl.textContent = App.formatCurrency(balance);
+                saldoEl.style.color = balance >= 0 ? '#28a745' : 'var(--danger)';
+            }
+            if (recEl) recEl.textContent = App.formatCurrency(totalReceived);
+            if (expEl) expEl.textContent = App.formatCurrency(totalPaid);
+        } catch (e) {
+            console.error('Erro ao atualizar painel DRE:', e);
+        }
     },
 
     async _renderReceitas(filters = {}) {
@@ -94,6 +166,8 @@ const Invoices = {
             });
         }
         if (filters.status) invoices = invoices.filter(i => i.status === filters.status);
+
+        Invoices._allInvoices = invoices;
 
         const totalRec = invoices.reduce((s,i)=>s+(i.value||0),0);
         const recebido = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+(i.value||0),0);
@@ -126,6 +200,7 @@ const Invoices = {
                 </select></div>
               <button class="btn btn-ghost" style="height:40px" onclick="Invoices.filterReceitas()"><span class="material-symbols-outlined">filter_list</span> Filtrar</button>
               <button class="btn btn-ghost" style="height:40px;color:var(--success);border-color:rgba(76,175,80,.3)" onclick="Invoices.downloadReceitas()" title="Baixar Excel"><span class="material-symbols-outlined">download</span> Excel</button>
+              <button class="btn btn-ghost" style="height:40px;color:var(--primary);border-color:rgba(88,50,63,.3)" onclick="Invoices.showMeiMonthlyReport()" title="Relatório Mensal MEI"><span class="material-symbols-outlined">receipt_long</span> Relatório MEI</button>
               <button class="btn btn-primary" style="height:40px" onclick="Invoices.openModal()"><span class="material-symbols-outlined">add</span> Nova Venda</button>
             </div>
           </div></div>
@@ -181,6 +256,19 @@ const Invoices = {
               <button onclick="document.getElementById('inv-client-history-panel').style.display='none'" class="btn btn-ghost btn-sm">✕</button>
             </div>
             <div id="inv-client-history-content" style="font-size:0.88rem;color:var(--text-muted)">Digite o nome da cliente e clique no ícone 👆</div>
+          </div>
+          <!-- Modal Recibo MEI -->
+          <div id="inv-mei-modal" class="modal-overlay hidden" onclick="Invoices.closeMeiModal(event)">
+            <div class="modal-container" style="max-width:650px;background:#ffffff;color:#1e1e1e" onclick="event.stopPropagation()">
+              <div class="modal-header" style="border-bottom:1px solid #ddd;display:flex;justify-content:space-between;padding:12px 20px;background:#f5f5f5;align-items:center">
+                <h3 class="modal-title" style="color:#333;font-weight:700;margin:0;font-size:1.05rem">🧾 Recibo / Nota MEI Simplificada</h3>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button class="btn btn-sm" onclick="Invoices.printMeiReceipt()" style="background:#58323F;color:#fff;font-weight:600;display:inline-flex;align-items:center;gap:4px;border:none;border-radius:4px;padding:6px 12px;font-size:0.8rem;cursor:pointer"><span class="material-symbols-outlined" style="font-size:16px">print</span> Imprimir / PDF</button>
+                  <button class="modal-close" onclick="Invoices.closeMeiModal()" style="color:#555;background:transparent;border:none;cursor:pointer;font-size:1.1rem">✕</button>
+                </div>
+              </div>
+              <div id="inv-mei-content" style="padding:24px;font-family:monospace;line-height:1.4"></div>
+            </div>
           </div>`;
     },
 
@@ -199,6 +287,7 @@ const Invoices = {
               <td style="font-weight:700;color:var(--primary)">${App.formatCurrency(i.value)}</td>
               <td><span class="badge ${i.status==='paid'?'badge-green':i.status==='pending'?'badge-gold':'badge-brown'}">${i.status==='paid'?'Recebido':i.status==='pending'?'Pendente':'Cancelado'}</span></td>
               <td><div style="display:flex;gap:4px">
+                ${i.status==='paid'?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();Invoices.showMeiReceipt('${i.id}')" title="Emitir Recibo / Nota MEI" style="color:var(--primary)"><span class="material-symbols-outlined" style="font-size:16px">description</span></button>`:''}
                 ${i.status==='pending'?`<button class="btn btn-ghost btn-sm" onclick="Invoices.markPaid('${i.id}')" style="color:var(--success)"><span class="material-symbols-outlined">check</span></button>`:''}
                 <button class="btn btn-ghost btn-sm" onclick="Invoices.deleteInv('${i.id}')" style="color:var(--danger)"><span class="material-symbols-outlined">delete</span></button>
               </div></td>
@@ -260,6 +349,27 @@ const Invoices = {
         const expenses = await Store.getExpenses({ from: defFrom, to: defTo });
         const totalPagar = expenses.filter(e=>e.status!=='paid').reduce((s,e)=>s+(e.value||0),0);
         const totalPago  = expenses.filter(e=>e.status==='paid').reduce((s,e)=>s+(e.value||0),0);
+
+        const catMap = {};
+        expenses.filter(e => e.status === 'paid').forEach(e => {
+            catMap[e.category] = (catMap[e.category] || 0) + (e.value || 0);
+        });
+        const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+        const barsHtml = sortedCats.map(([cat, val]) => {
+            const pct = totalPago > 0 ? (val / totalPago * 100).toFixed(0) : 0;
+            return `
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px">
+                <span style="font-weight:600;color:var(--text-secondary)">${cat}</span>
+                <span style="color:var(--text-muted)">${App.formatCurrency(val)} (${pct}%)</span>
+              </div>
+              <div style="height:6px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:100px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--primary) 0%,var(--gold) 100%);border-radius:100px"></div>
+              </div>
+            </div>`;
+        }).join('') || '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:12px">Nenhum pagamento realizado no período.</div>';
+
         const pane = document.getElementById('cf-tab-despesas');
         if (!pane) return;
         pane.innerHTML = `
@@ -280,13 +390,26 @@ const Invoices = {
               <button class="btn btn-primary" style="height:40px" onclick="Invoices.openExpModal()"><span class="material-symbols-outlined">add</span> Nova Despesa</button>
             </div>
           </div></div>
-          <!-- Tabela despesas -->
-          <div class="card"><div class="table-wrapper"><table>
-            <thead><tr><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Vencimento</th><th>Forma Pag.</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody id="expenses-tbody">
-              ${Invoices._renderExpRows(expenses)}
-            </tbody>
-          </table></div></div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <!-- Tabela despesas -->
+            <div class="card" style="flex:2;min-width:320px;margin:0">
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Vencimento</th><th>Forma Pag.</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+                  <tbody id="expenses-tbody">
+                    ${Invoices._renderExpRows(expenses)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Distribuição Proporcional -->
+            <div class="card" style="flex:1;min-width:280px;margin:0">
+              <div class="card-header" style="border-bottom:1.5px solid var(--border);padding:12px 16px"><span class="card-title" style="font-size:0.88rem;font-weight:700">📊 Distribuição de Gastos</span></div>
+              <div id="expenses-cats-body" class="card-body" style="padding:16px">
+                ${barsHtml}
+              </div>
+            </div>
+          </div>
           <!-- Modal Nova Despesa -->
           <div id="exp-modal" class="modal-overlay hidden" onclick="Invoices.closeExpModal(event)">
             <div class="modal-container" style="max-width:520px" onclick="event.stopPropagation()">
@@ -321,6 +444,59 @@ const Invoices = {
         // Setar data de hoje como padrão do vencimento
         const dueInput = document.getElementById('exp-due');
         if (dueInput) dueInput.value = fmt(today);
+    },
+
+    async _renderInadimplencias() {
+        let invoices = await Store.getInvoices();
+        const today = new Date(); today.setHours(0,0,0,0);
+        
+        // Filtra faturas pendentes criadas antes de hoje
+        const overdueInvoices = invoices.filter(i => {
+            if (i.status !== 'pending') return false;
+            const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt || 0);
+            dt.setHours(0,0,0,0);
+            return dt < today;
+        });
+
+        const totalOverdue = overdueInvoices.reduce((s, i) => s + (i.value || 0), 0);
+        const pane = document.getElementById('cf-tab-inadimplencias');
+        if (!pane) return;
+
+        pane.innerHTML = `
+          <!-- KPI Inadimplência -->
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px">
+            <div class="kpi-card rose"><div class="kpi-icon"><span class="material-symbols-outlined">warning</span></div><div class="kpi-value">${overdueInvoices.length}</div><div class="kpi-label">Cobranças Pendentes</div></div>
+            <div class="kpi-card gold"><div class="kpi-icon"><span class="material-symbols-outlined">hourglass_empty</span></div><div class="kpi-value" style="font-size:1.1rem;color:var(--danger)">${App.formatCurrency(totalOverdue)}</div><div class="kpi-label">Total em Atraso</div></div>
+          </div>
+          <!-- Tabela -->
+          <div class="card">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Cliente</th><th>Procedimento/Categoria</th><th>Data Procedimento</th><th>Atraso</th><th>Valor</th><th>Ação de Cobrança</th></tr></thead>
+                <tbody>
+                  ${overdueInvoices.map(i => {
+                      const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt || 0);
+                      const diffDays = Math.max(1, Math.floor((new Date() - dt) / (1000 * 60 * 60 * 24)));
+                      const textCobranca = `Olá ${i.clientName || 'cliente'}, tudo bem? Passando para lembrar com carinho que ficou pendente o acerto do procedimento ${i.description || i.category} feito no dia ${dt.toLocaleDateString('pt-BR')} no valor de ${App.formatCurrency(i.value)}. Deseja que eu te envie o link de pagamento ou a chave PIX? 💕`;
+                      const linkWhats = `https://wa.me/?text=${encodeURIComponent(textCobranca)}`;
+                      return `
+                      <tr>
+                        <td style="font-weight:600">${i.clientName || 'Cliente'}</td>
+                        <td>${i.description || i.category}</td>
+                        <td>${dt.toLocaleDateString('pt-BR')}</td>
+                        <td><span style="font-size:0.75rem;padding:2px 8px;border-radius:10px;background:rgba(220,53,69,0.1);color:#dc3545;font-weight:600">⏳ ${diffDays} dias</span></td>
+                        <td style="font-weight:700;color:var(--danger)">${App.formatCurrency(i.value)}</td>
+                        <td>
+                          <a href="${linkWhats}" target="_blank" class="btn btn-ghost btn-sm" style="color:#25D366;display:inline-flex;align-items:center;gap:4px;font-weight:600;text-decoration:none" title="Enviar cobrança via WhatsApp">
+                            <span class="material-symbols-outlined">chat</span> Cobrar via WhatsApp
+                          </a>
+                        </td>
+                      </tr>`;
+                  }).join('') || '<tr><td colspan="6" class="text-center" style="color:var(--text-muted);padding:32px">Parabéns! Nenhuma pendência em atraso. 🎉</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
     },
 
     _renderExpRows(expenses) {
@@ -370,6 +546,29 @@ const Invoices = {
         if (kpis[0]) kpis[0].textContent = expenses.length;
         if (kpis[1]) kpis[1].textContent = App.formatCurrency(totalPagar);
         if (kpis[2]) kpis[2].textContent = App.formatCurrency(totalPago);
+
+        const catMap = {};
+        expenses.filter(e => e.status === 'paid').forEach(e => {
+            catMap[e.category] = (catMap[e.category] || 0) + (e.value || 0);
+        });
+        const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+        const barsHtml = sortedCats.map(([cat, val]) => {
+            const pct = totalPago > 0 ? (val / totalPago * 100).toFixed(0) : 0;
+            return `
+            <div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px">
+                <span style="font-weight:600;color:var(--text-secondary)">${cat}</span>
+                <span style="color:var(--text-muted)">${App.formatCurrency(val)} (${pct}%)</span>
+              </div>
+              <div style="height:6px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:100px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--primary) 0%,var(--gold) 100%);border-radius:100px"></div>
+              </div>
+            </div>`;
+        }).join('') || '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:12px">Nenhum pagamento realizado no período.</div>';
+
+        const catsBody = document.getElementById('expenses-cats-body');
+        if (catsBody) catsBody.innerHTML = barsHtml;
     },
 
     async downloadReceitas() {
@@ -519,6 +718,7 @@ const Invoices = {
         await Store.updateInvoice(id, { status: 'paid' });
         App.showToast('Marcado como pago! ✅', 'success');
         await Invoices._renderReceitas();
+        await Invoices._renderInadimplencias();
     },
 
     async deleteInv(id) {
@@ -526,6 +726,176 @@ const Invoices = {
         await Store.deleteInvoice(id);
         App.showToast('Removido.', 'success');
         await Invoices._renderReceitas();
+        await Invoices._renderInadimplencias();
+    },
+
+    showMeiReceipt(id) {
+        const item = (Invoices._allInvoices || []).find(x => x.id === id);
+        if (!item) return;
+        
+        const dt = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+        const studio = Invoices.studioData || {};
+        const content = document.getElementById('inv-mei-content');
+        if (!content) return;
+        
+        content.innerHTML = `
+        <div id="mei-print-area" style="padding:16px;border:2px solid #000;border-radius:4px;background:#fff;color:#000">
+          <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:12px;margin-bottom:12px">
+            <h2 style="margin:0;font-size:1.25rem;font-weight:800;color:#000">${studio.studioName || studio.companyName || 'STUDIO BEAUTY'}</h2>
+            <div style="font-size:0.8rem;margin-top:4px;color:#333">CNPJ: ${studio.cnpj || '—'} | Tel: ${studio.phone || '—'}</div>
+            <div style="font-size:0.8rem;color:#333">${studio.address || '—'}</div>
+          </div>
+          
+          <div style="font-size:0.85rem;margin-bottom:12px;color:#000">
+            <div style="text-align:center;font-weight:700;text-decoration:underline;margin-bottom:8px">COMPROVANTE DE PRESTAÇÃO DE SERVIÇOS (MEI)</div>
+            <div><strong>Nº DOCUMENTO:</strong> ${item.id.substring(0,8).toUpperCase()}</div>
+            <div><strong>DATA EMISSÃO:</strong> ${new Date().toLocaleDateString('pt-BR')}</div>
+            <div><strong>CLIENTE (TOMADOR):</strong> ${item.clientName || 'CONSUMIDOR FINAL'}</div>
+          </div>
+          
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:0.85rem;color:#000">
+            <thead>
+              <tr style="border-bottom:1px solid #000;text-align:left">
+                <th style="padding:4px 0">DESCRIÇÃO DO SERVIÇO</th>
+                <th style="text-align:right;padding:4px 0">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:6px 0">${item.description || item.category} (Executado em ${dt.toLocaleDateString('pt-BR')})</td>
+                <td style="text-align:right;padding:6px 0">${App.formatCurrency(item.value)}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div style="border-top:1px dashed #000;padding-top:12px;margin-top:12px;font-size:0.85rem;text-align:right;font-weight:700;color:#000">
+            TOTAL RECEBIDO (${(item.paymentMethod || 'Outro').toUpperCase()}): ${App.formatCurrency(item.value)}
+          </div>
+          
+          <div style="border-top:1px solid #000;margin-top:16px;padding-top:8px;font-size:0.68rem;color:#555;text-align:justify;font-style:italic">
+            Documento emitido por Microempreendedor Individual (MEI), dispensado de emissão de nota fiscal eletrônica para consumidor final pessoa física, conforme o Art. 26, § 1º, inciso II, da Lei Complementar nº 123/2006.
+          </div>
+        </div>`;
+        document.getElementById('inv-mei-modal').classList.remove('hidden');
+    },
+    closeMeiModal(event) {
+        if (event && event.target !== document.getElementById('inv-mei-modal')) return;
+        document.getElementById('inv-mei-modal')?.classList.add('hidden');
+    },
+    printMeiReceipt() {
+        const area = document.getElementById('mei-print-area');
+        if (!area) return;
+        const printWin = window.open('', '_blank');
+        printWin.document.write('<html><head><title>Imprimir Recibo MEI</title><style>');
+        printWin.document.write('body{font-family:monospace;padding:20px;color:#000;background:#fff}');
+        printWin.document.write('table{width:100%;border-collapse:collapse}');
+        printWin.document.write('th,td{padding:6px;border-bottom:1px solid #000}');
+        printWin.document.write('</style></head><body>');
+        printWin.document.write(area.innerHTML);
+        printWin.document.write('</body></html>');
+        printWin.document.close();
+        printWin.focus();
+        printWin.print();
+        printWin.close();
+    },
+    async showMeiMonthlyReport() {
+        const from = document.getElementById('inv-from')?.value;
+        const to = document.getElementById('inv-to')?.value;
+        let invoices = await Store.getInvoices();
+        
+        // Filtra por período
+        if (from) { const d = new Date(from); d.setHours(0,0,0,0); invoices = invoices.filter(i => { const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt||0); return dt >= d; }); }
+        if (to)   { const d = new Date(to); d.setHours(23,59,59,999); invoices = invoices.filter(i => { const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt||0); return dt <= d; }); }
+        
+        const paidInvoices = invoices.filter(i => i.status === 'paid');
+        const totalServicos = paidInvoices.reduce((s, i) => s + (i.value || 0), 0);
+        const studio = Invoices.studioData || {};
+
+        const modalHtml = `
+        <div id="mei-report-print-area" style="padding:10px;font-family:sans-serif;color:#000;line-height:1.5">
+          <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px">
+            <h3 style="margin:0;font-size:1.1rem;font-weight:700">RELATÓRIO MENSAL DAS RECEITAS BRUTAS</h3>
+            <div style="font-size:0.75rem;margin-top:2px">Artigo 26, § 2º, inciso I da Lei Complementar nº 123/06</div>
+          </div>
+          
+          <table style="width:100%;border-collapse:collapse;font-size:0.8rem;margin-bottom:15px">
+            <tr>
+              <td style="padding:6px;border:1px solid #000;width:70%"><strong>Razão Social:</strong> ${studio.companyName || studio.studioName || '—'}</td>
+              <td style="padding:6px;border:1px solid #000"><strong>CNPJ:</strong> ${studio.cnpj || '—'}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:6px;border:1px solid #000"><strong>Período de Apuração:</strong> ${from ? new Date(from).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Mês Corrente'}</td>
+            </tr>
+          </table>
+
+          <table style="width:100%;border-collapse:collapse;font-size:0.78rem;margin-bottom:15px">
+            <thead>
+              <tr style="background:#eaeaea">
+                <th style="padding:6px;border:1px solid #000;text-align:left">RECEITA BRUTA MENSAL — ATIVIDADES</th>
+                <th style="padding:6px;border:1px solid #000;text-align:right;width:30%">VALOR ACUMULADO (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:6px;border:1px solid #000">I - Receitas brutas com comércio (Venda de cosméticos/produtos)</td>
+                <td style="padding:6px;border:1px solid #000;text-align:right">R$ 0,00</td>
+              </tr>
+              <tr>
+                <td style="padding:6px;border:1px solid #000;font-weight:700">II - Receitas brutas com prestação de serviços (Cílios, design, etc.)</td>
+                <td style="padding:6px;border:1px solid #000;text-align:right;font-weight:700">${App.formatCurrency(totalServicos)}</td>
+              </tr>
+              <tr style="background:#f5f5f5;font-weight:800">
+                <td style="padding:6px;border:1px solid #000">III - TOTAL DE RECEITAS BRUTAS DO PERÍODO (I + II)</td>
+                <td style="padding:6px;border:1px solid #000;text-align:right;color:var(--primary)">${App.formatCurrency(totalServicos)}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div style="font-size:0.75rem;margin-top:20px;border-top:1px dashed #000;padding-top:10px">
+            <div style="margin-bottom:15px">Local e data: __________________________, ______/______/______</div>
+            <div style="text-align:center;margin-top:20px">____________________________________________________________<br>Assinatura do Microempreendedor Individual</div>
+          </div>
+        </div>`;
+
+        // Renderiza no Modal
+        let modal = document.getElementById('inv-mei-report-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'inv-mei-report-modal';
+            modal.className = 'modal-overlay hidden';
+            modal.onclick = (e) => { if (e.target === modal) modal.classList.add('hidden'); };
+            modal.innerHTML = `
+              <div class="modal-container" style="max-width:650px;background:#ffffff;color:#1e1e1e" onclick="event.stopPropagation()">
+                <div class="modal-header" style="border-bottom:1px solid #ddd;display:flex;justify-content:space-between;padding:12px 20px;background:#f5f5f5;align-items:center">
+                  <h3 class="modal-title" style="color:#333;font-weight:700;margin:0;font-size:1.05rem">📋 Relatório Mensal de Faturamento MEI</h3>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn btn-sm" onclick="Invoices.printMeiReport()" style="background:#58323F;color:#fff;font-weight:600;display:inline-flex;align-items:center;gap:4px;border:none;border-radius:4px;padding:6px 12px;font-size:0.8rem;cursor:pointer"><span class="material-symbols-outlined" style="font-size:16px">print</span> Imprimir</button>
+                    <button class="modal-close" onclick="document.getElementById('inv-mei-report-modal').classList.add('hidden')" style="color:#555;background:transparent;border:none;cursor:pointer;font-size:1.1rem">✕</button>
+                  </div>
+                </div>
+                <div id="inv-mei-report-content" style="padding:24px;"></div>
+              </div>`;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('inv-mei-report-content').innerHTML = modalHtml;
+        modal.classList.remove('hidden');
+    },
+    
+    printMeiReport() {
+        const area = document.getElementById('mei-report-print-area');
+        if (!area) return;
+        const printWin = window.open('', '_blank');
+        printWin.document.write('<html><head><title>Relatório MEI</title><style>');
+        printWin.document.write('body{font-family:sans-serif;padding:20px;color:#000;background:#fff}');
+        printWin.document.write('table{width:100%;border-collapse:collapse;margin-bottom:15px}');
+        printWin.document.write('th,td{padding:8px;border:1px solid #000}');
+        printWin.document.write('</style></head><body>');
+        printWin.document.write(area.innerHTML);
+        printWin.document.write('</body></html>');
+        printWin.document.close();
+        printWin.focus();
+        printWin.print();
+        printWin.close();
     }
 };
 

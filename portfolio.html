@@ -113,6 +113,16 @@ const PF = {
       PF._header(); PF._filters(); PF._grid(items);
       document.getElementById('pf-loading').style.display = 'none';
       document.getElementById('pf-app').style.display = 'block';
+
+      // Auto-open Lightbox se "ver" estiver presente na URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const verId = urlParams.get('ver');
+      if (verId) {
+        const idx = PF.items.findIndex(item => item.id === verId);
+        if (idx !== -1) {
+          setTimeout(() => PF.openLightbox(idx), 300);
+        }
+      }
     } catch(e){ console.error(e); PF.notFound(); }
   },
   notFound() {
@@ -144,31 +154,59 @@ const PF = {
   _grid(items) {
     const grid = document.getElementById('pf-grid');
     if (!items.length) { grid.innerHTML='<div class="pf-empty"><div style="font-size:3rem;opacity:.35">📷</div><strong>Nenhum trabalho cadastrado ainda</strong></div>'; return; }
-    grid.innerHTML = items.map((item,idx)=>`
+    grid.innerHTML = items.map((item,idx)=>{
+      const before = item.photoBefore || item.beforeUrl || '';
+      const after = item.photoAfter || item.afterUrl || '';
+      const caption = item.notes || item.caption || '';
+      return `
       <div class="pf-card" onclick="PF.openLightbox(${idx})">
-        ${item.afterUrl&&item.beforeUrl
-          ?`<div class="pf-before-after"><img class="pf-img" src="${item.beforeUrl}" alt="Antes" loading="lazy"/><img class="pf-img" src="${item.afterUrl}" alt="Depois" loading="lazy"/><div class="pf-ba-badge">B|D</div></div>`
-          :`<img class="pf-img-single" src="${item.afterUrl||item.beforeUrl||''}" alt="${item.procedure||'Trabalho'}" loading="lazy"/>`}
+        ${after&&before
+          ?`<div class="pf-before-after"><img class="pf-img" src="${before}" alt="Antes" loading="lazy"/><img class="pf-img" src="${after}" alt="Depois" loading="lazy"/><div class="pf-ba-badge">B|D</div></div>`
+          :`<img class="pf-img-single" src="${after||before}" alt="${item.procedure||'Trabalho'}" loading="lazy"/>`}
         <div class="pf-info">
           <div class="pf-procedure">${item.procedure||''}</div>
-          ${item.caption?`<div class="pf-caption">${item.caption}</div>`:''}
+          ${caption?`<div class="pf-caption">${caption}</div>`:''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   },
   openLightbox(idx) {
     const list = PF.currentFilter?PF.items.filter(i=>i.procedure===PF.currentFilter):PF.items;
     const item = list[idx]; if(!item) return;
+    const before = item.photoBefore || item.beforeUrl || '';
+    const after = item.photoAfter || item.afterUrl || '';
+    const caption = item.notes || item.caption || '';
     const bk = `/booking/${PF.studioData.bookingSlug}`;
+    const currentUrl = `${window.location.origin}${window.location.pathname}?ver=${item.id}`;
     document.getElementById('lb-inner').innerHTML=`
-      ${item.afterUrl&&item.beforeUrl
-        ?`<div class="lb-ba"><img class="lb-img" src="${item.beforeUrl}" alt="Antes"/><img class="lb-img" src="${item.afterUrl}" alt="Depois"/></div>`
-        :`<img class="lb-single" src="${item.afterUrl||item.beforeUrl}" alt="${item.procedure||''}"/>`}
+      ${after&&before
+        ?`<div class="lb-ba"><img class="lb-img" src="${before}" alt="Antes"/><img class="lb-img" src="${after}" alt="Depois"/></div>`
+        :`<img class="lb-single" src="${after||before}" alt="${item.procedure||''}"/>`}
       <div class="lb-info">
         ${item.procedure?`<div class="lb-proc">${item.procedure}</div>`:''}
-        ${item.caption?`<div class="lb-caption">${item.caption}</div>`:''}
+        ${caption?`<div class="lb-caption">${caption}</div>`:''}
+        
+        <div style="display:flex;gap:12px;margin: 16px 0;border-top:1px solid var(--border);padding-top:12px;justify-content:center;align-items:center">
+          <span style="font-size:0.75rem;color:var(--text-muted)">Compartilhar:</span>
+          <a href="https://wa.me/?text=${encodeURIComponent('Olha esse resultado incrível de ' + (item.procedure || '') + ' que fiz no ' + (PF.studioData.studioName || 'estúdio') + '! 😍 Confira o antes e depois no link: ' + currentUrl)}" target="_blank" style="color:#25D366;display:flex;align-items:center;text-decoration:none" title="WhatsApp">
+            <span class="material-symbols-outlined" style="font-size:22px">chat</span>
+          </a>
+          <a href="#" onclick="PF.copyLink(event, '${currentUrl}')" style="color:var(--primary-light);display:flex;align-items:center;text-decoration:none" title="Copiar Link">
+            <span class="material-symbols-outlined" style="font-size:22px">link</span>
+          </a>
+        </div>
+        
         <a class="lb-book" href="${bk}">✨ Quero agendar este procedimento</a>
       </div>`;
     document.getElementById('pf-lightbox').classList.add('open');
+  },
+  copyLink(e, url) {
+    e.preventDefault();
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Link direto do Antes & Depois copiado para a área de transferência! 🔗');
+    }).catch(err => {
+      console.error('Erro ao copiar link:', err);
+    });
   },
   closeLightbox(e) {
     if (e && !e.target.classList.contains('lightbox') && !e.target.classList.contains('lightbox-close')) return;
