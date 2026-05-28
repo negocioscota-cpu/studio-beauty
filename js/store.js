@@ -57,6 +57,16 @@ const Store = {
         const ref = await db.collection('appointments').add(data);
         return ref.id;
     },
+    // Busca appointments por intervalo de datas (para visão semanal/mensal)
+    async getAppointmentsRange(startDate, endDate) {
+        let q = db.collection('appointments').where('userId','==',this._uid());
+        if (typeof Team !== 'undefined' && Team.isProfessional()) {
+            q = q.where('professionalId','==',this._profUid());
+        }
+        q = q.where('date','>=',startDate).where('date','<',endDate).orderBy('date');
+        const snap = await q.get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
     async updateAppointment(id, data) { await db.collection('appointments').doc(id).update(data); },
     async deleteAppointment(id) { await db.collection('appointments').doc(id).delete(); },
 
