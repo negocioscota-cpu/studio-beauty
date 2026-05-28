@@ -1,0 +1,289 @@
+    init() {
+        this.currentSection = 0;
+        this.bindNavigation();
+    },
+
+    bindNavigation() {
+        document.querySelectorAll('.bolsa-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.section);
+                this.navigateTo(idx);
+            });
+        });
+        const prev = document.getElementById('bolsa-prev');
+        const next = document.getElementById('bolsa-next');
+        if (prev) prev.addEventListener('click', () => this.navigateTo(this.currentSection - 1));
+        if (next) next.addEventListener('click', () => this.navigateTo(this.currentSection + 1));
+    },
+
+    navigateTo(idx) {
+        if (idx < 0 || idx >= this.sections.length) return;
+        this.currentSection = idx;
+        const contentEl = document.getElementById('bolsa-content');
+        if (!contentEl) return;
+
+        contentEl.style.opacity = '0';
+        contentEl.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+            switch (idx) {
+                case 0: contentEl.innerHTML = this.renderIntro(); break;
+                case 1: contentEl.innerHTML = this.renderAtivos(); break;
+                case 2:
+                    contentEl.innerHTML = this.renderMinhaCarteira();
+                    this.atualizarAlocacao();
+                    this._carregarDadosFirestore();
+                    break;
+                case 3:
+                    contentEl.innerHTML = this.renderPlano14Dias();
+                    this._carregarDadosFirestore().then(() => this._bindPlano14());
+                    break;
+                case 4: contentEl.innerHTML = this.renderFerramentas(); break;
+                case 5: contentEl.innerHTML = this.renderInsight(); break;
+            }
+            contentEl.style.opacity = '1';
+            contentEl.style.transform = 'translateY(0)';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 200);
+
+        // Update tabs
+        document.querySelectorAll('.bolsa-tab').forEach((tab, i) => {
+            if (i === idx) {
+                tab.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.remove('bg-slate-100', 'text-slate-600');
+            } else {
+                tab.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.add('bg-slate-100', 'text-slate-600');
+            }
+        });
+
+        // Minha Carteira tab special style
+        document.querySelectorAll('.bolsa-tab').forEach((tab, i) => {
+            if (i === 2 && i !== idx) {
+                tab.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.add('bg-emerald-50', 'text-emerald-700');
+            }
+        });
+
+        // Update prev/next
+        const prev = document.getElementById('bolsa-prev');
+        const next = document.getElementById('bolsa-next');
+        if (prev) prev.disabled = idx === 0;
+        if (next) {
+            if (idx === this.sections.length - 1) {
+                next.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>Concluído';
+                next.disabled = true;
+                next.classList.add('opacity-50');
+            } else {
+                next.innerHTML = 'Próximo<span class="material-symbols-outlined text-lg">arrow_forward</span>';
+                next.disabled = false;
+                next.classList.remove('opacity-50');
+            }
+        }
+
+        const counter = document.getElementById('bolsa-counter');
+        if (counter) counter.textContent = `${idx + 1} / ${this.sections.length}`;
+    },
+
+    // ══════════════════════════════════════════
+    // HORA CEM — MOTOR DE CÁLCULO
+    // ══════════════════════════════════════════
+    calcularHoraCem() {
+        const custoFixo = parseFloat(document.getElementById('hc-custo-fixo')?.value) || 0;
+        const dias = parseFloat(document.getElementById('hc-dias')?.value) || 22;
+        const horas = parseFloat(document.getElementById('hc-horas')?.value) || 8;
+        const metaLucro = parseFloat(document.getElementById('hc-meta-lucro')?.value) || 0;
+        const custoVar = parseFloat(document.getElementById('hc-custo-var')?.value) || 0;
+
+        const totalHoras = dias * horas;
+        const custoHora = totalHoras > 0 ? custoFixo / totalHoras : 0;
+        const metaDia = dias > 0 ? (custoFixo + metaLucro) / dias : 0;
+        const horaCem = custoHora + custoVar + (metaLucro / totalHoras);
+        const ticketMin = custoHora + custoVar;
+
+        document.getElementById('hc-custo-hora').textContent = `R$ ${custoHora.toFixed(0)}`;
+        document.getElementById('hc-hora-cem').textContent = `R$ ${horaCem.toFixed(0)}`;
+        document.getElementById('hc-meta-dia').textContent = `R$ ${metaDia.toFixed(0)}`;
+        document.getElementById('hc-ticket-min').textContent = `R$ ${ticketMin.toFixed(0)}`;
+
+        const insight = `Para atingir sua meta de R$ ${metaLucro.toLocaleString('pt-BR')} de lucro, cada hora na cadeira precisa gerar pelo menos <strong>R$ ${horaCem.toFixed(0)}</strong>. Qualquer serviço que cobre menos que <strong>R$ ${ticketMin.toFixed(0)}/hora</strong> está gerando prejuízo real.`;
+        document.getElementById('hc-insight').innerHTML = insight;
+        document.getElementById('hc-resultado').classList.remove('hidden');
+
+        // Salvar no Firestore
+        this._salvarFirestore('horaCem', { custoFixo, dias, horas, metaLucro, custoVar, custoHora, horaCem, metaDia, ticketMin });
+    },
+
+    // ══════════════════════════════════════════
+    // SERVIÇOS — GESTÃO DA CARTEIRA
+    // ══════════════════════════════════════════
+    servicos: [],
+
+    adicionarServico() {
+        const id = Date.now();
+        this.servicos.push({ id, nome: '', preco: 0, tempo: 1, custo: 0, categoria: 0 });
+        this._renderServicos();
+    },
+
+    removerServico(id) {
+        this.servicos = this.servicos.filter(s => s.id !== id);
+        this._renderServicos();
+        this.atualizarAlocacao();
+        this._salvarFirestore('servicos', this.servicos);
+    },
+
+    _renderServicos() {
+        const container = document.getElementById('servicos-lista');
+        if (!container) return;
+
+        const catNomes = ['Renda Fixa', 'Crescimento', 'Premium', 'Dividendos', 'Venture Capital'];
+        const catColors = ['emerald', 'purple', 'amber', 'sky', 'rose'];
+
+        container.innerHTML = this.servicos.map(s => `
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">SERVIÇO</label>
+                        <input type="text" value="${s.nome}" onchange="BolsaBeleza._updateServico(${s.id}, 'nome', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Ex: Volume Russo">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">PREÇO (R$)</label>
+                        <input type="number" value="${s.preco}" onchange="BolsaBeleza._updateServico(${s.id}, 'preco', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="250">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">TEMPO (H)</label>
+                        <input type="number" step="0.5" value="${s.tempo}" onchange="BolsaBeleza._updateServico(${s.id}, 'tempo', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="2">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">ATIVO</label>
+                        <select onchange="BolsaBeleza._updateServico(${s.id}, 'categoria', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                            ${catNomes.map((n, i) => `<option value="${i}" ${s.categoria == i ? 'selected' : ''}>${n}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="BolsaBeleza.removerServico(${s.id})" class="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
+                            <span class="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    _updateServico(id, campo, valor) {
+        const s = this.servicos.find(s => s.id === id);
+        if (!s) return;
+        s[campo] = campo === 'nome' ? valor : parseFloat(valor) || 0;
+        this.atualizarAlocacao();
+        this._salvarFirestore('servicos', this.servicos);
+    },
+
+    // ══════════════════════════════════════════
+    // ALOCAÇÃO — DISTRIBUIÇÃO DA CARTEIRA
+    // ══════════════════════════════════════════
+    atualizarAlocacao() {
+        const totais = [0, 0, 0, 0, 0];
+        this.servicos.forEach(s => {
+            totais[s.categoria] += s.preco || 0;
+        });
+        const total = totais.reduce((a, b) => a + b, 0);
+
+        for (let i = 0; i < 5; i++) {
+            const pct = total > 0 ? ((totais[i] / total) * 100).toFixed(0) : 0;
+            const el = document.getElementById(`aloc-${i}`);
+            const bar = document.getElementById(`bar-${i}`);
+            if (el) el.textContent = `${pct}%`;
+            if (bar) bar.style.width = `${pct}%`;
+        }
+
+        const totalEl = document.getElementById('alocacao-total');
+        if (totalEl) totalEl.textContent = `Faturamento total: R$ ${total.toLocaleString('pt-BR')}`;
+    },
+
+    // ══════════════════════════════════════════
+    // FIRESTORE — PERSISTÊNCIA
+    // ══════════════════════════════════════════
+    async _salvarFirestore(campo, dados) {
+        try {
+            const uid = Store._uid();
+            if (!uid) return;
+            const docRef = firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados');
+            await docRef.set({ [campo]: dados, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        } catch (e) {
+            console.warn('Bolsa Beleza — Erro ao salvar:', e);
+        }
+    },
+
+    async _carregarDadosFirestore() {
+        try {
+            const uid = Store._uid();
+            if (!uid) return;
+            const docRef = firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados');
+            const snap = await docRef.get();
+            if (!snap.exists) return;
+            const data = snap.data();
+
+            // Carregar serviços
+            if (data.servicos && Array.isArray(data.servicos)) {
+                this.servicos = data.servicos;
+                this._renderServicos();
+                this.atualizarAlocacao();
+            }
+
+            // Carregar Hora Cem
+            if (data.horaCem) {
+                const hc = data.horaCem;
+                const el = (id, val) => { const e = document.getElementById(id); if (e) e.value = val; };
+                el('hc-custo-fixo', hc.custoFixo);
+                el('hc-dias', hc.dias);
+                el('hc-horas', hc.horas);
+                el('hc-meta-lucro', hc.metaLucro);
+                el('hc-custo-var', hc.custoVar);
+                this.calcularHoraCem();
+            }
+
+            // Carregar Plano 14 dias
+            if (data.plano14 && Array.isArray(data.plano14)) {
+                this._plano14Concluidos = data.plano14;
+            }
+        } catch (e) {
+            console.warn('Bolsa Beleza — Erro ao carregar:', e);
+        }
+    },
+
+    // ══════════════════════════════════════════
+    // PLANO 14 DIAS — PROGRESSO
+    // ══════════════════════════════════════════
+    _plano14Concluidos: [],
+
+    _bindPlano14() {
+        document.querySelectorAll('.plano14-check').forEach(cb => {
+            const dia = parseInt(cb.dataset.dia);
+            cb.checked = this._plano14Concluidos.includes(dia);
+            cb.addEventListener('change', () => {
+                if (cb.checked) {
+                    if (!this._plano14Concluidos.includes(dia)) this._plano14Concluidos.push(dia);
+                } else {
+                    this._plano14Concluidos = this._plano14Concluidos.filter(d => d !== dia);
+                }
+                this._atualizarProgressoPlano14();
+                this._salvarFirestore('plano14', this._plano14Concluidos);
+            });
+        });
+        this._atualizarProgressoPlano14();
+    },
+
+    _atualizarProgressoPlano14() {
+        const total = 14;
+        const feitos = this._plano14Concluidos.length;
+        const pct = ((feitos / total) * 100).toFixed(0);
+        const bar = document.getElementById('plano14-progress');
+        const counter = document.getElementById('plano14-counter');
+        if (bar) bar.style.width = `${pct}%`;
+        if (counter) counter.textContent = `${feitos}/${total}`;
+    },
+};

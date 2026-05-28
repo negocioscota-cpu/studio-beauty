@@ -1,0 +1,811 @@
+/* ============================================================
+   BOLSA DA BELEZA — Design System Rose Gold
+   ============================================================ */
+
+/* Hero Header */
+.bolsa-hero {
+  background: linear-gradient(135deg, #2D1B24 0%, #4A2535 50%, #3A1E2E 100%);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.bolsa-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(201,169,110,0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.bolsa-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(196,117,138,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.bolsa-hero-content { position: relative; z-index: 1; }
+.bolsa-hero-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  display: block;
+}
+.bolsa-hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+.bolsa-hero-subtitle {
+  color: rgba(255,255,255,0.7);
+  font-size: 0.95rem;
+  margin: 0 0 16px;
+}
+.bolsa-hero-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.bolsa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.bolsa-badge-gold {
+  background: rgba(201,169,110,0.25);
+  color: #EDD9B0;
+  border: 1px solid rgba(201,169,110,0.4);
+}
+.bolsa-badge-rose {
+  background: rgba(196,117,138,0.25);
+  color: #F4B8CA;
+  border: 1px solid rgba(196,117,138,0.4);
+}
+
+/* Tabs de Navegação */
+.bolsa-tabs-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bolsa-tabs-wrapper::-webkit-scrollbar { display: none; }
+.bolsa-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.bolsa-tab-btn:hover {
+  background: var(--primary-xlight);
+  color: var(--primary);
+}
+.bolsa-tab-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(196,117,138,0.35);
+}
+.bolsa-tab-btn .tab-icon { font-size: 1rem; }
+
+/* Cards Genéricos */
+.bolsa-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+  transition: box-shadow var(--transition);
+}
+.bolsa-card:hover { box-shadow: var(--shadow-md); }
+.bolsa-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bolsa-card-header-rose { background: linear-gradient(135deg, var(--primary-xlight), rgba(196,117,138,0.05)); }
+.bolsa-card-header-gold { background: linear-gradient(135deg, rgba(201,169,110,0.1), rgba(201,169,110,0.03)); }
+.bolsa-card-header-dark { background: linear-gradient(135deg, #2D1B24, #4A2535); }
+.bolsa-card-icon { font-size: 1.4rem; }
+.bolsa-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.bolsa-card-title-light { color: #fff; }
+.bolsa-card-body { padding: 20px; }
+
+/* Callouts */
+.bolsa-callout {
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.bolsa-callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.bolsa-callout-danger {
+  background: rgba(224,92,106,0.08);
+  border: 1px solid rgba(224,92,106,0.25);
+  border-left: 3px solid var(--danger);
+  color: #7A2D36;
+}
+.bolsa-callout-gold {
+  background: rgba(201,169,110,0.08);
+  border: 1px solid rgba(201,169,110,0.25);
+  border-left: 3px solid var(--gold);
+  color: #6B4E1A;
+}
+.bolsa-callout-rose {
+  background: var(--primary-xlight);
+  border: 1px solid var(--primary-light);
+  border-left: 3px solid var(--primary);
+  color: var(--primary-dark);
+}
+.bolsa-callout-info {
+  background: rgba(94,158,204,0.08);
+  border: 1px solid rgba(94,158,204,0.25);
+  border-left: 3px solid var(--info);
+  color: #1E4F6E;
+}
+.bolsa-callout strong { font-weight: 700; display: block; margin-bottom: 4px; }
+
+/* Grid de Comparação */
+.bolsa-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.bolsa-compare-card {
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-size: 0.85rem;
+}
+.bolsa-compare-old {
+  background: rgba(224,92,106,0.06);
+  border: 1px solid rgba(224,92,106,0.2);
+}
+.bolsa-compare-new {
+  background: rgba(76,175,125,0.06);
+  border: 1px solid rgba(76,175,125,0.2);
+}
+.bolsa-compare-label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.bolsa-compare-old .bolsa-compare-label { color: var(--danger); }
+.bolsa-compare-new .bolsa-compare-label { color: var(--success); }
+.bolsa-compare-card ul {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Cards dos 5 Ativos */
+.bolsa-ativos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.bolsa-ativo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+.bolsa-ativo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.bolsa-ativo-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bolsa-ativo-emoji { font-size: 1.5rem; }
+.bolsa-ativo-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+}
+.bolsa-ativo-pct {
+  margin-left: auto;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+}
+.bolsa-ativo-body { padding: 14px 16px; }
+.bolsa-ativo-desc {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.bolsa-ativo-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.bolsa-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+/* Cores dos Ativos */
+.bolsa-ativo-rose { background: linear-gradient(135deg, #C4758A, #9E4F65); }
+.bolsa-ativo-gold { background: linear-gradient(135deg, #C9A96E, #A07840); }
+.bolsa-ativo-mauve { background: linear-gradient(135deg, #9C7BAC, #6E4F82); }
+.bolsa-ativo-info { background: linear-gradient(135deg, #5E9ECC, #3A6F95); }
+.bolsa-ativo-success { background: linear-gradient(135deg, #4CAF7D, #2E7D54); }
+
+/* Painel Escuro — Hora Cem */
+.bolsa-dark-panel {
+  background: linear-gradient(135deg, #2D1B24 0%, #3A1E2E 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+.bolsa-dark-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: #EDD9B0;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bolsa-dark-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+  margin: 0 0 20px;
+}
+.bolsa-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.bolsa-form-field { display: flex; flex-direction: column; gap: 4px; }
+.bolsa-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.bolsa-input {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(201,169,110,0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  transition: border-color var(--transition);
+  width: 100%;
+  box-sizing: border-box;
+}
+.bolsa-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255,255,255,0.12);
+}
+.bolsa-input::placeholder { color: rgba(255,255,255,0.35); }
+.bolsa-calc-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--gold), #A07840);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.bolsa-calc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(201,169,110,0.4);
+}
+
+/* KPI Cards */
+.bolsa-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+.bolsa-kpi {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  text-align: center;
+}
+.bolsa-kpi-label {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+.bolsa-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.bolsa-kpi-rose .bolsa-kpi-value { color: #F4B8CA; }
+.bolsa-kpi-gold .bolsa-kpi-value { color: #EDD9B0; }
+.bolsa-kpi-green .bolsa-kpi-value { color: #86EFAC; }
+.bolsa-kpi-blue .bolsa-kpi-value { color: #93C5FD; }
+
+/* Barra de Alocação */
+.bolsa-alloc-section { margin-top: 20px; }
+.bolsa-alloc-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.bolsa-alloc-bar {
+  display: flex;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  height: 12px;
+  margin-bottom: 10px;
+}
+.bolsa-alloc-segment { transition: width 0.6s ease; }
+.bolsa-alloc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.bolsa-alloc-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.bolsa-alloc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Formulário de Serviços (fundo claro) */
+.bolsa-servicos-grid {
+  display: grid;
+  gap: 10px;
+}
+.bolsa-servico-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.bolsa-servico-row .form-control {
+  font-size: 0.85rem;
+  padding: 7px 10px;
+}
+.bolsa-remove-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.bolsa-remove-btn:hover {
+  background: rgba(224,92,106,0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Plano 14 Dias */
+.bolsa-progress-wrap { margin-bottom: 20px; }
+.bolsa-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.bolsa-progress-label { font-weight: 700; font-size: 0.9rem; }
+.bolsa-progress-pct { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+.bolsa-progress-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.bolsa-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--gold));
+  border-radius: var(--radius-full);
+  transition: width 0.8s ease;
+}
+.bolsa-dias-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.bolsa-dia-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.bolsa-dia-card:hover { border-color: var(--primary-light); box-shadow: var(--shadow-sm); }
+.bolsa-dia-card.done {
+  background: var(--primary-xlight);
+  border-color: var(--primary-light);
+}
+.bolsa-dia-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary);
+  min-width: 26px;
+  line-height: 1;
+}
+.bolsa-dia-card.done .bolsa-dia-num { color: var(--success); }
+.bolsa-dia-info { flex: 1; }
+.bolsa-dia-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+.bolsa-dia-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+.bolsa-dia-check {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.bolsa-dia-card.done .bolsa-dia-check { color: var(--success); }
+
+/* Ferramentas */
+.bolsa-tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.bolsa-tool-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  transition: all var(--transition);
+}
+.bolsa-tool-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-md);
+}
+.bolsa-tool-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  display: block;
+}
+.bolsa-tool-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.bolsa-tool-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.bolsa-formula {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--primary-dark);
+  line-height: 1.5;
+}
+
+/* Insight de Ouro */
+.bolsa-insight-hero {
+  background: linear-gradient(135deg, rgba(201,169,110,0.1), rgba(196,117,138,0.08));
+  border: 1px solid rgba(201,169,110,0.25);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.bolsa-insight-hero::before {
+  content: '✦';
+  position: absolute;
+  top: 16px; left: 24px;
+  font-size: 1.5rem;
+  color: rgba(201,169,110,0.3);
+}
+.bolsa-insight-hero::after {
+  content: '✦';
+  position: absolute;
+  bottom: 16px; right: 24px;
+  font-size: 1.5rem;
+  color: rgba(196,117,138,0.3);
+}
+.bolsa-quote-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+.bolsa-quote-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 auto 16px;
+}
+.bolsa-quote-author {
+  font-size: 0.82rem;
+  color: var(--gold);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.bolsa-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.bolsa-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  text-align: center;
+}
+.bolsa-stat-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.bolsa-stat-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Botão de Salvar */
+.bolsa-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.bolsa-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(196,117,138,0.35);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .bolsa-hero { padding: 22px 18px; }
+  .bolsa-hero-title { font-size: 1.4rem; }
+  .bolsa-ativos-grid { grid-template-columns: 1fr; }
+  .bolsa-compare-grid { grid-template-columns: 1fr; }
+  .bolsa-form-grid { grid-template-columns: 1fr; }
+  .bolsa-kpis { grid-template-columns: 1fr 1fr; }
+  .bolsa-dias-grid { grid-template-columns: 1fr; }
+  .bolsa-tools-grid { grid-template-columns: 1fr; }
+  .bolsa-stats-grid { grid-template-columns: 1fr 1fr; }
+  .bolsa-servico-row { grid-template-columns: 1fr 1fr; }
+  .bolsa-insight-hero { padding: 22px 18px; }
+  .bolsa-quote-text { font-size: 1rem; }
+}
+@media (max-width: 480px) {
+  .bolsa-tab-btn { padding: 7px 10px; font-size: 0.75rem; }
+  .bolsa-kpis { grid-template-columns: 1fr 1fr; }
+  .bolsa-stats-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   EXTENSÕES — Classes dos novos templates refatorados
+   ============================================================ */
+
+/* Seção / animações */
+.bolsa-section { animation: bolsaFadeIn 0.3s ease; }
+@keyframes bolsaFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Tipografia genérica */
+.bolsa-section-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:20px 20px 0; }
+.bolsa-section-title { font-weight:800; font-size:1.1rem; margin:0; color:var(--text-primary); }
+.bolsa-icon-box {
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; flex-shrink:0;
+}
+.bolsa-icon-box-gold { background:rgba(201,169,110,0.15); }
+.bolsa-prose { font-size:0.88rem; line-height:1.7; color:var(--text-secondary); padding:0 20px 20px; }
+.bolsa-prose p { margin:0 0 12px; }
+.bolsa-prose strong { font-weight:700; color:var(--text-primary); }
+
+/* Alertas inline */
+.bolsa-alert { border-radius:10px; padding:14px 16px; margin:12px 0; }
+.bolsa-alert-title { font-weight:700; font-size:0.84rem; margin:0 0 4px; }
+.bolsa-alert-danger {
+  background:rgba(224,92,106,0.08); border:1px solid rgba(224,92,106,0.25);
+  border-left:4px solid #e05c6a;
+}
+.bolsa-highlight-box {
+  background:var(--primary-xlight); border:1px solid var(--primary-light);
+  border-radius:10px; padding:14px 16px; margin:12px 0;
+}
+.bolsa-highlight-title { font-weight:700; font-size:0.84rem; margin:0 0 6px; color:var(--primary-dark); }
+
+/* Grid comparação (aliases novos templates) */
+.bolsa-compare-bad {
+  background:rgba(224,92,106,0.06); border:1px solid rgba(224,92,106,0.2); color:var(--text-secondary);
+}
+.bolsa-compare-good {
+  background:rgba(76,175,125,0.06); border:1px solid rgba(76,175,125,0.2); color:var(--text-secondary);
+}
+.bolsa-compare-bad .bolsa-compare-label { color:var(--danger); }
+.bolsa-compare-good .bolsa-compare-label { color:var(--success); }
+
+/* Cards dos 5 Ativos — sub-elementos novos */
+.bolsa-ativo-icon { font-size:1.6rem; flex-shrink:0; }
+.bolsa-ativo-num { font-size:0.65rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+.bolsa-ativo-title { font-weight:800; font-size:0.92rem; margin:2px 0 0; color:var(--text-primary); }
+.bolsa-ativo-exemplos { background:var(--bg-secondary); border-radius:8px; padding:10px 12px; font-size:0.78rem; color:var(--text-muted); margin:10px 16px; line-height:1.5; }
+.bolsa-ativo-exemplos-label { font-weight:700; font-size:0.65rem; letter-spacing:0.5px; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px; }
+.bolsa-ativo-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; border-top:1px solid var(--border); margin-top:10px; }
+.bolsa-stat { text-align:center; padding:10px 6px; border-right:1px solid var(--border); }
+.bolsa-stat:last-child { border-right:none; }
+.bolsa-stat-label { font-size:0.62rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); display:block; margin-bottom:2px; }
+.bolsa-stat-val { font-size:0.82rem; font-weight:800; color:var(--text-primary); }
+.bolsa-ativo-tip { background:rgba(201,169,110,0.07); border-left:3px solid var(--gold); padding:10px 14px; font-size:0.76rem; color:var(--text-secondary); line-height:1.5; }
+
+/* Motor Hora Cem — inputs e resultados */
+.bolsa-calc-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.bolsa-calc-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.bolsa-input-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:rgba(255,255,255,0.6); display:block; margin-bottom:5px; }
+.bolsa-input-dark {
+  background:rgba(255,255,255,0.08); border:1px solid rgba(201,169,110,0.3);
+  border-radius:8px; padding:8px 12px; color:#fff;
+  font-family:'Outfit',sans-serif; font-size:0.9rem; width:100%; box-sizing:border-box;
+  transition:border-color 0.2s;
+}
+.bolsa-input-dark:focus { outline:none; border-color:var(--gold); background:rgba(255,255,255,0.12); }
+.bolsa-input-dark::placeholder { color:rgba(255,255,255,0.3); }
+.bolsa-hc-resultado { margin-top:16px; background:rgba(255,255,255,0.07); border-radius:10px; padding:16px; }
+.bolsa-hc-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+.bolsa-hc-stat { text-align:center; }
+.bolsa-hc-stat-label { font-size:0.62rem; font-weight:700; text-transform:uppercase; color:rgba(255,255,255,0.5); display:block; margin-bottom:4px; }
+.bolsa-hc-stat-val { font-size:1.2rem; font-weight:900; }
+.bolsa-hc-insight { font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.6; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; }
+
+/* Botão adicionar serviço */
+.bolsa-btn-add {
+  display:flex; align-items:center; gap:6px; padding:8px 16px;
+  background:none; border:1px dashed var(--primary-light); border-radius:8px;
+  color:var(--primary); font-family:'Outfit',sans-serif; font-size:0.84rem;
+  font-weight:600; cursor:pointer; transition:all 0.2s; width:100%; justify-content:center;
+}
+.bolsa-btn-add:hover { background:var(--primary-xlight); border-color:var(--primary); }
+
+/* Alocação da Carteira */
+.bolsa-aloc-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:12px; }
+.bolsa-aloc-item { text-align:center; padding:12px 6px; background:var(--bg-secondary); border-radius:8px; }
+.bolsa-aloc-cat { font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); display:block; margin-bottom:4px; }
+.bolsa-aloc-pct { font-size:1.3rem; font-weight:900; color:var(--aloc-color,var(--primary)); display:block; }
+.bolsa-aloc-ideal { font-size:0.62rem; color:var(--text-muted); margin-top:2px; }
+.bolsa-aloc-bar { display:flex; height:10px; border-radius:10px; overflow:hidden; background:var(--bg-secondary); }
+
+/* Insight de Ouro — painel */
+.bolsa-insight-panel {
+  background:linear-gradient(135deg, #2D1B24 0%, #3A1E2E 100%);
+  border-radius:var(--radius-lg); padding:36px 32px;
+  color:#fff; text-align:center;
+}
+.bolsa-quote {
+  font-family:'Playfair Display',serif; font-style:italic;
+  font-size:1.2rem; line-height:1.8; color:rgba(255,255,255,0.9);
+  border:none; margin:0 auto 28px; max-width:520px;
+  padding:0;
+}
+.bolsa-insight-body { text-align:left; max-width:600px; margin:0 auto 28px; font-size:0.88rem; line-height:1.7; color:rgba(255,255,255,0.75); }
+.bolsa-insight-body p { margin:0 0 12px; }
+.bolsa-insight-body strong { color:#fff; font-weight:700; }
+.bolsa-insight-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; max-width:500px; margin:0 auto; }
+.bolsa-insight-stat {
+  background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px; padding:16px;
+}
+
+/* Responsividade das classes novas */
+@media (max-width: 768px) {
+  .bolsa-calc-grid-3 { grid-template-columns:1fr 1fr; }
+  .bolsa-hc-stats { grid-template-columns:1fr 1fr; }
+  .bolsa-aloc-grid { grid-template-columns:repeat(3,1fr); }
+  .bolsa-insight-stats { grid-template-columns:1fr 1fr 1fr; }
+  .bolsa-insight-panel { padding:24px 18px; }
+  .bolsa-quote { font-size:1rem; }
+}
+@media (max-width: 480px) {
+  .bolsa-calc-grid-3 { grid-template-columns:1fr; }
+  .bolsa-calc-grid-2 { grid-template-columns:1fr; }
+  .bolsa-aloc-grid { grid-template-columns:1fr 1fr; }
+  .bolsa-insight-stats { grid-template-columns:1fr; }
+}
+

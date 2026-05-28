@@ -1,286 +1,444 @@
-// === Consent Form (TCLE) & Canvas Digital Signature Page ===
-const ConsentPage = {
-    consents: [],
-    canvas: null,
-    ctx: null,
+// === TERMO DE CONSENTIMENTO DIGITAL ===
+const Consent = {
+    currentClients: [],
+    signaturePad: null,
     isDrawing: false,
+    editingId: null,
 
-    render() {
-        return `
-        <div class="space-y-8 max-w-[1400px] mobile-full-width mx-auto animation-fade-in pb-20">
-            <!-- Header -->
-            <section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface">Termos de Consentimento (TCLE)</h2>
-                    <p class="text-on-surface-variant mt-1">Gerencie termos de responsabilidade e colha assinaturas digitais diretamente em tela.</p>
-                </div>
-                <div>
-                    <button id="btn-new-consent" class="px-5 py-3 vitality-gradient text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform flex items-center gap-2 text-sm">
-                        <span class="material-symbols-outlined text-lg">draw</span>
-                        Assinar Novo Termo
-                    </button>
-                </div>
-            </section>
-
-            <!-- Termos Assinados Lista -->
-            <div class="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/10 shadow-xs">
-                <h3 class="font-headline font-bold text-lg mb-4">Termos Assinados Recentemente</h3>
-                <div id="consents-list" class="space-y-4">
-                    <div class="text-center py-12 text-on-surface-variant text-sm">
-                        <div class="spinner mx-auto mb-4"></div>
-                        <p>Carregando registros de consentimentos...</p>
-                    </div>
-                </div>
+    async render(container) {
+        Consent.currentClients = await Store.getClients();
+        container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <!-- Header -->
+          <div class="card" style="background:linear-gradient(135deg,var(--primary) 0%,#8B5E6B 100%);color:white">
+            <div class="card-body" style="display:flex;align-items:center;gap:16px">
+              <div style="font-size:40px">📝</div>
+              <div>
+                <h3 style="font-weight:800;font-size:1.2rem;margin-bottom:4px">Termos de Consentimento</h3>
+                <p style="opacity:0.9;font-size:0.85rem">Proteção jurídica com assinatura digital da cliente antes de cada procedimento.</p>
+              </div>
             </div>
+          </div>
+
+          <div class="toolbar">
+            <input class="form-control search-input" type="text" placeholder="🔍 Buscar por cliente..." id="consent-search" oninput="Consent.filterList()" />
+            <button class="btn btn-primary" onclick="Consent.openModal()">
+              <span class="material-symbols-outlined">add</span> Novo Termo
+            </button>
+          </div>
+
+          <div id="consent-list"></div>
+        </div>
+
+        <!-- Modal -->
+        <div id="consent-modal" class="modal-overlay hidden" onclick="Consent.closeModal(event)">
+          <div class="modal-container" style="max-width:600px" onclick="event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title" id="consent-modal-title">Novo Termo de Consentimento</h3>
+              <button class="modal-close" onclick="Consent.closeModal()">✕</button>
+            </div>
+            <form id="consent-form" onsubmit="Consent.handleSave(event)" class="modal-body" style="max-height:70vh;overflow-y:auto">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Cliente *</label>
+                  <select class="form-control" id="consent-client" required>
+                    <option value="">-- Selecione --</option>
+                    ${Consent.currentClients.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Procedimento *</label>
+                  <select class="form-control" id="consent-procedure" required>
+                    <option value="">-- Selecione --</option>
+                    <option>Extensão de Cílios — Volume Russo</option>
+                    <option>Extensão de Cílios — Clássico</option>
+                    <option>Lifting de Cílios</option>
+                    <option>Manutenção de Extensão</option>
+                    <option>Design de Sobrancelhas</option>
+                    <option>Micropigmentação</option>
+                    <option>Brow Lamination</option>
+                    <option>Henna de Sobrancelhas</option>
+                    <option>Remoção de Extensão</option>
+                  </select>
+                </div>
+                <div class="form-group form-group-full">
+                  <label class="form-label">Alergias / Sensibilidades Conhecidas</label>
+                  <textarea class="form-control" id="consent-allergies" rows="2" placeholder="Ex: sensibilidade a adesivos, alergia a latex..."></textarea>
+                </div>
+
+                <!-- Checklist médico -->
+                <div class="form-group form-group-full">
+                  <label class="form-label" style="margin-bottom:10px">Checklist de Saúde</label>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+                      <input type="checkbox" id="consent-pregnancy"> Está grávida ou amamentando?
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+                      <input type="checkbox" id="consent-medication"> Está usando algum medicamento?
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+                      <input type="checkbox" id="consent-patch-test"> Patch test realizado?
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+                      <input type="checkbox" id="consent-eye-surgery"> Cirurgia ocular recente?
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+                      <input type="checkbox" id="consent-skin-condition"> Condição dermatológica ativa?
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                  <label class="form-label">Medicamentos em uso</label>
+                  <input class="form-control" id="consent-medications" placeholder="Nome dos medicamentos, se houver" />
+                </div>
+
+                <div class="form-group form-group-full">
+                  <label class="form-label">Observações adicionais</label>
+                  <textarea class="form-control" id="consent-notes" rows="2" placeholder="Informações extras relevantes"></textarea>
+                </div>
+
+                <!-- Assinatura Digital -->
+                <div class="form-group form-group-full">
+                  <label class="form-label">Assinatura da Cliente <small style="color:var(--text-muted);font-weight:400">(opcional — pode enviar via WhatsApp)</small></label>
+                  <div style="position:relative;border:2px solid var(--border);border-radius:var(--radius-sm);background:#fff;overflow:hidden">
+                    <canvas id="consent-signature-pad" width="520" height="180" style="width:100%;cursor:crosshair;touch-action:none"></canvas>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="Consent.clearSignature()" style="position:absolute;top:6px;right:6px;font-size:0.75rem">
+                      <span class="material-symbols-outlined" style="font-size:16px">restart_alt</span> Limpar
+                    </button>
+                  </div>
+                  <p style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Assine aqui ou salve sem assinatura e envie o link via WhatsApp para a cliente assinar remotamente.</p>
+                </div>
+
+                <!-- Consentimento -->
+                <div class="form-group form-group-full">
+                  <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;cursor:pointer;background:var(--primary-xlight);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--primary-light)">
+                    <input type="checkbox" id="consent-agree" style="margin-top:2px">
+                    <span>Declaro que a cliente foi informada sobre o procedimento, possíveis riscos e cuidados pós-procedimento.</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="Consent.closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                  <span class="material-symbols-outlined">save</span> Salvar Termo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal Visualizar -->
+        <div id="consent-view-modal" class="modal-overlay hidden" onclick="Consent.closeViewModal(event)">
+          <div class="modal-container" style="max-width:600px" onclick="event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title">Termo de Consentimento</h3>
+              <button class="modal-close" onclick="Consent.closeViewModal()">✕</button>
+            </div>
+            <div id="consent-view-body" class="modal-body" style="max-height:70vh;overflow-y:auto"></div>
+          </div>
         </div>`;
+
+        await Consent.loadList();
     },
 
-    async init() {
-        document.getElementById('btn-new-consent')?.addEventListener('click', () => ConsentPage.showFormModal());
-        await ConsentPage.loadData();
+    async loadList() {
+        const list = document.getElementById('consent-list');
+        list.innerHTML = '<div style="text-align:center;padding:32px"><div class="spinner"></div></div>';
+        const items = await Store.getConsents();
+        Consent._allItems = items;
+        Consent.renderList(items);
     },
 
-    async loadData() {
-        try {
-            ConsentPage.consents = await Store.getConsents();
-            ConsentPage.renderList();
-        } catch (error) {
-            console.error("Erro ao carregar termos de consentimento:", error);
-            App.showToast("Falha ao carregar termos de consentimento.", "error");
-        }
-    },
-
-    renderList() {
-        const list = document.getElementById('consents-list');
-        if (!list) return;
-
-        if (ConsentPage.consents.length === 0) {
-            list.innerHTML = `
-            <div class="text-center py-12 text-on-surface-variant">
-                <span class="material-symbols-outlined text-primary/30 text-5xl mb-4">fact_check</span>
-                <h4 class="font-headline font-bold text-base text-on-surface">Nenhum termo de consentimento assinado</h4>
-                <p class="text-xs mt-1">Gere novos termos jurídicos de responsabilidade com assinatura digital na tela para suas clientes.</p>
+    renderList(items) {
+        const list = document.getElementById('consent-list');
+        if (!items.length) {
+            list.innerHTML = `<div class="empty-state">
+                <span class="material-symbols-outlined empty-state-icon">description</span>
+                <p class="empty-state-title">Nenhum termo registrado</p>
+                <p class="empty-state-desc">Crie termos de consentimento antes dos procedimentos</p>
+                <button class="btn btn-primary" onclick="Consent.openModal()">Criar Primeiro Termo</button>
             </div>`;
             return;
         }
 
-        list.innerHTML = ConsentPage.consents.map(rem => {
-            const dateStr = rem.createdAt ? new Date(rem.createdAt.seconds * 1000).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
-            return `
-            <div class="p-5 bg-surface-container-low rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold" style="background-color: rgba(199, 123, 107, 0.1);">
-                        ✒
-                    </div>
-                    <div>
-                        <h4 class="font-headline font-bold text-sm text-on-surface">Termo assinado por: <strong class="text-primary">${rem.clientName}</strong></h4>
-                        <p class="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Procedimento: ${rem.termType || 'Alongamento de Cílios'} | Registro assinado digitalmente ✓</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 self-end md:self-center shrink-0">
-                    <span class="text-[10px] text-on-surface-variant font-medium">${dateStr}</span>
-                    <button onclick="ConsentPage.viewSignature('${rem.id}')" class="px-4 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all">
-                        <span class="material-symbols-outlined text-base">visibility</span>
-                        Visualizar Assinatura
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
+        list.innerHTML = `<div class="table-wrapper"><table>
+            <thead><tr>
+                <th>Cliente</th><th>Procedimento</th><th>Data</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody>${items.map(item => {
+                const client = Consent.currentClients.find(c => c.id === item.clientId);
+                let statusBadge;
+                if (item.signature && item.signedRemotely) {
+                    statusBadge = '<span class="badge badge-green">📲 Assinado remotamente</span>';
+                } else if (item.signature) {
+                    statusBadge = '<span class="badge badge-green">✅ Assinado</span>';
+                } else {
+                    statusBadge = '<span class="badge badge-brown">🟡 Pendente</span>';
+                }
+                const whatsBtn = !item.signature ? `<button class="btn btn-ghost btn-sm" onclick="Consent.sendWhatsApp('${item.id}')" title="Enviar via WhatsApp" style="color:#25D366"><span class="material-symbols-outlined">share</span></button>` : '';
+                return `<tr>
+                    <td style="font-weight:600">${client?.name || 'Cliente removida'}</td>
+                    <td>${item.procedure || '-'}</td>
+                    <td>${App.formatDate(item.date || item.createdAt)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div style="display:flex;gap:4px">
+                            ${whatsBtn}
+                            <button class="btn btn-ghost btn-sm" onclick="Consent.viewTerm('${item.id}')" title="Visualizar">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="Consent.delete('${item.id}')" style="color:var(--danger)" title="Excluir">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('')}</tbody>
+        </table></div>`;
     },
 
-    showFormModal() {
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
-        <div class="p-8 max-w-2xl mx-auto">
-            <h3 class="font-headline font-bold text-2xl mb-1">Termo de Consentimento Livre e Esclarecido</h3>
-            <p class="text-on-surface-variant text-sm mb-6">Selecione o procedimento, revise o termo e colha a assinatura da cliente.</p>
-            <form id="consent-form" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Cliente</label>
-                        <select id="cst-client" class="w-full px-4 py-2.5 bg-surface-container-high border-none rounded-xl text-on-surface text-sm" required>
-                            <option value="">Selecione a cliente...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Tipo de Procedimento</label>
-                        <select id="cst-type" class="w-full px-4 py-2.5 bg-surface-container-high border-none rounded-xl text-on-surface text-sm" required>
-                            <option value="Alongamento de Cílios">Alongamento / Extensão de Cílios</option>
-                            <option value="Micropigmentação">Micropigmentação Labial / Sobrancelhas</option>
-                            <option value="Design de Sobrancelhas">Design de Sobrancelhas & Tintura</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Corpo do termo de consentimento -->
-                <div>
-                    <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Revisão do Termo Jurídico</label>
-                    <div id="cst-term-body" class="w-full h-40 overflow-y-auto px-4 py-3 bg-surface-container-high rounded-xl text-xs text-on-surface-variant leading-relaxed select-none border border-outline-variant/5">
-                        <!-- Carregado via JS -->
-                    </div>
-                </div>
-
-                <!-- Canvas de Assinatura -->
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant">Assinatura Digital (Assine abaixo usando o dedo ou mouse)</label>
-                        <button type="button" id="cst-clear-canvas" class="text-[10px] text-primary font-bold hover:underline">Limpar Tela</button>
-                    </div>
-                    <div class="w-full bg-white rounded-2xl border border-outline-variant/30 overflow-hidden flex items-center justify-center" style="touch-action: none;">
-                        <canvas id="cst-signature-canvas" width="550" height="150" class="w-full h-[150px] cursor-crosshair bg-white"></canvas>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant/10">
-                    <button type="button" onclick="App.closeModal()" class="px-6 py-2.5 text-on-surface-variant font-bold hover:bg-surface-container-low rounded-xl text-sm transition-colors">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 vitality-gradient text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-95 transition-all text-sm flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-base">verified</span>
-                        Salvar e Registrar Termo
-                    </button>
-                </div>
-            </form>
-        </div>`;
-        App.openModal();
-
-        // Populate Clients dropdown
-        Store.getClients().then(clients => {
-            const select = document.getElementById('cst-client');
-            if (select) {
-                select.innerHTML = '<option value="">Selecione a cliente...</option>' +
-                    clients.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('');
-            }
+    filterList() {
+        const q = document.getElementById('consent-search').value.toLowerCase();
+        if (!Consent._allItems) return;
+        const filtered = Consent._allItems.filter(item => {
+            const client = Consent.currentClients.find(c => c.id === item.clientId);
+            return (client?.name || '').toLowerCase().includes(q) || (item.procedure || '').toLowerCase().includes(q);
         });
+        Consent.renderList(filtered);
+    },
 
-        // Term templates
-        const termTemplates = {
-            "Alongamento de Cílios": `Termo de Responsabilidade - Extensão de Cílios no Studiobeauty:\n\n1. Entendo que o procedimento envolve a colagem de cílios sintéticos aos meus cílios naturais por meio de adesivo de grau cirúrgico.\n2. Fui informada sobre as regras de manutenção de 15 a 21 dias.\n3. Confirmo que não possuo alergias a produtos oculares, rinite severa em crise ou infecções oculares ativas.\n4. Autorizo a aplicação e me comprometo a seguir as regras de pós-atendimento (não molhar nas primeiras 24 horas, escovar diariamente e não utilizar rímel a base de óleo).`,
-            "Micropigmentação": `Termo de Consentimento - Micropigmentação Labial / Sobrancelhas:\n\n1. Dou meu pleno consentimento para a realização do procedimento de dermopigmentação estética.\n2. Compreendo que a técnica envolve a inserção de pigmentos minerais na camada superficial da epiderme.\n3. Fui orientada sobre o processo de cicatrização (descamação leve e clareamento de até 40% da cor nas primeiras semanas).\n4. Declaro que não tenho tendências a queloides, não estou grávida/lactante sem aval médico, e não uso ácidos tópicos na região.`,
-            "Design de Sobrancelhas": `Termo de Consentimento - Design de Sobrancelhas & Tintura / Henna:\n\n1. Autorizo a realização do mapeamento geométrico das sobrancelhas e remoção de pelos excedentes.\n2. Declaro não possuir alergias conhecidas a tinturas cosméticas ou henna natural.\n3. Compreendo as orientações de durabilidade de fixação da tintura na pele e pelos.`
-        };
+    openModal() {
+        Consent.editingId = null;
+        document.getElementById('consent-form').reset();
+        document.getElementById('consent-modal').classList.remove('hidden');
+        setTimeout(() => Consent.initSignaturePad(), 100);
+    },
 
-        const termBody = document.getElementById('cst-term-body');
-        const typeSelect = document.getElementById('cst-type');
+    closeModal(event) {
+        if (event && event.target !== document.getElementById('consent-modal')) return;
+        document.getElementById('consent-modal')?.classList.add('hidden');
+    },
 
-        const updateTerm = () => {
-            const text = termTemplates[typeSelect.value] || termTemplates["Alongamento de Cílios"];
-            termBody.innerHTML = text.replace(/\n/g, '<br>');
-        };
-
-        typeSelect.addEventListener('change', updateTerm);
-        updateTerm(); // Initial trigger
-
-        // Canvas Drawing Setup
-        const canvas = document.getElementById('cst-signature-canvas');
+    initSignaturePad() {
+        const canvas = document.getElementById('consent-signature-pad');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        ConsentPage.canvas = canvas;
-        ConsentPage.ctx = ctx;
-
-        // Estilos do traço de assinatura
-        ctx.strokeStyle = '#331c15';
-        ctx.lineWidth = 2.5;
-        ctx.lineJoin = 'round';
+        
+        // Ajusta resolução do canvas
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        ctx.strokeStyle = '#1a0a10';
+        ctx.lineWidth = 2;
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-        // Mouse Events
-        canvas.addEventListener('mousedown', (e) => {
-            ConsentPage.isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
+        let drawing = false;
+        let lastX = 0, lastY = 0;
+
+        function getPos(e) {
+            const r = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+        }
+
+        function start(e) {
+            e.preventDefault();
+            drawing = true;
+            const p = getPos(e);
+            lastX = p.x; lastY = p.y;
+        }
+        function move(e) {
+            e.preventDefault();
+            if (!drawing) return;
+            const p = getPos(e);
             ctx.beginPath();
-            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!ConsentPage.isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(p.x, p.y);
             ctx.stroke();
-        });
+            lastX = p.x; lastY = p.y;
+            Consent._hasSignature = true;
+        }
+        function stop() { drawing = false; }
 
-        window.addEventListener('mouseup', () => {
-            ConsentPage.isDrawing = false;
-        });
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', move);
+        canvas.addEventListener('mouseup', stop);
+        canvas.addEventListener('mouseleave', stop);
+        canvas.addEventListener('touchstart', start, { passive: false });
+        canvas.addEventListener('touchmove', move, { passive: false });
+        canvas.addEventListener('touchend', stop);
 
-        // Touch Events para celulares (muito importante para WOW!)
-        canvas.addEventListener('touchstart', (e) => {
-            ConsentPage.isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            ctx.beginPath();
-            ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-            e.preventDefault();
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            if (!ConsentPage.isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-            ctx.stroke();
-            e.preventDefault();
-        });
-
-        canvas.addEventListener('touchend', () => {
-            ConsentPage.isDrawing = false;
-        });
-
-        // Clear Canvas
-        document.getElementById('cst-clear-canvas').addEventListener('click', () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        });
-
-        // Submit Form
-        document.getElementById('consent-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const clientSel = document.getElementById('cst-client');
-
-            // Validar se o canvas não está completamente em branco
-            // Uma verificação simples de que pelo menos alguns pixels foram desenhados
-            const canvasDataUrl = canvas.toDataURL();
-            
-            const data = {
-                clientId: clientSel.value,
-                clientName: clientSel.selectedOptions[0]?.dataset.name || '',
-                termType: typeSelect.value,
-                signatureDataUrl: canvasDataUrl // Grava como String Base64
-            };
-
-            try {
-                await Store.addConsent(data);
-                App.closeModal();
-                App.showToast("Termo assinado e registrado com sucesso!", "success");
-                await ConsentPage.loadData();
-            } catch (err) {
-                console.error("Erro ao salvar consentimento:", err);
-                App.showToast("Erro ao registrar assinatura no banco.", "error");
-            }
-        });
+        Consent._hasSignature = false;
     },
 
-    viewSignature(consentId) {
-        const consent = ConsentPage.consents.find(c => c.id === consentId);
-        if (!consent) return;
+    clearSignature() {
+        const canvas = document.getElementById('consent-signature-pad');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        Consent._hasSignature = false;
+    },
 
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
-        <div class="p-8 max-w-lg mx-auto text-center space-y-6">
-            <div>
-                <h3 class="font-headline font-bold text-2xl text-on-surface">Assinatura de ${consent.clientName}</h3>
-                <p class="text-xs text-on-surface-variant uppercase font-semibold tracking-wider mt-0.5">${consent.termType}</p>
+    getSignatureData() {
+        const canvas = document.getElementById('consent-signature-pad');
+        if (!canvas || !Consent._hasSignature) return null;
+        return canvas.toDataURL('image/png', 0.5);
+    },
+
+    async handleSave(e) {
+        e.preventDefault();
+        const signature = Consent.getSignatureData();
+        const clientId = document.getElementById('consent-client').value;
+        const client = Consent.currentClients.find(c => c.id === clientId);
+
+        const data = {
+            clientId: clientId,
+            clientName: client?.name || '',
+            clientPhone: client?.phone || '',
+            procedure: document.getElementById('consent-procedure').value,
+            allergies: document.getElementById('consent-allergies').value,
+            pregnancy: document.getElementById('consent-pregnancy').checked,
+            medication: document.getElementById('consent-medication').checked,
+            patchTest: document.getElementById('consent-patch-test').checked,
+            eyeSurgery: document.getElementById('consent-eye-surgery').checked,
+            skinCondition: document.getElementById('consent-skin-condition').checked,
+            medications: document.getElementById('consent-medications').value,
+            notes: document.getElementById('consent-notes').value,
+            agreed: document.getElementById('consent-agree').checked,
+            date: firebase.firestore.Timestamp.fromDate(new Date()),
+            status: signature ? 'signed' : 'pending'
+        };
+
+        // Se tem assinatura presencial, salva direto
+        if (signature) {
+            data.signature = signature;
+        } else {
+            // Gera token para assinatura remota via WhatsApp
+            data.signToken = crypto.randomUUID();
+        }
+
+        // Salva nome do studio para exibir na página pública
+        try { data.studioName = App.currentUser?.displayName || ''; } catch(e) {}
+
+        try {
+            const newId = await Store.addConsent(data);
+            document.getElementById('consent-modal').classList.add('hidden');
+            if (signature) {
+                App.showToast('Termo salvo com assinatura digital! ✅', 'success');
+            } else {
+                App.showToast('Termo salvo! Envie o link via WhatsApp para a cliente assinar. 📲', 'success');
+                // Oferece enviar pelo WhatsApp automaticamente
+                setTimeout(() => Consent.sendWhatsApp(newId), 500);
+            }
+            await Consent.loadList();
+        } catch (err) {
+            App.showToast('Erro: ' + err.message, 'error');
+        }
+    },
+
+    async viewTerm(id) {
+        const items = Consent._allItems || await Store.getConsents();
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+        const client = Consent.currentClients.find(c => c.id === item.clientId);
+
+        const checkItem = (val, label) => `<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem">
+            <span style="color:${val ? 'var(--danger)' : 'var(--success)'}">${val ? '⚠️ Sim' : '✅ Não'}</span> ${label}
+        </div>`;
+
+        document.getElementById('consent-view-body').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="text-align:center;padding:16px;border-bottom:2px solid var(--border)">
+                <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">Termo de Consentimento</div>
+                <div style="font-size:0.82rem;color:var(--text-muted)">Data: ${App.formatDate(item.date || item.createdAt)}</div>
             </div>
-            
-            <div class="border border-outline-variant/30 rounded-2xl bg-white p-4 flex items-center justify-center max-w-sm mx-auto shadow-inner">
-                <img src="${consent.signatureDataUrl}" class="max-h-[120px] w-auto pointer-events-none" alt="Assinatura" />
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Cliente</div>
+                    <div style="font-weight:700;font-size:1rem">${client?.name || '-'}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Procedimento</div>
+                    <div style="font-weight:700;font-size:1rem">${item.procedure || '-'}</div>
+                </div>
             </div>
 
-            <p class="text-xs text-on-surface-variant italic leading-relaxed">
-                "Este termo de consentimento foi assinado eletronicamente direto na tela do dispositivo."
-            </p>
+            ${item.allergies ? `<div style="background:var(--warning-bg);border:1px solid #F5CCA0;padding:10px 14px;border-radius:var(--radius-sm)">
+                <div style="font-size:0.75rem;font-weight:700;color:#7A5010;text-transform:uppercase;margin-bottom:4px">Alergias / Sensibilidades</div>
+                <div style="font-size:0.85rem;color:#7A5010">${item.allergies}</div>
+            </div>` : ''}
 
-            <div class="flex justify-end pt-4 border-t border-outline-variant/10">
-                <button type="button" onclick="App.closeModal()" class="px-6 py-2.5 vitality-gradient text-white font-bold rounded-xl text-xs">Fechar</button>
+            <div style="display:flex;flex-direction:column;gap:6px;background:var(--bg);padding:12px;border-radius:var(--radius-sm)">
+                <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Checklist de Saúde</div>
+                ${checkItem(item.pregnancy, 'Gravidez / Amamentação')}
+                ${checkItem(item.medication, 'Uso de medicamentos')}
+                ${checkItem(!item.patchTest, 'Patch test NÃO realizado')}
+                ${checkItem(item.eyeSurgery, 'Cirurgia ocular recente')}
+                ${checkItem(item.skinCondition, 'Condição dermatológica ativa')}
+            </div>
+
+            ${item.medications ? `<div><div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Medicamentos</div>
+                <div style="font-size:0.85rem">${item.medications}</div></div>` : ''}
+
+            ${item.notes ? `<div><div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Observações</div>
+                <div style="font-size:0.85rem">${item.notes}</div></div>` : ''}
+
+            <div style="border-top:2px solid var(--border);padding-top:16px;text-align:center">
+                <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">Assinatura da Cliente</div>
+                ${item.signature ? `<img src="${item.signature}" style="max-width:300px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff" />` : '<span style="color:var(--warning);font-size:0.85rem">🟡 Aguardando assinatura remota</span>'}
+                ${item.signedRemotely ? `<div style="font-size:0.78rem;color:var(--success);margin-top:6px">📲 Assinado remotamente em ${item.signedAt?.toDate ? item.signedAt.toDate().toLocaleString('pt-BR') : '-'}</div>` : ''}
+            </div>
+
+            <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding-top:8px;border-top:1px solid var(--border)">
+                Documento gerado digitalmente pelo sistema LashBrow.
             </div>
         </div>`;
-        App.openModal();
+
+        document.getElementById('consent-view-modal').classList.remove('hidden');
+    },
+
+    closeViewModal(event) {
+        if (event && event.target !== document.getElementById('consent-view-modal')) return;
+        document.getElementById('consent-view-modal')?.classList.add('hidden');
+    },
+
+    async sendWhatsApp(id) {
+        const items = Consent._allItems || await Store.getConsents();
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+
+        // Se não tem token, gera um
+        let token = item.signToken;
+        if (!token) {
+            token = crypto.randomUUID();
+            await Store.updateConsent(id, { signToken: token });
+        }
+
+        const baseUrl = location.origin;
+        const signUrl = `${baseUrl}/assinar-termo.html?id=${id}&token=${token}`;
+        const client = Consent.currentClients.find(c => c.id === item.clientId);
+        const clientName = client?.name?.split(' ')[0] || 'Cliente';
+
+        const msg = `Olá ${clientName}! 💕\n\nSegue o link para assinar o *Termo de Consentimento* do seu procedimento de *${item.procedure}*:\n\n📝 ${signUrl}\n\nÉ rápido e seguro! Basta abrir o link, ler o termo e assinar com o dedo na tela. ✨`;
+
+        const phone = (client?.phone || '').replace(/\D/g, '');
+        const waUrl = phone
+            ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+            : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+        window.open(waUrl, '_blank');
+        App.showToast('Link de assinatura enviado via WhatsApp! 📲', 'success');
+    },
+
+    async delete(id) {
+        if (!confirm('Excluir este termo?')) return;
+        await Store.deleteConsent(id);
+        App.showToast('Termo removido.', 'success');
+        await Consent.loadList();
     }
 };

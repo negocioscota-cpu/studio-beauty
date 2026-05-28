@@ -1,101 +1,292 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // === companies ===
-    // Usuário autenticado pode ler qualquer empresa (necessário para o sistema de indicações
-    // buscar dados do indicador). Só pode escrever no próprio documento.
+    // ============================================================
+    // FUNÇÕES AUXILIARES
+    // ============================================================
+
+    // Verifica se está autenticado
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Verifica se é o próprio owner
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Verifica se o usuário é profissional vinculado ao owner
+    function isProfessionalOf(ownerId) {
+      return isAuth() && exists(/databases/$(database)/documents/professionals/$(request.auth.uid))
+        && get(/databases/$(database)/documents/professionals/$(request.auth.uid)).data.ownerId == ownerId
+        && get(/databases/$(database)/documents/professionals/$(request.auth.uid)).data.status == 'active';
+    }
+
+    // Verifica se é owner OU profissional do studio
+    function isTeamMember(ownerId) {
+      return isOwner(ownerId) || isProfessionalOf(ownerId);
+    }
+
+    // ============================================================
+    // COMPANY — Perfil do studio (só owner)
+    // ============================================================
     match /companies/{companyId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == companyId;
+      // Owner sempre pode ler/escrever o próprio doc; profissionais podem ler
+      allow read: if isOwner(companyId) || isProfessionalOf(companyId);
+      allow write: if isOwner(companyId);
+
+      // Subcoleção team — gerenciada pelo owner
+      match /team/{memberId} {
+        allow read: if isOwner(companyId) || isProfessionalOf(companyId);
+        allow write: if isOwner(companyId);
+      }
+
+      // Subcoleção bolsa_beleza — planejamento financeiro (só owner)
+      match /bolsa_beleza/{docId} {
+        allow read, write: if isOwner(companyId);
+      }
     }
 
-    // === referral_payments ===
-    // Qualquer usuário autenticado pode ler (para visualizar status do próprio bônus).
-    // Somente o admin (via painel) pode escrever — verificado pelo email.
-    match /referral_payments/{paymentId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
-        && request.auth.token.email in [
-          'negocioscota@gmail.com',
-          'admin@clientehubclin.app.br'
-        ];
+    // ============================================================
+    // PROFESSIONALS — Registro de profissionais
+    // ============================================================
+    match /professionals/{profId} {
+      // Owner pode ler/escrever profissionais vinculados a ele
+      allow read: if isAuth() && (
+        request.auth.uid == profId ||
+        resource.data.ownerId == request.auth.uid
+      );
+      allow create: if isAuth();
+      allow update: if isAuth() && (
+        request.auth.uid == profId ||
+        resource.data.ownerId == request.auth.uid
+      );
+      allow delete: if isAuth() && resource.data.ownerId == request.auth.uid;
     }
 
-    // === clients ===
-    match /clients/{clientId} {
-      allow read, write: if request.auth != null;
+    // ============================================================
+    // TEAM_INVITES — Convites de equipe
+    // ============================================================
+    match /team_invites/{inviteId} {
+      // Owner pode gerenciar seus convites
+      allow read, write: if isAuth() && (
+        resource == null ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.email == request.auth.token.email
+      );
+      allow create: if isAuth();
     }
 
-    // === appointments ===
-    match /appointments/{appointmentId} {
-      allow read, write: if request.auth != null;
+    // ============================================================
+    // DADOS COMPARTILHADOS DO STUDIO
+    // Owner e profissionais vinculados podem ler/escrever
+    // userId = ownerId do studio
+    // ============================================================
+
+    // CLIENTES — compartilhado com toda equipe
+    match /clients/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === interactions ===
-    match /interactions/{interactionId} {
-      allow read, write: if request.auth != null;
+    // AGENDAMENTOS — equipe pode ver todos do studio, criar os seus
+    match /appointments/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === inventory ===
-    match /inventory/{itemId} {
-      allow read, write: if request.auth != null;
+    // FICHA TÉCNICA — equipe acessa, cada um cria a sua
+    match /ficha_tecnica/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && (
+        isTeamMember(resource.data.userId)
+      );
     }
 
-    // === inventory_logs ===
-    match /inventory_logs/{logId} {
-      allow read, write: if request.auth != null;
+    // PORTFÓLIO — equipe acessa
+    match /portfolio/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === invoices ===
-    match /invoices/{invoiceId} {
-      allow read, write: if request.auth != null;
+    // LEMBRETES — equipe acessa
+    match /reminders/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === services ===
-    match /services/{serviceId} {
-      allow read, write: if request.auth != null;
+    // INTERAÇÕES/HISTÓRICO — equipe acessa
+    match /interactions/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === portfolio ===
-    match /portfolio/{itemId} {
-      allow read, write: if request.auth != null;
+    // TERMOS DE CONSENTIMENTO — equipe acessa + assinatura pública via token
+    match /consents/{docId} {
+      // Leitura: equipe autenticada OU público (para página de assinatura)
+      allow read: if true;
+      
+      // Criação: apenas equipe autenticada
+      allow create: if isAuth();
+      
+      // Update: equipe autenticada OU update público apenas de campos de assinatura
+      allow update: if (isAuth() && isTeamMember(resource.data.userId))
+        || request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['signature', 'signedAt', 'signedRemotely', 'status', 'updatedAt']);
+      
+      // Deleção: apenas equipe autenticada
+      allow delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // === team ===
-    match /team/{memberId} {
-      allow read, write: if request.auth != null;
+    // ============================================================
+    // DADOS EXCLUSIVOS DO OWNER (gestão)
+    // ============================================================
+
+    // ESTOQUE — só owner
+    match /inventory/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
-    // === technical_records (fichas técnicas) ===
-    match /technical_records/{recordId} {
-      allow read, write: if request.auth != null;
+    // LOGS DE ESTOQUE — só owner
+    match /inventory_logs/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
-    // === consents (termos de consentimento) ===
-    match /consents/{consentId} {
-      allow read, write: if request.auth != null;
+    // FINANCEIRO — só owner
+    match /invoices/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
-    // === reviews ===
+    // CONTAS A PAGAR — só owner
+    match /expenses/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // LISTA DE COMPRAS — só owner
+    match /shoppingList/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // CATÁLOGO — só owner
+    match /catalog/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ANÁLISES DE CUSTO — só owner
+    match /cost_analyses/{docId} {
+      allow read, write: if isAuth() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ============================================================
+    // PROGRAMA DE INDICAÇÕES
+    // ============================================================
+    match /referrals/{docId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+    match /referral_payments/{docId} {
+      allow read: if isAuth() && (
+        resource == null || resource.data.referrerId == request.auth.uid
+      );
+      allow create: if isAuth();
+      allow update, delete: if false;
+    }
+    // ============================================================
+    // STUDIOS — Perfil do studio (nova coleção centralizada)
+    // ============================================================
+    match /studios/{studioId} {
+      // Leitura pública: necessário para mini-site de agendamento buscar por slug
+      allow read: if true;
+      // Escrita apenas pelo próprio owner
+      allow write: if isOwner(studioId);
+
+      // Subcoleção bookings — escrita pública (clientes sem auth), leitura só do owner
+      match /bookings/{bookingId} {
+        allow read: if isOwner(studioId);
+        allow create: if true;  // qualquer cliente pode criar agendamento
+        allow update, delete: if isOwner(studioId);
+      }
+
+      // Subcoleção services — leitura pública, escrita só owner
+      match /services/{serviceId} {
+        allow read: if true;
+        allow write: if isOwner(studioId);
+      }
+
+      // Subcoleção bolsa_beleza
+      match /bolsa_beleza/{docId} {
+        allow read, write: if isOwner(studioId);
+      }
+    }
+
+    // ============================================================
+    // CONFIGURAÇÕES DO ESTÚDIO — só owner lê/escreve
+    // ============================================================
+    match /studioConfig/{studioId} {
+      allow read, write: if isOwner(studioId);
+    }
+
+    // ============================================================
+    // AVALIAÇÕES (REVIEWS) — escrita pública, leitura só do owner
+    // ============================================================
     match /reviews/{reviewId} {
-      allow read, write: if request.auth != null;
+      // Qualquer pessoa pode criar (link enviado por WhatsApp, sem auth)
+      allow create: if true;
+      // Owner pode ler as suas avaliações
+      allow read: if isAuth() && (
+        resource == null || resource.data.studioId == request.auth.uid
+      );
+      // Não pode editar ou excluir
+      allow update, delete: if false;
     }
 
-    // === reminders ===
-    match /reminders/{reminderId} {
-      allow read, write: if request.auth != null;
+    // ============================================================
+    // CONVITES DE PARCEIROS — leitura pública, escrita pelo painel admin
+    // ============================================================
+    match /invites/{inviteId} {
+      allow read: if true;   // app valida convite sem auth
+      allow write: if true;  // painel admin usa PIN próprio
     }
 
-    // === orders (pedidos de pagamento) ===
-    match /orders/{orderId} {
-      allow read, write: if request.auth != null;
-    }
-
-    // Bloqueia tudo o que não foi explicitamente permitido
-    match /{document=**} {
-      allow read, write: if false;
-    }
   }
 }

@@ -1,106 +1,115 @@
-// === Página: Horário de Funcionamento ===
-const BusinessHoursPage = {
-    dayNames: ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],
+// === HORÁRIO DE FUNCIONAMENTO ===
+const BusinessHours = {
+    DAYS: [
+        { key: 'seg', label: 'Seg' }, { key: 'ter', label: 'Ter' },
+        { key: 'qua', label: 'Qua' }, { key: 'qui', label: 'Qui' },
+        { key: 'sex', label: 'Sex' }, { key: 'sab', label: 'Sáb' },
+        { key: 'dom', label: 'Dom' }
+    ],
 
-    render() {
-        const flexRows = this.dayNames.map((d, i) => `
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-high hover:bg-surface-container transition-colors" data-flex-day="${i}">
-                <button type="button" class="day-btn w-12 h-10 rounded-lg text-xs font-bold transition-all ${i < 5 ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'}" data-day="${i}">${d}</button>
-                <input type="time" class="flex-day-start settings-input px-3 py-2 bg-surface-container-lowest border-none rounded-lg text-sm text-on-surface w-24 ${i >= 5 ? 'opacity-40' : ''}" value="${i >= 5 ? '09:00' : '08:00'}" ${i >= 5 ? 'disabled' : ''}/>
-                <span class="text-xs text-on-surface-variant font-bold">até</span>
-                <input type="time" class="flex-day-end settings-input px-3 py-2 bg-surface-container-lowest border-none rounded-lg text-sm text-on-surface w-24 ${i >= 5 ? 'opacity-40' : ''}" value="${i >= 5 ? '13:00' : '18:00'}" ${i >= 5 ? 'disabled' : ''}/>
-            </div>`).join('');
+    async render(container) {
+        const uid = firebase.auth().currentUser?.uid;
+        let comp = {};
+        if (uid) {
+            try {
+                const doc = await db.collection('studios').doc(uid).get();
+                comp = doc.exists ? (doc.data() || {}) : {};
+            } catch(e) {}
+        }
+        const hours = comp.businessHours || {};
 
-        return `
-        <div class="max-w-3xl mx-auto space-y-8">
-            <div>
-                <h2 class="font-headline text-3xl font-extrabold tracking-tight">Horário de Funcionamento</h2>
-                <p class="text-on-surface-variant mt-1">Defina horários diferentes para cada dia da semana. Clique no dia para ativar/desativar.</p>
+        const dayRow = (d) => {
+            const h = hours[d.key] || { open: false, start: '09:00', end: '18:00' };
+            return `
+            <div class="settings-day-row" id="day-row-${d.key}">
+              <label class="settings-toggle-wrap">
+                <input type="checkbox" class="settings-toggle-cb" id="day-${d.key}" ${h.open ? 'checked' : ''}
+                  onchange="BusinessHours.toggleDay('${d.key}')">
+                <span class="settings-toggle-pill"></span>
+                <span class="settings-day-label">${d.label}</span>
+              </label>
+              <div class="settings-time-range ${h.open ? '' : 'hidden'}" id="time-range-${d.key}">
+                <input type="time" class="form-control form-control-sm" id="start-${d.key}" value="${h.start || '09:00'}">
+                <span style="color:var(--text-muted);font-size:0.85rem">até</span>
+                <input type="time" class="form-control form-control-sm" id="end-${d.key}" value="${h.end || '18:00'}">
+              </div>
+              <span class="settings-day-closed ${h.open ? 'hidden' : ''}" id="closed-${d.key}" style="color:var(--text-muted);font-size:0.82rem;padding-left:8px">Fechado</span>
+            </div>`;
+        };
+
+        container.innerHTML = `
+        <div class="settings-page">
+          <div class="settings-section-card">
+            <div class="settings-section-header">
+              <span class="material-symbols-outlined">schedule</span>
+              <div>
+                <h3 class="settings-section-title">Horário de Funcionamento</h3>
+                <p class="settings-section-sub">Defina os dias e horários disponíveis para agendamento</p>
+              </div>
             </div>
-
-            <div class="bg-surface-container-lowest rounded-xl p-5 md:p-8 shadow-sm ghost-border">
-                <h3 class="font-headline font-bold text-xl mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">schedule</span> Horários por Dia
-                </h3>
-                <div class="space-y-2" id="flex-schedule">${flexRows}</div>
-
-                <!-- Intervalo de Almoço -->
-                <div class="mt-6 p-4 bg-amber-50/50 border border-amber-200/50 rounded-xl">
-                    <div class="flex items-center gap-3 mb-3">
-                        <input type="checkbox" id="set-lunch-enabled" class="settings-input w-4 h-4 accent-amber-600" checked/>
-                        <label for="set-lunch-enabled" class="font-bold text-sm text-amber-800 flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-sm">lunch_dining</span>Bloqueio de Horário de Almoço
-                        </label>
-                    </div>
-                    <div id="lunch-fields" class="flex items-center gap-3 ml-7">
-                        <input type="time" id="set-lunch-start" value="12:00" class="settings-input px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm w-28"/>
-                        <span class="text-xs font-bold text-amber-700">até</span>
-                        <input type="time" id="set-lunch-end" value="13:00" class="settings-input px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm w-28"/>
-                        <span class="text-xs text-amber-600 ml-2">Clientes não poderão agendar neste período</span>
-                    </div>
+            <div class="settings-section-body">
+              <div class="settings-days-list">
+                ${BusinessHours.DAYS.map(dayRow).join('')}
+              </div>
+              <div class="settings-lunch-block" id="lunch-block-wrap">
+                <label class="settings-toggle-wrap" style="gap:12px">
+                  <input type="checkbox" class="settings-toggle-cb" id="lunch-block" ${(comp.lunchBlock?.enabled) ? 'checked' : ''}
+                    onchange="BusinessHours.toggleLunch()">
+                  <span class="settings-toggle-pill"></span>
+                  <span style="font-size:0.9rem;font-weight:600">🍽️ Bloqueio de Horário de Almoço</span>
+                </label>
+                <div class="settings-time-range ${comp.lunchBlock?.enabled ? '' : 'hidden'}" id="lunch-time-range" style="margin-top:10px">
+                  <input type="time" class="form-control form-control-sm" id="lunch-start" value="${comp.lunchBlock?.start || '12:00'}">
+                  <span style="color:var(--text-muted);font-size:0.85rem">até</span>
+                  <input type="time" class="form-control form-control-sm" id="lunch-end" value="${comp.lunchBlock?.end || '13:00'}">
+                  <span style="color:var(--primary);font-size:0.8rem">Clientes não poderão agendar neste período</span>
                 </div>
-            </div>
-
-            <div class="flex justify-end">
-                <button onclick="BusinessHoursPage.save()" class="px-8 py-3 vitality-gradient text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform flex items-center gap-2">
-                    <span class="material-symbols-outlined">save</span> Salvar Horários
+              </div>
+              <div class="settings-action-bar">
+                <button class="btn btn-primary" onclick="BusinessHours.saveHours()">
+                  <span class="material-symbols-outlined">save</span> Salvar Horários
                 </button>
+              </div>
             </div>
+          </div>
         </div>`;
     },
 
-    async init() {
-        // Day toggle buttons
-        document.querySelectorAll('.day-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const row = btn.closest('[data-flex-day]');
-                const isActive = btn.classList.contains('bg-primary/10');
-                btn.classList.toggle('bg-primary/10', !isActive);
-                btn.classList.toggle('text-primary', !isActive);
-                btn.classList.toggle('bg-surface-container', isActive);
-                btn.classList.toggle('text-on-surface-variant', isActive);
-                row.querySelectorAll('input[type=time]').forEach(inp => {
-                    inp.disabled = isActive;
-                    inp.classList.toggle('opacity-40', isActive);
-                });
-            });
-        });
-        // Lunch toggle
-        document.getElementById('set-lunch-enabled')?.addEventListener('change', (e) => {
-            const fields = document.getElementById('lunch-fields');
-            fields.querySelectorAll('input').forEach(i => i.disabled = !e.target.checked);
-            fields.classList.toggle('opacity-40', !e.target.checked);
-        });
-        this.loadSaved();
+    toggleDay(key) {
+        const cb = document.getElementById(`day-${key}`);
+        const range = document.getElementById(`time-range-${key}`);
+        const closed = document.getElementById(`closed-${key}`);
+        if (cb.checked) { range?.classList.remove('hidden'); closed?.classList.add('hidden'); }
+        else { range?.classList.add('hidden'); closed?.classList.remove('hidden'); }
     },
 
-    loadSaved() {
-        const s = JSON.parse(localStorage.getItem('ch_settings') || '{}');
-        if (s.lunchEnabled === false) {
-            const cb = document.getElementById('set-lunch-enabled');
-            if (cb) { cb.checked = false; document.getElementById('lunch-fields')?.classList.add('opacity-40'); }
-        }
-        if (s.lunchStart) document.getElementById('set-lunch-start').value = s.lunchStart;
-        if (s.lunchEnd)   document.getElementById('set-lunch-end').value = s.lunchEnd;
+    toggleLunch() {
+        const cb = document.getElementById('lunch-block');
+        const range = document.getElementById('lunch-time-range');
+        cb.checked ? range?.classList.remove('hidden') : range?.classList.add('hidden');
     },
 
-    save() {
-        const s = JSON.parse(localStorage.getItem('ch_settings') || '{}');
-        s.lunchEnabled = document.getElementById('set-lunch-enabled')?.checked;
-        s.lunchStart   = document.getElementById('set-lunch-start')?.value;
-        s.lunchEnd     = document.getElementById('set-lunch-end')?.value;
-        // Horários por dia
-        const days = [];
-        document.querySelectorAll('[data-flex-day]').forEach(row => {
-            const i = parseInt(row.dataset.flexDay);
-            days[i] = {
-                enabled: !row.querySelector('.day-btn')?.classList.contains('bg-surface-container'),
-                start: row.querySelector('.flex-day-start')?.value,
-                end:   row.querySelector('.flex-day-end')?.value
+    async saveHours() {
+        const uid = firebase.auth().currentUser?.uid;
+        if (!uid) return;
+        const businessHours = {};
+        BusinessHours.DAYS.forEach(d => {
+            const cb = document.getElementById(`day-${d.key}`);
+            businessHours[d.key] = {
+                open:  cb?.checked || false,
+                start: document.getElementById(`start-${d.key}`)?.value || '09:00',
+                end:   document.getElementById(`end-${d.key}`)?.value   || '18:00'
             };
         });
-        s.flexDays = days;
-        localStorage.setItem('ch_settings', JSON.stringify(s));
-        App.showToast('Horários salvos! ✅', 'success');
+        const lunchEnabled = document.getElementById('lunch-block')?.checked || false;
+        const lunchBlock = {
+            enabled: lunchEnabled,
+            start:   document.getElementById('lunch-start')?.value || '12:00',
+            end:     document.getElementById('lunch-end')?.value   || '13:00'
+        };
+        try {
+            await db.collection('studios').doc(uid).set({ businessHours, lunchBlock }, { merge: true });
+            App.showToast('Horários salvos! 🕐', 'success');
+        } catch(err) { App.showToast('Erro: ' + err.message, 'error'); }
     }
 };

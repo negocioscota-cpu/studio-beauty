@@ -1,438 +1,501 @@
-// === URL Parameter Tracking ===
+// === URL Parameter Tracking (Referal + Plano) ===
 const urlParams = new URLSearchParams(window.location.search);
 const refCode = urlParams.get('ref');
-if (refCode) {
-    localStorage.setItem('referralCode', refCode);
-}
+const planoParam = urlParams.get('plano'); // solo | studio | premium
+if (refCode) localStorage.setItem('referralCode', refCode);
+if (planoParam) localStorage.setItem('selectedPlan', planoParam);
 
-// === Auth Module ===
+// === Auth Module — LashBrow ===
 const Auth = {
     currentUser: null,
     isRecoveryMode: false,
 
-    init() {
+    init(telaParam) {
+        // Listener único de estado de autenticação
         auth.onAuthStateChanged(async user => {
             Auth.currentUser = user;
-            
-            const loginScreen = document.getElementById('login-screen');
+
+            // Oculta o overlay de loading sempre que o estado resolver
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => { overlay.style.display = 'none'; }, 400);
+            }
+
+            const loginScreen    = document.getElementById('login-screen');
             const registerScreen = document.getElementById('register-screen');
-            const appShell = document.getElementById('app-shell');
-            const blockedScreen = document.getElementById('blocked-screen');
+            const appShell       = document.getElementById('app-shell');
+            const blockedScreen  = document.getElementById('blocked-screen');
 
             if (user) {
                 try {
                     const doc = await db.collection('companies').doc(user.uid).get();
+
+                    // 📴 Log quando dados vêm do cache offline do Firestore
+                    if (doc.metadata.fromCache) {
+                        console.log('📴 Verificação de acesso usando cache offline');
+                    }
+
                     if (doc.exists) {
-                        const companyData = doc.data();
-                        Auth.companyData = companyData;
+                        const data = doc.data();
+                        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
                         const now = new Date();
+                        const TRIAL_DAYS = 14;
 
-                        // ── Verificação de acesso via Asaas ──
-                        const asaasStatus = companyData.asaasStatus; // ACTIVE | OVERDUE | CANCELLED | PENDING | undefined
-                        const status = companyData.status; // active | trial | overdue | blocked
+                        // Status do Asaas (preenchido pelo webhook)
+                        const subStatus = data.subscriptionStatus; // active | overdue | cancelled | pending_payment | null
 
-                        // 1. Se tem assinatura Asaas ativa → livre acesso
-                        if (asaasStatus === 'ACTIVE') {
-                            // Verificar se expirou por data (fallback)
-                            if (companyData.subscriptionExpiresAt) {
-                                const expiresAt = companyData.subscriptionExpiresAt.toDate();
-                                if (now > expiresAt) {
-                                    // Expirou mas webhook ainda não chegou — bloquear preventivamente
-                                    if (loginScreen) loginScreen.classList.add('hidden');
-                                    if (registerScreen) registerScreen.classList.add('hidden');
-                                    if (appShell) appShell.classList.add('hidden');
-                                    if (blockedScreen) blockedScreen.classList.remove('hidden');
-                                    return;
-                                }
-                            }
-                            // Acesso liberado — continua abaixo
+                        // 🟢 Cache do status para uso offline
+                        if (subStatus === 'active') {
+                            localStorage.setItem(`sub_status_${user.uid}`, 'active');
+                        } else if (!subStatus || subStatus === 'trial') {
+                            const trialExpired = data.plan === 'free' &&
+                                (now - createdAt > TRIAL_DAYS * 24 * 60 * 60 * 1000);
+                            localStorage.setItem(`sub_status_${user.uid}`, trialExpired ? 'expired' : 'trial');
                         }
-                        // 2. Em trial — verificar prazo
-                        else if (status === 'trial' || (!asaasStatus && companyData.plan === 'free')) {
-                            const trialEnd = companyData.trialEndsAt
-                                ? companyData.trialEndsAt.toDate()
-                                : (() => {
-                                    const t = companyData.createdAt ? companyData.createdAt.toDate() : now;
-                                    t.setDate(t.getDate() + 14);
-                                    return t;
-                                  })();
-                            if (now > trialEnd) {
-                                if (loginScreen) loginScreen.classList.add('hidden');
-                                if (registerScreen) registerScreen.classList.add('hidden');
-                                if (appShell) appShell.classList.add('hidden');
-                                if (blockedScreen) blockedScreen.classList.remove('hidden');
-                                return;
-                            }
-                        }
-                        // 3. Bloqueado / cancelado / inadimplente
-                        else if (asaasStatus === 'CANCELLED' || asaasStatus === 'OVERDUE' || status === 'blocked' || status === 'overdue') {
-                            if (loginScreen) loginScreen.classList.add('hidden');
-                            if (registerScreen) registerScreen.classList.add('hidden');
-                            if (appShell) appShell.classList.add('hidden');
+
+                        // Casos que bloqueiam o acesso:
+                        // 1. Plano free E trial expirado (sem assinatura)
+                        // 2. Assinatura cancelada/overdue
+                        // 3. Campo status == 'blocked' (admin manual)
+                        const trialExpired = !subStatus && data.plan === 'free' &&
+                            (now - createdAt > TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+                        const subscriptionBlocked = ['cancelled', 'overdue', 'refunded'].includes(subStatus);
+                        const adminBlocked = data.status === 'blocked';
+
+                        if (trialExpired || subscriptionBlocked || adminBlocked) {
+                            loginScreen.classList.add('hidden');
+                            registerScreen.classList.add('hidden');
+                            appShell.classList.add('hidden');
                             if (blockedScreen) blockedScreen.classList.remove('hidden');
+
+                            // Se tem plano selecionado da landing, auto-iniciar pagamento
+                            const pendingPlan = data.selectedPlan;
+                            if (pendingPlan && pendingPlan !== 'free' && !subStatus) {
+                                // Atualizar título para novo cadastro
+                                const titleEl = blockedScreen.querySelector('h2');
+                                if (titleEl) titleEl.textContent = '🎉 Falta só o pagamento!';
+                                const subtEl = blockedScreen.querySelector('p');
+                                if (subtEl) subtEl.textContent = `Você escolheu o plano ${pendingPlan.charAt(0).toUpperCase() + pendingPlan.slice(1)}. Finalize abaixo:`;
+                                // Destacar o plano escolhido
+                                setTimeout(() => {
+                                    const cards = blockedScreen.querySelectorAll('.plan-card');
+                                    cards.forEach(card => {
+                                        const text = card.textContent.toLowerCase();
+                                        if (text.includes(pendingPlan)) {
+                                            card.style.border = '2px solid var(--gold)';
+                                            card.style.boxShadow = '0 0 12px rgba(201,169,110,0.3)';
+                                        }
+                                    });
+                                }, 100);
+                            }
+
+                            // Se overdue, tentar exibir link de pagamento automaticamente
+                            if (subStatus === 'overdue') {
+                                Subscription.getPaymentLink(user.uid).then(link => {
+                                    if (link) {
+                                        const errorEl = document.getElementById('subscription-error');
+                                        if (errorEl) {
+                                            errorEl.className = 'auth-error';
+                                            errorEl.innerHTML = `⚠️ Sua última cobrança está em aberto.
+                                                <br><a href="${link}" target="_blank" class="btn btn-primary btn-full" style="margin-top:10px">
+                                                Pagar agora</a>`;
+                                            errorEl.classList.remove('hidden');
+                                        }
+                                    }
+                                });
+                            }
+                            return;
+                        }
+
+                        // Se tem selectedPlan (veio da landing) e ainda não tem assinatura ativa,
+                        // mas está dentro do trial, mostrar tela de pagamento
+                        if (data.selectedPlan && data.selectedPlan !== 'free' && !subStatus) {
+                            loginScreen.classList.add('hidden');
+                            registerScreen.classList.add('hidden');
+                            appShell.classList.add('hidden');
+                            if (blockedScreen) blockedScreen.classList.remove('hidden');
+                            const titleEl = blockedScreen.querySelector('h2');
+                            if (titleEl) titleEl.textContent = '🎉 Bem-vinda! Finalize sua assinatura';
+                            const subtEl = blockedScreen.querySelector('p');
+                            if (subtEl) subtEl.textContent = `Você escolheu o plano ${data.selectedPlan.charAt(0).toUpperCase() + data.selectedPlan.slice(1)}. Complete o pagamento para ativar:`;
+                            setTimeout(() => {
+                                const cards = blockedScreen.querySelectorAll('.plan-card');
+                                cards.forEach(card => {
+                                    const text = card.textContent.toLowerCase();
+                                    if (text.includes(data.selectedPlan)) {
+                                        card.style.border = '2px solid var(--gold)';
+                                        card.style.boxShadow = '0 0 12px rgba(201,169,110,0.3)';
+                                    }
+                                });
+                            }, 100);
                             return;
                         }
                     }
                 } catch (err) {
-                    console.error("Erro ao verificar status da empresa:", err);
+                    console.error('Erro ao verificar acesso:', err);
+                    // 📴 Offline fail-safe: usar último status salvo no localStorage
+                    const lastStatus = localStorage.getItem(`sub_status_${user.uid}`);
+                    if (lastStatus === 'active' || lastStatus === 'trial') {
+                        console.log('📴 Usando último status de assinatura salvo:', lastStatus);
+                    } else if (lastStatus === 'expired') {
+                        // Status expirado salvo — manter bloqueio
+                        loginScreen.classList.add('hidden');
+                        registerScreen.classList.add('hidden');
+                        appShell.classList.add('hidden');
+                        if (blockedScreen) blockedScreen.classList.remove('hidden');
+                        return;
+                    }
+                    // Fail-safe geral: não bloquear
                 }
-
 
                 loginScreen.classList.add('hidden');
                 registerScreen.classList.add('hidden');
-                if(blockedScreen) blockedScreen.classList.add('hidden');
+                if (blockedScreen) blockedScreen.classList.add('hidden');
                 appShell.classList.remove('hidden');
-                
-                document.getElementById('user-name').textContent = user.displayName || user.email.split('@')[0];
+
+                document.getElementById('user-name').textContent =
+                    user.displayName || user.email.split('@')[0];
                 document.getElementById('user-role').textContent = user.email;
+
+                // 🔑 Detectar role (owner vs profissional)
+                try {
+                    // Primeiro verifica se há convite pendente para este email
+                    await Team.checkPendingInvite(user.uid, user.email);
+                    await Team.detectRole(user.uid);
+                } catch (roleErr) {
+                    console.warn('Erro ao detectar role:', roleErr);
+                    // Fallback: tratar como owner do próprio UID
+                    Team.currentRole = 'owner';
+                    Team.ownerId = user.uid;
+                }
+
+                // Filtrar sidebar conforme role
+                Auth.filterSidebar();
+
                 App.init();
+
+                // 🔌 Inicializar indicador de status online/offline
+                if (typeof OfflineIndicator !== 'undefined') {
+                    OfflineIndicator.init();
+                }
             } else {
-                loginScreen.classList.remove('hidden');
-                registerScreen.classList.add('hidden');
+                // Não logado: decide qual tela mostrar
+                if (telaParam === 'cadastro') {
+                    loginScreen.classList.add('hidden');
+                    registerScreen.classList.remove('hidden');
+                } else {
+                    loginScreen.classList.remove('hidden');
+                    registerScreen.classList.add('hidden');
+                }
                 appShell.classList.add('hidden');
-                if(blockedScreen) blockedScreen.classList.add('hidden');
+                if (blockedScreen) blockedScreen.classList.add('hidden');
             }
         });
 
-        // === 1. Toggle Password Visibility ===
-        document.getElementById('btn-toggle-password').addEventListener('click', () => {
+        // Toggle senha
+        document.getElementById('btn-toggle-password')?.addEventListener('click', () => {
             const pw = document.getElementById('login-password');
             const icon = document.querySelector('#btn-toggle-password .material-symbols-outlined');
-            if (pw.type === 'password') {
-                pw.type = 'text';
-                icon.textContent = 'visibility_off';
-            } else {
-                pw.type = 'password';
-                icon.textContent = 'visibility';
-            }
+            if (pw.type === 'password') { pw.type = 'text'; icon.textContent = 'visibility_off'; }
+            else { pw.type = 'password'; icon.textContent = 'visibility'; }
         });
 
-        // === 5. Real-time Email Validation (onBlur) ===
+        // Validação email
         const emailInput = document.getElementById('login-email');
-        const emailError = document.getElementById('email-error-msg');
+        emailInput?.addEventListener('blur', () => Auth.validateForm());
+        emailInput?.addEventListener('input', () => Auth.validateForm());
+        document.getElementById('login-password')?.addEventListener('input', () => Auth.validateForm());
 
-        emailInput.addEventListener('blur', () => {
-            const val = emailInput.value.trim();
-            if (val && !Auth.isValidEmail(val)) {
-                emailInput.classList.add('border-red-500');
-                emailInput.classList.remove('border-transparent');
-                emailError.classList.remove('hidden');
-            } else {
-                emailInput.classList.remove('border-red-500');
-                emailInput.classList.add('border-transparent');
-                emailError.classList.add('hidden');
-            }
-            Auth.validateForm();
+        // Recuperar senha
+        document.getElementById('btn-forgot-password')?.addEventListener('click', () => {
+            Auth.isRecoveryMode ? Auth.exitRecoveryMode() : Auth.enterRecoveryMode();
         });
 
-        emailInput.addEventListener('input', () => {
-            const val = emailInput.value.trim();
-            if (Auth.isValidEmail(val)) {
-                emailInput.classList.remove('border-red-500');
-                emailInput.classList.add('border-transparent');
-                emailError.classList.add('hidden');
-            }
-            Auth.validateForm();
-        });
-
-        // === 5. Validate on password input too ===
-        document.getElementById('login-password').addEventListener('input', () => {
-            Auth.validateForm();
-        });
-
-        // === 3. Dynamic "Esqueceu a Senha?" Flow ===
-        document.getElementById('btn-forgot-password').addEventListener('click', () => {
-            if (!Auth.isRecoveryMode) {
-                Auth.enterRecoveryMode();
-            } else {
-                Auth.exitRecoveryMode();
-            }
-        });
-
-        // === Toggle Login <-> Register ===
-        document.getElementById('btn-show-register').addEventListener('click', () => {
+        // Toggle login/registro
+        document.getElementById('btn-show-register')?.addEventListener('click', () => {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('register-screen').classList.remove('hidden');
         });
-
-        document.getElementById('btn-show-login').addEventListener('click', () => {
+        document.getElementById('btn-show-login')?.addEventListener('click', () => {
             document.getElementById('register-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
         });
 
-        // === Login / Recovery Form Submit ===
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        // Login form
+        document.getElementById('login-form')?.addEventListener('submit', async e => {
             e.preventDefault();
-
-            if (Auth.isRecoveryMode) {
-                Auth.handlePasswordRecovery();
-                return;
-            }
-
-            Auth.handleLogin();
+            Auth.isRecoveryMode ? Auth.handlePasswordRecovery() : Auth.handleLogin();
         });
 
-        // === 4. Google Sign-In ===
-        const handleGoogleAuth = async (btnId, errorElId) => {
+        // Google Auth
+        const handleGoogle = async (btnId, errId) => {
             const btn = document.getElementById(btnId);
             if (!btn) return;
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
+            btn.disabled = true; btn.style.opacity = '0.6';
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const cred = await auth.signInWithPopup(provider);
-                
-                if (cred.additionalUserInfo && cred.additionalUserInfo.isNewUser) {
-                    const referralCode = localStorage.getItem('referralCode') || null;
+                if (cred.additionalUserInfo?.isNewUser) {
+                    const ref  = localStorage.getItem('referralCode') || null;
+                    const inviteData = (typeof Invites !== 'undefined') ? Invites.getInviteData() : null;
+                    let companyPlan, companySubStatus, selectedPlan;
+                    if (inviteData) {
+                        companyPlan      = inviteData.plan || 'studio';
+                        companySubStatus = inviteData.subscriptionStatus || 'active';
+                        selectedPlan     = null;
+                    } else {
+                        companyPlan      = 'free';
+                        companySubStatus = null;
+                        selectedPlan     = localStorage.getItem('selectedPlan') || 'free';
+                    }
                     await db.collection('companies').doc(cred.user.uid).set({
-                        companyName: cred.user.displayName || "Minha Empresa",
-                        segment: "outros",
-                        ownerName: cred.user.displayName || "",
-                        ownerPhone: cred.user.phoneNumber || "",
-                        ownerEmail: cred.user.email || "",
+                        companyName: cred.user.displayName || 'Meu Studio',
+                        ownerName: cred.user.displayName || '',
+                        ownerPhone: '',
+                        ownerEmail: cred.user.email || '',
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        plan: 'free',
-                        status: 'active',
-                        referredBy: referralCode,
-                        pixKey: ''
+                        plan: companyPlan, status: 'active',
+                        subscriptionStatus: companySubStatus,
+                        selectedPlan: selectedPlan,
+                        inviteCode: inviteData ? (localStorage.getItem('inviteCode') || null) : null,
+                        invitePartner: inviteData ? (inviteData.partnerName || null) : null,
+                        referredBy: ref, pixKey: '',
+                        referralCode: Auth.generateCode()
                     });
+                    if (typeof Invites !== 'undefined' && inviteData) {
+                        await Invites.registerUse(
+                            cred.user.uid,
+                            cred.user.email,
+                            cred.user.displayName || '',
+                            cred.user.displayName || ''
+                        );
+                    }
+                    localStorage.removeItem('selectedPlan');
                 }
             } catch (err) {
-                if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-                    const errorEl = document.getElementById(errorElId);
-                    if (errorEl) {
-                        let msg = 'Erro ao entrar com Google: ' + (err.message || err.code);
-                        if (err.code === 'auth/operation-not-allowed') {
-                            msg = 'Autenticação pelo Google desativada. Ative no painel Firebase (Authentication > Sign-in method) para funcionar.';
-                        }
-                        errorEl.textContent = msg;
-                        errorEl.classList.remove('hidden');
-                    }
+                if (!['auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(err.code)) {
+                    const el = document.getElementById(errId);
+                    if (el) { el.textContent = 'Erro Google: ' + (err.message || err.code); el.classList.remove('hidden'); }
                 }
-            } finally {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            }
+            } finally { btn.disabled = false; btn.style.opacity = '1'; }
         };
+        document.getElementById('btn-google-login')?.addEventListener('click', () => handleGoogle('btn-google-login','login-error'));
+        document.getElementById('btn-google-register')?.addEventListener('click', () => handleGoogle('btn-google-register','register-error'));
 
-        if (document.getElementById('btn-google-login')) {
-            document.getElementById('btn-google-login').addEventListener('click', () => handleGoogleAuth('btn-google-login', 'login-error'));
-        }
-        
-        if (document.getElementById('btn-google-register')) {
-            document.getElementById('btn-google-register').addEventListener('click', () => handleGoogleAuth('btn-google-register', 'register-error'));
-        }
-
-        // === Register Form ===
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
+        // Register form
+        document.getElementById('register-form')?.addEventListener('submit', async e => {
             e.preventDefault();
-            const company = document.getElementById('reg-company').value.trim();
-            const segment = document.getElementById('reg-segment').value;
-            const name = document.getElementById('reg-name').value.trim();
-            const phone = document.getElementById('reg-phone').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
+            const studio   = document.getElementById('reg-studio').value.trim();
+            const name     = document.getElementById('reg-name').value.trim();
+            const phone    = document.getElementById('reg-phone').value.trim();
+            const email    = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
-            const passwordConfirm = document.getElementById('reg-password-confirm').value;
-            const errorEl = document.getElementById('register-error');
-            const btn = document.getElementById('register-btn');
+            const pwConf   = document.getElementById('reg-password-confirm').value;
+            const errorEl  = document.getElementById('register-error');
+            const btn      = document.getElementById('register-btn');
 
             errorEl.classList.add('hidden');
-
-            if (password !== passwordConfirm) {
-                errorEl.classList.remove('hidden');
-                errorEl.textContent = 'As senhas não coincidem.';
-                return;
-            }
-
-            if (password.length < 6) {
-                errorEl.classList.remove('hidden');
-                errorEl.textContent = 'A senha deve ter pelo menos 6 caracteres.';
-                return;
-            }
+            if (password !== pwConf) { errorEl.textContent = 'As senhas não coincidem.'; errorEl.classList.remove('hidden'); return; }
+            if (password.length < 6) { errorEl.textContent = 'Mínimo 6 caracteres na senha.'; errorEl.classList.remove('hidden'); return; }
 
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> Criando conta...';
-
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
                 await cred.user.updateProfile({ displayName: name });
-                const referralCode = localStorage.getItem('referralCode') || null;
+                const ref  = localStorage.getItem('referralCode') || null;
+
+                // Verificar se veio de convite de parceiro
+                const inviteData = (typeof Invites !== 'undefined') ? Invites.getInviteData() : null;
+
+                let companyPlan, companySubStatus, selectedPlan;
+                if (inviteData) {
+                    // Conta ativa imediatamente pelo convite
+                    companyPlan     = inviteData.plan || 'studio';
+                    companySubStatus = inviteData.subscriptionStatus || 'active';
+                    selectedPlan    = null;
+                } else {
+                    companyPlan     = 'free';
+                    companySubStatus = null;
+                    selectedPlan    = localStorage.getItem('selectedPlan') || 'free';
+                }
+
                 await db.collection('companies').doc(cred.user.uid).set({
-                    companyName: company,
-                    segment: segment,
-                    ownerName: name,
-                    ownerPhone: phone,
-                    ownerEmail: email,
+                    companyName: studio,
+                    ownerName: name, ownerPhone: phone, ownerEmail: email,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    plan: 'free',
+                    plan: companyPlan,
                     status: 'active',
-                    referredBy: referralCode,
-                    pixKey: ''
+                    subscriptionStatus: companySubStatus,
+                    selectedPlan: selectedPlan,
+                    inviteCode: inviteData ? (localStorage.getItem('inviteCode') || null) : null,
+                    invitePartner: inviteData ? (inviteData.partnerName || null) : null,
+                    referredBy: ref, pixKey: '',
+                    referralCode: Auth.generateCode()
                 });
+
+                // Registrar uso do convite no Firestore
+                if (typeof Invites !== 'undefined' && inviteData) {
+                    await Invites.registerUse(cred.user.uid, email, name, studio);
+                }
+                localStorage.removeItem('referralCode');
+                localStorage.removeItem('selectedPlan');
             } catch (err) {
-                errorEl.classList.remove('hidden');
-                const messages = {
-                    'auth/email-already-in-use': 'Este e-mail já está cadastrado. Tente fazer login.',
+                const msgs = {
+                    'auth/email-already-in-use': 'E-mail já cadastrado. Faça login.',
                     'auth/invalid-email': 'E-mail inválido.',
-                    'auth/weak-password': 'A senha é muito fraca. Use pelo menos 6 caracteres.',
-                    'auth/operation-not-allowed': 'Registro por e-mail não está habilitado.'
+                    'auth/weak-password': 'Senha fraca. Use pelo menos 6 caracteres.'
                 };
-                errorEl.textContent = messages[err.code] || 'Erro ao criar conta: ' + err.message;
+                errorEl.textContent = msgs[err.code] || 'Erro: ' + err.message;
+                errorEl.classList.remove('hidden');
                 btn.disabled = false;
-                btn.innerHTML = '<span class="material-symbols-outlined text-xl">rocket_launch</span> Criar Minha Conta';
+                btn.innerHTML = '<span class="material-symbols-outlined">spa</span> Criar Minha Conta';
             }
         });
 
-        // === Logout ===
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            auth.signOut();
-        });
+        // Logout
+        document.getElementById('btn-logout')?.addEventListener('click', () => auth.signOut());
     },
 
-    // === Utility: validate email format ===
-    isValidEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    generateCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        return Array.from({length: 8}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     },
 
-    // === 5. Enable/disable login button based on form validity ===
+    isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); },
+
     validateForm() {
-        const email = document.getElementById('login-email').value.trim();
-        const password = document.getElementById('login-password').value;
+        const email = document.getElementById('login-email')?.value.trim();
+        const password = document.getElementById('login-password')?.value;
         const btn = document.getElementById('login-btn');
-
-        let isValid;
-        if (Auth.isRecoveryMode) {
-            isValid = Auth.isValidEmail(email);
-        } else {
-            isValid = Auth.isValidEmail(email) && password.length > 0;
-        }
-
-        if (isValid) {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
+        if (!btn) return;
+        const valid = Auth.isRecoveryMode ? Auth.isValidEmail(email) : Auth.isValidEmail(email) && password?.length > 0;
+        btn.disabled = !valid;
     },
 
-    // === 3. Enter Recovery Mode ===
     enterRecoveryMode() {
         Auth.isRecoveryMode = true;
         document.getElementById('login-title').textContent = 'Recuperar Senha';
-        document.getElementById('login-subtitle').textContent = 'Informe seu e-mail para receber o link de recuperação.';
-        document.getElementById('password-field-wrapper').classList.add('hidden');
-        document.getElementById('remember-me-wrapper').classList.add('hidden');
-        document.getElementById('login-btn-text').textContent = 'Enviar link de recuperação';
-        document.getElementById('login-btn-icon').textContent = 'send';
+        document.getElementById('login-subtitle').textContent = 'Informe seu e-mail para receber o link.';
+        document.getElementById('password-field-wrapper')?.classList.add('hidden');
+        document.getElementById('login-btn-text').textContent = 'Enviar link';
         document.getElementById('btn-forgot-password').textContent = '← Voltar ao login';
-        document.getElementById('login-password').removeAttribute('required');
-
-        // Hide Google login & separator in recovery mode
-        const separator = document.querySelector('#login-form').nextElementSibling;
-        const googleBtn = document.getElementById('btn-google-login');
-        if (separator) separator.classList.add('hidden');
-        if (googleBtn) googleBtn.classList.add('hidden');
-
-        // Clear errors
-        const errorEl = document.getElementById('login-error');
-        errorEl.classList.add('hidden');
-        errorEl.classList.remove('text-primary', 'bg-primary/5');
-        errorEl.classList.add('text-error', 'bg-error-container');
-
         Auth.validateForm();
     },
 
-    // === 3. Exit Recovery Mode ===
     exitRecoveryMode() {
         Auth.isRecoveryMode = false;
         document.getElementById('login-title').textContent = 'Acesse sua conta';
-        document.getElementById('login-subtitle').textContent = 'Bem-vindo de volta ao seu painel de gestão.';
-        document.getElementById('password-field-wrapper').classList.remove('hidden');
-        document.getElementById('remember-me-wrapper').classList.remove('hidden');
+        document.getElementById('login-subtitle').textContent = 'Bem-vinda ao seu painel de gestão.';
+        document.getElementById('password-field-wrapper')?.classList.remove('hidden');
         document.getElementById('login-btn-text').textContent = 'Entrar no Painel';
-        document.getElementById('login-btn-icon').textContent = 'arrow_forward';
         document.getElementById('btn-forgot-password').textContent = 'Esqueceu a senha?';
-        document.getElementById('login-password').setAttribute('required', '');
-
-        // Show Google login & separator
-        const separator = document.querySelector('#login-form').nextElementSibling;
-        const googleBtn = document.getElementById('btn-google-login');
-        if (separator) separator.classList.remove('hidden');
-        if (googleBtn) googleBtn.classList.remove('hidden');
-
-        // Clear errors
-        document.getElementById('login-error').classList.add('hidden');
-
         Auth.validateForm();
     },
 
-    // === 3. Handle Password Recovery ===
     async handlePasswordRecovery() {
         const email = document.getElementById('login-email').value.trim();
         const errorEl = document.getElementById('login-error');
         const btn = document.getElementById('login-btn');
-
-        btn.disabled = true;
-        btn.innerHTML = '<div class="spinner"></div>';
-
+        btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
         try {
             await auth.sendPasswordResetEmail(email);
-            errorEl.innerHTML = '<span class="text-primary font-bold">✓ E-mail enviado!</span> Verifique sua caixa de entrada para redefinir a senha.';
-            errorEl.classList.remove('hidden', 'text-error', 'bg-error-container');
-            errorEl.classList.add('text-primary', 'bg-primary/5');
+            errorEl.className = 'auth-success';
+            errorEl.textContent = '✓ E-mail enviado! Verifique sua caixa de entrada.';
+            errorEl.classList.remove('hidden');
         } catch (err) {
-            const messages = {
-                'auth/user-not-found': 'E-mail não encontrado no sistema.',
-                'auth/invalid-email': 'E-mail inválido.',
-                'auth/too-many-requests': 'Muitas tentativas. Tente novamente mais tarde.'
-            };
-            errorEl.textContent = messages[err.code] || 'Erro ao enviar e-mail de recuperação.';
-            errorEl.classList.remove('hidden', 'text-primary', 'bg-primary/5');
-            errorEl.classList.add('text-error', 'bg-error-container');
+            const msgs = { 'auth/user-not-found': 'E-mail não encontrado.', 'auth/invalid-email': 'E-mail inválido.' };
+            errorEl.className = 'auth-error'; errorEl.textContent = msgs[err.code] || 'Erro ao enviar e-mail.';
+            errorEl.classList.remove('hidden');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<span id="login-btn-text">Enviar link de recuperação</span><span class="material-symbols-outlined text-xl" id="login-btn-icon">send</span>';
+            btn.innerHTML = '<span id="login-btn-text">Enviar link</span><span class="material-symbols-outlined">send</span>';
             Auth.validateForm();
         }
     },
 
-    // === Handle Login ===
     async handleLogin() {
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
-        const remember = document.getElementById('login-remember').checked;
         const errorEl = document.getElementById('login-error');
         const btn = document.getElementById('login-btn');
-
-        btn.disabled = true;
-        btn.innerHTML = '<div class="spinner"></div>';
+        btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
         errorEl.classList.add('hidden');
-
         try {
-            // 2. Set persistence based on "Manter-me conectado"
-            const persistence = remember
-                ? firebase.auth.Auth.Persistence.LOCAL
-                : firebase.auth.Auth.Persistence.SESSION;
-            await auth.setPersistence(persistence);
-
             await auth.signInWithEmailAndPassword(email, password);
         } catch (err) {
-            errorEl.classList.remove('hidden');
-            errorEl.classList.add('text-error', 'bg-error-container');
-            errorEl.classList.remove('text-primary', 'bg-primary/5');
-            const messages = {
+            const msgs = {
                 'auth/user-not-found': 'Usuário não encontrado.',
                 'auth/wrong-password': 'Senha incorreta.',
-                'auth/invalid-email': 'E-mail inválido.',
-                'auth/too-many-requests': 'Muitas tentativas. Tente novamente mais tarde.',
-                'auth/invalid-credential': 'Credenciais inválidas. Verifique e-mail e senha.'
+                'auth/invalid-credential': 'E-mail ou senha incorretos.',
+                'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.'
             };
-            errorEl.textContent = messages[err.code] || 'Erro ao fazer login: ' + err.message;
+            errorEl.className = 'auth-error';
+            errorEl.textContent = msgs[err.code] || 'Erro: ' + err.message;
+            errorEl.classList.remove('hidden');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<span id="login-btn-text">Entrar no Painel</span><span class="material-symbols-outlined text-xl" id="login-btn-icon">arrow_forward</span>';
+            btn.innerHTML = '<span id="login-btn-text">Entrar no Painel</span><span class="material-symbols-outlined">arrow_forward</span>';
             Auth.validateForm();
+        }
+    },
+
+    // === Filtrar sidebar por role ===
+    filterSidebar() {
+        if (!Team.currentRole) return;
+
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        // Esconder itens marcados como owner-only para profissionais
+        sidebar.querySelectorAll('.nav-item[data-role="owner"]').forEach(item => {
+            if (Team.isProfessional()) {
+                item.style.display = 'none';
+            } else {
+                item.style.display = '';
+            }
+        });
+
+        // Esconder labels de grupo que ficaram sem itens visíveis
+        sidebar.querySelectorAll('.nav-group-label').forEach(label => {
+            let next = label.nextElementSibling;
+            let hasVisible = false;
+            while (next && !next.classList.contains('nav-group-label') && !next.classList.contains('sidebar-footer')) {
+                if (next.classList.contains('nav-item') && next.style.display !== 'none') {
+                    hasVisible = true;
+                    break;
+                }
+                next = next.nextElementSibling;
+            }
+            label.style.display = hasVisible ? '' : 'none';
+        });
+
+        // Mostrar badge de role no sidebar
+        const roleBadge = document.getElementById('role-badge');
+        if (roleBadge) {
+            if (Team.isProfessional()) {
+                roleBadge.textContent = '💼 Profissional';
+                roleBadge.style.display = '';
+                roleBadge.className = 'role-badge professional';
+            } else {
+                roleBadge.textContent = '👑 Proprietária';
+                roleBadge.style.display = '';
+                roleBadge.className = 'role-badge owner';
+            }
+        }
+
+        // Se profissional, mostrar nome do studio
+        if (Team.isProfessional()) {
+            const studioSub = document.querySelector('.sidebar-logo-sub');
+            if (studioSub) {
+                db.collection('companies').doc(Team.ownerId).get().then(doc => {
+                    if (doc.exists) {
+                        studioSub.textContent = doc.data().companyName || 'Studio';
+                    }
+                });
+            }
         }
     }
 };

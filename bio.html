@@ -1,478 +1,228 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-    <title id="bio-page-title">Studiobeauty — Agendamento Online</title>
-    <meta name="description" content="Agende seu procedimento online. Sobrancelhas e cílios com resultado impecável."/>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --cassis: #58323F;
-            --cassis-light: #7A4A57;
-            --sand: #F7EFE5;
-            --champagne: #EAD9CA;
-            --rose: #F0D9DC;
-            --green-wa: #25D366;
-        }
-        body {
-            font-family: 'Manrope', sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(160deg, #3d2029 0%, #58323F 40%, #7A4A57 70%, #a06070 100%);
-            display: flex; flex-direction: column; align-items: center;
-            padding: 32px 16px 60px;
-            position: relative; overflow-x: hidden;
-        }
-        body::before {
-            content: ''; position: fixed; inset: 0;
-            background: radial-gradient(ellipse at 20% 20%, rgba(240,217,220,0.12) 0%, transparent 60%),
-                        radial-gradient(ellipse at 80% 80%, rgba(212,175,55,0.08) 0%, transparent 60%);
-            pointer-events: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bio — LashBrow</title>
+  <meta name="description" content="Agende, veja o portfólio, indique e ganhe ou entre em contato." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root{--primary:#C4758A;--primary-light:#e8a4b8;--gold:#C9A96E;--bg:#120810;--surface:#1e1018;--surface-2:#2a1520;--border:rgba(196,117,138,.18);--text:#f0e6ea;--text-muted:rgba(240,230,234,.55)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
 
-        /* ── Container ── */
-        .bio-wrap { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 18px; }
+    /* Loading */
+    #bio-loading{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#120810,#1e0a14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    .spin{width:36px;height:36px;border:3px solid rgba(196,117,138,.2);border-top-color:#C4758A;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .logo-text{font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#e8a4b8,#C9A96E);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
-        /* ── Header ── */
-        .bio-header { text-align: center; padding-top: 8px; }
-        .bio-avatar {
-            width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 14px;
-            background: linear-gradient(135deg, var(--cassis-light), #a06070);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 32px; font-weight: 900; color: #fff;
-            border: 3px solid rgba(255,255,255,0.25);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .bio-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .bio-name { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
-        .bio-tagline { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 6px; line-height: 1.5; }
-        .bio-instagram { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px;
-            font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.5); }
+    /* App */
+    #bio-app{display:none;width:100%;max-width:440px;padding:40px 24px 60px;flex-direction:column;align-items:center;gap:0}
 
-        /* ── Botões de ação ── */
-        .bio-actions { display: flex; flex-direction: column; gap: 10px; }
-        .bio-btn {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            padding: 16px 24px; border-radius: 16px; font-family: 'Manrope', sans-serif;
-            font-size: 15px; font-weight: 800; border: none; cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s; text-decoration: none;
-            letter-spacing: -0.3px;
-        }
-        .bio-btn:active { transform: scale(0.97); }
-        .bio-btn-book {
-            background: linear-gradient(135deg, var(--champagne), var(--sand));
-            color: var(--cassis); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .bio-btn-book:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
-        .bio-btn-wa {
-            background: var(--green-wa); color: #fff;
-            box-shadow: 0 4px 20px rgba(37,211,102,0.35);
-        }
-        .bio-btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,211,102,0.45); }
-        .bio-btn-port {
-            background: rgba(255,255,255,0.12); color: #fff;
-            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
-        }
-        .bio-btn-port:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
-        .btn-icon { width: 22px; height: 22px; flex-shrink: 0; }
+    /* Background decoration */
+    body::before{
+      content:'';position:fixed;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%,rgba(196,117,138,.18),transparent),
+        radial-gradient(ellipse 60% 40% at 80% 80%,rgba(201,169,110,.08),transparent);
+    }
 
-        /* ── Seção Portfólio ── */
-        .bio-section { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
-            border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.12); }
-        .bio-section-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.6);
-            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
-        .portfolio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .ba-card { border-radius: 12px; overflow: hidden; position: relative; }
-        .ba-split { display: flex; height: 160px; border-radius: 12px; overflow: hidden; }
-        .ba-half { flex: 1; display: flex; align-items: flex-end; justify-content: center;
-            padding-bottom: 8px; position: relative; overflow: hidden; }
-        .ba-half img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        .ba-before { background: linear-gradient(135deg, #c4a896, #a08070); }
-        .ba-after  { background: linear-gradient(135deg, var(--cassis-light), #c97c8a); }
-        .ba-label {
-            position: relative; z-index: 2; font-size: 9px; font-weight: 900;
-            text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.9);
-            background: rgba(0,0,0,0.3); padding: 2px 7px; border-radius: 20px;
-            backdrop-filter: blur(4px);
-        }
-        .ba-divider { width: 2px; background: rgba(255,255,255,0.8); z-index: 1; flex-shrink: 0; }
-        .ba-service-name { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7);
-            text-align: center; margin-top: 6px; }
+    /* Avatar */
+    .bio-avatar{width:96px;height:96px;border-radius:50%;background:var(--surface-2);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:2.8rem;box-shadow:0 0 0 8px rgba(196,117,138,.08),0 16px 48px rgba(0,0,0,.5);margin-bottom:20px}
+    .bio-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 
-        /* ── Serviços ── */
-        .services-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .service-chip {
-            padding: 7px 14px; border-radius: 30px; font-size: 12px; font-weight: 700;
-            background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85);
-            border: 1px solid rgba(255,255,255,0.15);
-        }
+    /* Name & Bio */
+    .bio-name{font-size:1.5rem;font-weight:800;text-align:center;background:linear-gradient(135deg,var(--primary-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+    .bio-desc{font-size:.88rem;color:var(--text-muted);text-align:center;max-width:300px;line-height:1.55;margin-bottom:8px}
+    .bio-city{font-size:.8rem;color:var(--text-muted);margin-bottom:32px;display:flex;align-items:center;gap:4px}
 
-        /* ── Footer ── */
-        .bio-footer { text-align: center; color: rgba(255,255,255,0.3); font-size: 11px; padding-top: 8px; }
+    /* Links */
+    .bio-links{display:flex;flex-direction:column;gap:12px;width:100%}
 
-        /* ── Modal de Agendamento ── */
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(6px); z-index: 100;
-            display: flex; align-items: flex-end; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.25s;
-        }
-        .modal-overlay.open { opacity: 1; pointer-events: all; }
-        .modal-sheet {
-            background: var(--sand); border-radius: 24px 24px 0 0;
-            width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
-            padding: 0 0 32px; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .modal-overlay.open .modal-sheet { transform: translateY(0); }
-        .modal-handle { width: 40px; height: 4px; background: rgba(88,50,63,0.2); border-radius: 2px;
-            margin: 12px auto 0; }
-        .modal-body { padding: 20px 24px; }
-        .modal-title { font-size: 22px; font-weight: 900; color: var(--cassis); margin-bottom: 4px; }
-        .modal-sub { font-size: 13px; color: #7A5C54; margin-bottom: 20px; }
+    .bio-link{
+      display:flex;align-items:center;gap:14px;
+      padding:16px 20px;
+      border-radius:16px;
+      text-decoration:none;
+      color:var(--text);
+      font-weight:600;font-size:.95rem;
+      border:1px solid var(--border);
+      background:var(--surface);
+      transition:transform .18s,box-shadow .18s,background .18s,border-color .18s;
+      position:relative;overflow:hidden;
+    }
+    .bio-link::before{
+      content:'';position:absolute;inset:0;opacity:0;
+      background:linear-gradient(135deg,rgba(196,117,138,.08),rgba(201,169,110,.04));
+      transition:opacity .2s;
+    }
+    .bio-link:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 12px 36px rgba(0,0,0,.35);border-color:rgba(196,117,138,.4)}
+    .bio-link:hover::before{opacity:1}
+    .bio-link:active{transform:translateY(0) scale(.99)}
 
-        /* Form elements */
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1px; color: var(--cassis-light); margin-bottom: 8px; }
-        .form-input {
-            width: 100%; padding: 14px 16px; background: rgba(88,50,63,0.06);
-            border: 1.5px solid rgba(88,50,63,0.15); border-radius: 12px;
-            font-family: 'Manrope', sans-serif; font-size: 15px; color: var(--cassis);
-            outline: none; transition: border-color 0.2s;
-        }
-        .form-input:focus { border-color: var(--cassis); }
-        .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2358323F' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; cursor: pointer; }
+    /* Variantes de cor */
+    .bio-link.primary{background:linear-gradient(135deg,var(--primary),#a85570);border-color:transparent;box-shadow:0 8px 28px rgba(196,117,138,.4)}
+    .bio-link.primary:hover{box-shadow:0 12px 40px rgba(196,117,138,.6)}
+    .bio-link.gold{background:linear-gradient(135deg,rgba(201,169,110,.15),rgba(201,169,110,.05));border-color:rgba(201,169,110,.35)}
+    .bio-link.gold:hover{border-color:var(--gold)}
+    .bio-link.whatsapp{background:linear-gradient(135deg,rgba(37,211,102,.1),rgba(37,211,102,.04));border-color:rgba(37,211,102,.25)}
+    .bio-link.whatsapp:hover{border-color:rgba(37,211,102,.55)}
 
-        /* Date picker */
-        .date-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        .date-chip {
-            padding: 10px 4px; border-radius: 10px; text-align: center; cursor: pointer;
-            background: rgba(88,50,63,0.06); border: 1.5px solid transparent;
-            transition: all 0.15s; user-select: none;
-        }
-        .date-chip:hover { background: rgba(88,50,63,0.12); }
-        .date-chip.selected { background: var(--cassis); border-color: var(--cassis); color: #fff; }
-        .date-chip.disabled { opacity: 0.3; pointer-events: none; }
-        .date-day { font-size: 10px; font-weight: 700; color: var(--cassis-light); text-transform: uppercase; }
-        .date-num { font-size: 18px; font-weight: 900; color: var(--cassis); line-height: 1.2; }
-        .date-chip.selected .date-day, .date-chip.selected .date-num { color: #fff; }
+    .bio-link-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;background:rgba(255,255,255,.06)}
+    .bio-link.primary .bio-link-icon{background:rgba(255,255,255,.15)}
 
-        /* Time slots */
-        .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .time-chip {
-            padding: 12px 8px; border-radius: 10px; text-align: center; cursor: pointer;
-            background: rgba(88,50,63,0.06); border: 1.5px solid transparent;
-            font-size: 14px; font-weight: 700; color: var(--cassis); transition: all 0.15s;
-        }
-        .time-chip:hover { background: rgba(88,50,63,0.12); }
-        .time-chip.selected { background: var(--cassis); color: #fff; border-color: var(--cassis); }
+    .bio-link-content{flex:1}
+    .bio-link-title{font-weight:700;color:var(--text);line-height:1.2}
+    .bio-link.primary .bio-link-title{color:#fff}
+    .bio-link-sub{font-size:.78rem;color:var(--text-muted);font-weight:400;margin-top:2px}
+    .bio-link.primary .bio-link-sub{color:rgba(255,255,255,.7)}
 
-        /* Submit */
-        .btn-submit {
-            width: 100%; padding: 18px; background: linear-gradient(135deg, var(--cassis), var(--cassis-light));
-            color: #fff; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 800;
-            border: none; border-radius: 14px; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; gap: 10px; margin-top: 8px;
-            box-shadow: 0 4px 20px rgba(88,50,63,0.4); transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(88,50,63,0.5); }
-        .btn-submit:active { transform: scale(0.98); }
+    .bio-link-arrow{color:var(--text-muted);font-size:1.1rem;flex-shrink:0}
+    .bio-link.primary .bio-link-arrow{color:rgba(255,255,255,.7)}
 
-        @media (max-width: 400px) {
-            .portfolio-grid { grid-template-columns: 1fr; }
-            .date-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-    </style>
+    /* Divisor */
+    .bio-divider{width:100%;height:1px;background:var(--border);margin:8px 0}
+
+    /* Footer */
+    .bio-footer{margin-top:32px;font-size:.75rem;color:var(--text-muted);text-align:center;opacity:.6}
+    .bio-footer span{color:var(--primary-light)}
+
+    /* Animação de entrada */
+    .bio-link{animation:slideUp .4s ease both}
+    .bio-link:nth-child(1){animation-delay:.05s}
+    .bio-link:nth-child(2){animation-delay:.1s}
+    .bio-link:nth-child(3){animation-delay:.15s}
+    .bio-link:nth-child(4){animation-delay:.2s}
+    .bio-link:nth-child(5){animation-delay:.25s}
+    .bio-link:nth-child(6){animation-delay:.3s}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    #bio-app.visible{display:flex}
+  </style>
 </head>
 <body>
-<div class="bio-wrap">
 
-    <!-- HEADER -->
-    <div class="bio-header">
-        <div class="bio-avatar" id="bio-avatar-el">SB</div>
-        <h1 class="bio-name" id="bio-name-el">Studiobeauty</h1>
-        <p class="bio-tagline" id="bio-tagline-el">Especialistas em Sobrancelhas & Cílios ✨</p>
-        <span class="bio-instagram" id="bio-instagram-el">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            <span id="bio-ig-handle">@studiobeauty</span>
-        </span>
-    </div>
-
-    <!-- BOTÕES DE AÇÃO -->
-    <div class="bio-actions">
-        <button class="bio-btn bio-btn-book" onclick="openBookingModal()">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Agendar Horário Online
-        </button>
-        <button class="bio-btn bio-btn-wa" onclick="openWhatsApp()" id="btn-wa">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Saiba Mais no WhatsApp
-        </button>
-        <button class="bio-btn bio-btn-port" onclick="document.getElementById('portfolio-section').scrollIntoView({behavior:'smooth'})">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9l4-4 4 4 4-4 4 4"/><path d="M3 15l4 4h14"/></svg>
-            Ver Portfólio — Antes & Depois
-        </button>
-    </div>
-
-    <!-- PORTFÓLIO ANTES & DEPOIS -->
-    <div class="bio-section" id="portfolio-section">
-        <p class="bio-section-title">✨ Transformações</p>
-        <div class="portfolio-grid" id="portfolio-grid">
-            <!-- Gerado dinamicamente -->
-        </div>
-    </div>
-
-    <!-- SERVIÇOS -->
-    <div class="bio-section">
-        <p class="bio-section-title">💅 Nossos Serviços</p>
-        <div class="services-grid" id="services-grid">
-            <span class="service-chip">Design de Sobrancelha</span>
-            <span class="service-chip">Extensão de Cílios</span>
-            <span class="service-chip">Laminação de Cílios</span>
-            <span class="service-chip">Volume Russo</span>
-            <span class="service-chip">Micropigmentação</span>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="bio-footer">
-        <p>Feito com 💕 · <span id="footer-studio">Studiobeauty</span></p>
-        <p style="margin-top:4px;font-size:10px;">Agendamento 100% online — rápido e seguro</p>
-    </div>
+<div id="bio-loading">
+  <div class="logo-text">LashBrow</div>
+  <div class="spin"></div>
 </div>
 
-<!-- ════════════════════════════════════
-     MODAL DE AGENDAMENTO
-════════════════════════════════════ -->
-<div class="modal-overlay" id="booking-modal" onclick="closeBookingModal(event)">
-    <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div class="modal-body">
-            <h2 class="modal-title">📅 Agendar Horário</h2>
-            <p class="modal-sub" id="modal-studio-name">Studiobeauty — Agendamento Online</p>
+<div id="bio-app">
 
-            <div class="form-group">
-                <label class="form-label">Seu Nome</label>
-                <input type="text" id="book-name" class="form-input" placeholder="Digite seu nome completo"/>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Seu WhatsApp</label>
-                <input type="tel" id="book-phone" class="form-input" placeholder="(00) 00000-0000" maxlength="15"/>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Procedimento</label>
-                <select id="book-service" class="form-input form-select"></select>
-            </div>
+  <div class="bio-avatar" id="bio-avatar">✨</div>
+  <div class="bio-name"   id="bio-name">Studio</div>
+  <div class="bio-desc"   id="bio-desc"></div>
+  <div class="bio-city"   id="bio-city" style="display:none">
+    <span class="material-symbols-outlined" style="font-size:14px">location_on</span>
+    <span id="bio-city-text"></span>
+  </div>
 
-            <div class="form-group">
-                <label class="form-label">Escolha a Data</label>
-                <div class="date-grid" id="date-grid"></div>
-            </div>
+  <div class="bio-links" id="bio-links"></div>
 
-            <div class="form-group" id="time-group" style="display:none;">
-                <label class="form-label">Escolha o Horário</label>
-                <div class="time-grid" id="time-grid"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Observações (opcional)</label>
-                <textarea id="book-obs" class="form-input" rows="2" style="resize:none;" placeholder="Alguma informação adicional..."></textarea>
-            </div>
-
-            <button class="btn-submit" onclick="submitBooking()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                Confirmar via WhatsApp
-            </button>
-            <p style="text-align:center;font-size:11px;color:#9e7a84;margin-top:10px;">O studio confirmará seu agendamento pelo WhatsApp.</p>
-        </div>
-    </div>
+  <div class="bio-footer">Powered by <span>LashBrow</span> ✨</div>
 </div>
 
+<script src="js/firebase-config.js"></script>
 <script>
-// ════════════════════════════════════
-// LEITURA DA CONFIG (URL params)
-// ════════════════════════════════════
-let CONFIG = {
-    name: 'Studiobeauty',
-    tagline: 'Especialistas em Sobrancelhas & Cílios ✨',
-    phone: '',
-    instagram: '@studiobeauty',
-    services: ['Design de Sobrancelha','Extensão de Cílios','Laminação de Cílios','Volume Russo','Micropigmentação'],
-    days: [1,2,3,4,5],   // 0=Dom, 1=Seg … 6=Sáb
-    hourStart: '08:00',
-    hourEnd:   '18:00',
-    interval:  60,
-    images: [],
-    logo: '',
-    initials: 'SB'
+'use strict';
+const Bio = {
+  studioData: null,
+
+  async init() {
+    const slug = window.location.pathname.split('/').pop();
+    if (!slug) { Bio.notFound(); return; }
+
+    try {
+      const snap = await db.collection('studios').where('bookingSlug','==',slug).limit(1).get();
+      if (snap.empty) { Bio.notFound(); return; }
+      Bio.studioData = snap.docs[0].data();
+      Bio._render();
+    } catch(e) {
+      console.error(e);
+      Bio.notFound();
+    }
+  },
+
+  _render() {
+    const d   = Bio.studioData;
+    const slug = d.bookingSlug;
+
+    document.title = `${d.studioName||'Studio'} — Bio`;
+    document.querySelector('meta[name="description"]').content =
+      `Agende com ${d.studioName||'o studio'}, veja o portfólio e muito mais.`;
+
+    // Avatar
+    if (d.logoUrl) {
+      document.getElementById('bio-avatar').innerHTML = `<img src="${d.logoUrl}" alt="Logo">`;
+    }
+    document.getElementById('bio-name').textContent = d.studioName || d.companyName || 'Studio';
+    document.getElementById('bio-desc').textContent = d.bio || d.tagline || 'Especialista em cílios e sobrancelhas';
+
+    if (d.city) {
+      document.getElementById('bio-city').style.display = 'flex';
+      document.getElementById('bio-city-text').textContent = d.city;
+    }
+
+    // Whatsapp
+    const wa = d.whatsapp ? d.whatsapp.replace(/\D/g,'') : null;
+    const waLink = wa ? `https://wa.me/55${wa}?text=${encodeURIComponent('Olá! Vi seu perfil e queria mais informações 😊')}` : null;
+
+    // Links
+    const links = [
+      {
+        href: `/booking/${slug}`,
+        cls: 'primary',
+        icon: '📅',
+        title: 'Agendar agora',
+        sub: 'Reserve seu horário online em segundos',
+      },
+      {
+        href: `/portfolio/${slug}`,
+        cls: 'default',
+        icon: '📸',
+        title: 'Veja meu trabalho',
+        sub: 'Galeria de antes & depois dos procedimentos',
+      },
+      waLink ? {
+        href: waLink,
+        cls: 'whatsapp',
+        icon: '💬',
+        title: 'Falar no WhatsApp',
+        sub: 'Tire dúvidas ou agende direto pelo chat',
+        external: true,
+      } : null,
+    ].filter(Boolean);
+
+    document.getElementById('bio-links').innerHTML = links.map(l => `
+      <a class="bio-link ${l.cls}" href="${l.href}" ${l.external?'target="_blank" rel="noopener"':''}>
+        <div class="bio-link-icon">${l.icon}</div>
+        <div class="bio-link-content">
+          <div class="bio-link-title">${l.title}</div>
+          <div class="bio-link-sub">${l.sub}</div>
+        </div>
+        <span class="material-symbols-outlined bio-link-arrow">chevron_right</span>
+      </a>`).join('');
+
+    document.getElementById('bio-loading').style.display = 'none';
+    document.getElementById('bio-app').classList.add('visible');
+  },
+
+  notFound() {
+    document.getElementById('bio-loading').style.display = 'none';
+    document.getElementById('bio-name').textContent = 'Studio não encontrado';
+    document.getElementById('bio-desc').textContent = 'Verifique o link e tente novamente.';
+    document.getElementById('bio-links').innerHTML  = '';
+    document.getElementById('bio-app').classList.add('visible');
+  }
 };
 
-(function loadConfig() {
-    try {
-        const raw = new URLSearchParams(window.location.search).get('c');
-        if (raw) {
-            const parsed = JSON.parse(atob(raw));
-            CONFIG = { ...CONFIG, ...parsed };
-        }
-    } catch(e) {}
-
-    // Aplica no DOM
-    document.getElementById('bio-page-title').textContent = CONFIG.name + ' — Agendamento Online';
-    document.getElementById('bio-name-el').textContent = CONFIG.name;
-    document.getElementById('bio-tagline-el').textContent = CONFIG.tagline;
-    document.getElementById('bio-ig-handle').textContent = CONFIG.instagram || '@' + CONFIG.name.toLowerCase().replace(/\s/g,'');
-    document.getElementById('footer-studio').textContent = CONFIG.name;
-    document.getElementById('modal-studio-name').textContent = CONFIG.name + ' — Agendamento Online';
-
-    const avatarEl = document.getElementById('bio-avatar-el');
-    if (CONFIG.logo) { avatarEl.innerHTML = `<img src="${CONFIG.logo}" alt="Logo"/>`; }
-    else { avatarEl.textContent = CONFIG.initials || CONFIG.name.substring(0,2).toUpperCase(); }
-
-    // Serviços
-    const sg = document.getElementById('services-grid');
-    if (CONFIG.services && CONFIG.services.length) {
-        sg.innerHTML = CONFIG.services.map(s => `<span class="service-chip">${s}</span>`).join('');
-        // Preenche select do modal
-        const sel = document.getElementById('book-service');
-        sel.innerHTML = CONFIG.services.map(s => `<option value="${s}">${s}</option>`).join('');
-    }
-
-    // Portfólio
-    buildPortfolio();
-})();
-
-// ════════════════════════════════════
-// PORTFÓLIO ANTES & DEPOIS
-// ════════════════════════════════════
-function buildPortfolio() {
-    const grid = document.getElementById('portfolio-grid');
-    const defaults = [
-        { label: 'Design de Sobrancelha', before: '', after: '' },
-        { label: 'Extensão de Cílios',    before: '', after: '' },
-        { label: 'Laminação',             before: '', after: '' },
-        { label: 'Volume Russo',          before: '', after: '' }
-    ];
-    const items = (CONFIG.images && CONFIG.images.length) ? CONFIG.images : defaults;
-    grid.innerHTML = items.map(item => `
-        <div class="ba-card">
-            <div class="ba-split">
-                <div class="ba-half ba-before">
-                    ${item.before ? `<img src="${item.before}" alt="Antes"/>` : ''}
-                    <span class="ba-label">Antes</span>
-                </div>
-                <div class="ba-divider"></div>
-                <div class="ba-half ba-after">
-                    ${item.after ? `<img src="${item.after}" alt="Depois"/>` : ''}
-                    <span class="ba-label">Depois</span>
-                </div>
-            </div>
-            <p class="ba-service-name">${item.label}</p>
-        </div>`).join('');
-}
-
-// ════════════════════════════════════
-// WHATSAPP
-// ════════════════════════════════════
-function openWhatsApp() {
-    if (!CONFIG.phone) { alert('WhatsApp não configurado.'); return; }
-    const msg = `Olá, ${CONFIG.name}! 😊 Gostaria de saber mais sobre os procedimentos.`;
-    window.open(`https://wa.me/55${CONFIG.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-// ════════════════════════════════════
-// MODAL DE AGENDAMENTO
-// ════════════════════════════════════
-let selectedDate = null, selectedTime = null;
-
-function openBookingModal() {
-    buildDateGrid();
-    document.getElementById('booking-modal').classList.add('open');
-    document.body.style.overflow = 'hidden';
-}
-function closeBookingModal(e) {
-    if (e && e.target !== document.getElementById('booking-modal')) return;
-    document.getElementById('booking-modal').classList.remove('open');
-    document.body.style.overflow = '';
-}
-
-function buildDateGrid() {
-    const grid = document.getElementById('date-grid');
-    const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const today = new Date(); today.setHours(0,0,0,0);
-    let html = '';
-    for (let i = 0; i < 14; i++) {
-        const d = new Date(today); d.setDate(today.getDate() + i + 1);
-        const dow = d.getDay();
-        const avail = CONFIG.days.includes(dow);
-        html += `<div class="date-chip ${avail ? '' : 'disabled'}" onclick="selectDate(this, '${d.toISOString().split('T')[0]}', ${dow})">
-            <div class="date-day">${dayNames[dow]}</div>
-            <div class="date-num">${d.getDate()}</div>
-        </div>`;
-    }
-    grid.innerHTML = html;
-}
-
-function selectDate(el, dateStr, dow) {
-    document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedDate = dateStr; selectedTime = null;
-    buildTimeGrid();
-    document.getElementById('time-group').style.display = 'block';
-}
-
-function buildTimeGrid() {
-    const grid = document.getElementById('time-grid');
-    const [sh, sm] = CONFIG.hourStart.split(':').map(Number);
-    const [eh, em] = CONFIG.hourEnd.split(':').map(Number);
-    const startMin = sh * 60 + sm, endMin = eh * 60 + em;
-    const interval = CONFIG.interval || 60;
-    let html = '';
-    for (let m = startMin; m < endMin; m += interval) {
-        const h = String(Math.floor(m/60)).padStart(2,'0');
-        const mn = String(m%60).padStart(2,'0');
-        html += `<div class="time-chip" onclick="selectTime(this,'${h}:${mn}')">${h}:${mn}</div>`;
-    }
-    grid.innerHTML = html;
-}
-
-function selectTime(el, time) {
-    document.querySelectorAll('.time-chip').forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedTime = time;
-}
-
-function submitBooking() {
-    const name = document.getElementById('book-name').value.trim();
-    const phone = document.getElementById('book-phone').value.trim();
-    const service = document.getElementById('book-service').value;
-    const obs = document.getElementById('book-obs').value.trim();
-
-    if (!name) { alert('Por favor, informe seu nome.'); return; }
-    if (!phone) { alert('Por favor, informe seu WhatsApp.'); return; }
-    if (!selectedDate) { alert('Selecione uma data.'); return; }
-    if (!selectedTime) { alert('Selecione um horário.'); return; }
-    if (!CONFIG.phone) { alert('Número do studio não configurado.'); return; }
-
-    const [y,m,d] = selectedDate.split('-');
-    const dateLabel = `${d}/${m}/${y}`;
-    const msg = `🗓️ *Solicitação de Agendamento — ${CONFIG.name}*\n\n👤 *Nome:* ${name}\n📱 *WhatsApp:* ${phone}\n💅 *Procedimento:* ${service}\n📅 *Data:* ${dateLabel}\n🕐 *Horário:* ${selectedTime}${obs ? `\n📝 *Obs:* ${obs}` : ''}\n\nAguardo a confirmação! 😊`;
-    window.open(`https://wa.me/55${CONFIG.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-
-    document.getElementById('booking-modal').classList.remove('open');
-    document.body.style.overflow = '';
-}
-
-// Phone mask
-document.getElementById('book-phone').addEventListener('input', e => {
-    let v = e.target.value.replace(/\D/g,'').slice(0,11);
-    if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
-    else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
-    else if (v.length > 0) v = `(${v}`;
-    e.target.value = v;
-});
+document.addEventListener('DOMContentLoaded', () => Bio.init());
 </script>
 </body>
 </html>

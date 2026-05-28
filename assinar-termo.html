@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Assinar Termo — LashBrow</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --rose: #C4758A; --gold: #C9A96E; --dark: #0f0710;
+      --card-bg: rgba(20,8,16,0.7); --border: rgba(255,255,255,0.1);
+      --text: #f0e8f0; --muted: rgba(240,232,240,0.55);
+      --success: #28a745; --danger: #dc3545; --warning: #e0a800;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--dark);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 16px; position: relative;
+    }
+    body::before, body::after {
+      content: ''; position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0; pointer-events: none;
+    }
+    body::before { width: 400px; height: 400px; background: radial-gradient(circle, rgba(196,117,138,0.25) 0%, transparent 70%); top: -100px; left: -100px; animation: orb1 8s ease-in-out infinite; }
+    body::after { width: 350px; height: 350px; background: radial-gradient(circle, rgba(201,169,110,0.2) 0%, transparent 70%); bottom: -80px; right: -80px; animation: orb2 10s ease-in-out infinite; }
+    @keyframes orb1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
+    @keyframes orb2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,-20px)} }
+
+    .card {
+      position: relative; z-index: 1; background: var(--card-bg); backdrop-filter: blur(24px);
+      border: 1px solid var(--border); border-radius: 24px; padding: 32px 24px;
+      max-width: 520px; width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(196,117,138,0.1);
+      animation: slideUp 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .brand-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
+    .brand { font-size: 1.5rem; font-weight: 900; background: linear-gradient(135deg, var(--rose), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 24px; }
+
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .info-block {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 16px;
+    }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.88rem; color: var(--text); }
+    .info-row .label { color: var(--muted); font-size: 0.82rem; }
+    .info-row .value { font-weight: 700; }
+
+    .health-item { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text); padding: 4px 0; }
+    .health-icon { font-size: 14px; }
+
+    .consent-text {
+      background: rgba(196,117,138,0.08); border: 1px solid rgba(196,117,138,0.2); border-radius: 14px;
+      padding: 16px; margin-bottom: 20px; font-size: 0.84rem; color: var(--text); line-height: 1.6;
+    }
+
+    .sig-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; text-align: center; }
+    .sig-wrap {
+      position: relative; border: 2px dashed rgba(196,117,138,0.4); border-radius: 14px;
+      background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 6px;
+    }
+    .sig-wrap.signed { border-color: var(--success); border-style: solid; }
+    canvas { width: 100%; cursor: crosshair; touch-action: none; display: block; }
+    .btn-clear {
+      position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.4); border: none;
+      color: var(--muted); font-size: 0.72rem; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .sig-hint { font-size: 0.72rem; color: var(--muted); text-align: center; margin-bottom: 16px; }
+
+    .agree-wrap {
+      display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: var(--text);
+      background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px; border: 1px solid var(--border);
+      margin-bottom: 20px; cursor: pointer; line-height: 1.5;
+    }
+    .agree-wrap input { margin-top: 3px; accent-color: var(--rose); }
+
+    .btn-sign {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, var(--rose), var(--gold));
+      color: #fff; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 20px rgba(196,117,138,0.35); transition: all 0.25s;
+    }
+    .btn-sign:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(196,117,138,0.5); }
+    .btn-sign:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-msg { font-size: 0.8rem; color: #fc8181; background: rgba(252,129,129,0.1); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; text-align: center; }
+    .error-msg.hidden { display: none; }
+    .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .screen { display: none; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+    .screen.show { display: flex; animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .main-form.hidden { display: none; }
+    .loading-screen.show { display: flex; }
+    .success-icon { font-size: 4rem; animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes pop { from{transform:scale(0) rotate(-20deg)} to{transform:scale(1) rotate(0deg)} }
+    .divider { width: 60px; height: 3px; background: linear-gradient(90deg, var(--rose), var(--gold)); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Loading -->
+  <div class="screen loading-screen" id="loading-screen">
+    <div class="spinner" style="width:40px;height:40px;border-width:4px"></div>
+    <div style="color:var(--muted);font-size:0.9rem">Carregando termo...</div>
+  </div>
+
+  <!-- Erro -->
+  <div class="screen" id="error-screen">
+    <div style="font-size:3rem">⚠️</div>
+    <div style="font-weight:800;color:var(--text);font-size:1.1rem" id="error-title">Termo não encontrado</div>
+    <div style="font-size:0.85rem;color:var(--muted)" id="error-desc">O link pode estar incorreto ou o termo já foi assinado.</div>
+  </div>
+
+  <!-- Já assinado -->
+  <div class="screen" id="already-screen">
+    <div style="font-size:3rem">✅</div>
+    <div style="font-weight:800;color:var(--success);font-size:1.1rem">Termo já assinado</div>
+    <div style="font-size:0.85rem;color:var(--muted)">Este termo de consentimento já foi assinado digitalmente. Obrigada!</div>
+  </div>
+
+  <!-- Formulário principal -->
+  <div class="main-form" id="main-form" style="display:none">
+    <div class="brand-wrap">
+      <span style="font-size:1.8rem">📝</span>
+      <div class="brand">LashBrow</div>
+    </div>
+    <div class="subtitle">Termo de Consentimento Digital</div>
+
+    <!-- Dados do Procedimento -->
+    <div class="section-title"><span class="material-symbols-outlined" style="font-size:16px">person</span> Dados do Procedimento</div>
+    <div class="info-block" id="info-block"></div>
+
+    <!-- Checklist de Saúde -->
+    <div id="health-section"></div>
+
+    <!-- Alergias -->
+    <div id="allergies-section"></div>
+
+    <!-- Texto de Consentimento -->
+    <div class="consent-text">
+      <strong>Declaro que:</strong><br><br>
+      • Fui informada sobre o procedimento a ser realizado, incluindo técnica utilizada, produtos aplicados e possíveis riscos.<br><br>
+      • Informei todas as condições de saúde relevantes, alergias e medicamentos em uso.<br><br>
+      • Estou ciente dos cuidados pós-procedimento necessários para garantir o melhor resultado.<br><br>
+      • Autorizo a profissional a realizar o procedimento descrito acima, assumindo ciência de todas as informações prestadas.
+    </div>
+
+    <!-- Assinatura -->
+    <div class="sig-label">✍️ Assine com o dedo abaixo</div>
+    <div class="sig-wrap" id="sig-wrap">
+      <canvas id="sig-canvas" height="180"></canvas>
+      <button class="btn-clear" onclick="SignPage.clearSig()">
+        <span class="material-symbols-outlined" style="font-size:14px">restart_alt</span> Limpar
+      </button>
+    </div>
+    <div class="sig-hint">Desenhe sua assinatura na área acima</div>
+
+    <!-- Aceite -->
+    <label class="agree-wrap">
+      <input type="checkbox" id="agree-check" />
+      <span>Li e concordo com todos os termos descritos acima. Autorizo a realização do procedimento.</span>
+    </label>
+
+    <div class="error-msg hidden" id="sign-error"></div>
+
+    <button class="btn-sign" id="btn-sign" onclick="SignPage.submit()">
+      <span class="material-symbols-outlined">verified</span> Assinar Termo
+    </button>
+  </div>
+
+  <!-- Sucesso -->
+  <div class="screen" id="success-screen">
+    <div class="success-icon">✅</div>
+    <div class="divider"></div>
+    <div style="font-size:1.3rem;font-weight:900;color:var(--rose)">Termo Assinado!</div>
+    <div style="font-size:0.88rem;color:var(--muted);line-height:1.6;max-width:300px">
+      Sua assinatura digital foi registrada com sucesso.<br>A profissional já pode visualizar no sistema. 💕
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-top:8px" id="sign-timestamp"></div>
+  </div>
+</div>
+
+<script>
+const db = firebase.firestore();
+
+const SignPage = {
+  consentId: null,
+  signToken: null,
+  consentData: null,
+  _hasSig: false,
+
+  async init() {
+    const p = new URLSearchParams(location.search);
+    SignPage.consentId = p.get('id');
+    SignPage.signToken = p.get('token');
+
+    if (!SignPage.consentId || !SignPage.signToken) {
+      SignPage._showScreen('error-screen');
+      return;
+    }
+
+    SignPage._showScreen('loading-screen');
+
+    try {
+      const doc = await db.collection('consents').doc(SignPage.consentId).get();
+      if (!doc.exists) { SignPage._showScreen('error-screen'); return; }
+
+      const data = doc.data();
+
+      // Verificar token
+      if (data.signToken !== SignPage.signToken) {
+        document.getElementById('error-title').textContent = 'Link inválido';
+        document.getElementById('error-desc').textContent = 'O token de segurança não confere. Solicite um novo link.';
+        SignPage._showScreen('error-screen'); return;
+      }
+
+      // Já assinado?
+      if (data.signature && data.signedRemotely) {
+        SignPage._showScreen('already-screen'); return;
+      }
+
+      SignPage.consentData = data;
+      SignPage._renderInfo(data);
+      SignPage._initCanvas();
+
+      document.getElementById('loading-screen').classList.remove('show');
+      document.getElementById('main-form').style.display = 'block';
+      document.getElementById('main-form').style.animation = 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both';
+    } catch(e) {
+      console.error(e);
+      document.getElementById('error-desc').textContent = 'Erro ao carregar. Tente novamente.';
+      SignPage._showScreen('error-screen');
+    }
+  },
+
+  _showScreen(id) {
+    ['loading-screen','error-screen','already-screen','success-screen'].forEach(s => {
+      document.getElementById(s).classList.toggle('show', s === id);
+    });
+    document.getElementById('main-form').style.display = 'none';
+  },
+
+  _renderInfo(data) {
+    // Buscar nome do cliente (já salvo no consent como clientName)
+    const clientName = data.clientName || 'Cliente';
+    const procedure = data.procedure || '-';
+    const dateStr = data.date?.toDate ? data.date.toDate().toLocaleDateString('pt-BR') : '-';
+
+    document.getElementById('info-block').innerHTML = `
+      <div class="info-row"><span class="label">Cliente</span><span class="value">${clientName}</span></div>
+      <div class="info-row"><span class="label">Procedimento</span><span class="value">${procedure}</span></div>
+      <div class="info-row"><span class="label">Data</span><span class="value">${dateStr}</span></div>
+      ${data.studioName ? `<div class="info-row"><span class="label">Profissional</span><span class="value">${data.studioName}</span></div>` : ''}
+    `;
+
+    // Checklist de saúde
+    const checks = [
+      { key: 'pregnancy', label: 'Gravidez / Amamentação', icon: '🤰' },
+      { key: 'medication', label: 'Uso de medicamentos', icon: '💊' },
+      { key: 'patchTest', label: 'Patch test realizado', icon: '🧪', invert: true },
+      { key: 'eyeSurgery', label: 'Cirurgia ocular recente', icon: '👁️' },
+      { key: 'skinCondition', label: 'Condição dermatológica ativa', icon: '🩹' }
+    ];
+    const hasHealth = checks.some(c => data[c.key] !== undefined);
+    if (hasHealth) {
+      document.getElementById('health-section').innerHTML = `
+        <div class="section-title"><span class="material-symbols-outlined" style="font-size:16px">health_and_safety</span> Checklist de Saúde</div>
+        <div class="info-block">${checks.map(c => {
+          const val = c.invert ? !data[c.key] : data[c.key];
+          return `<div class="health-item">${c.icon} <span style="color:${val ? 'var(--warning)' : 'var(--success)'}; font-weight:600">${val ? '⚠️ Sim' : '✅ Não'}</span> ${c.label}</div>`;
+        }).join('')}</div>`;
+    }
+
+    // Alergias
+    if (data.allergies) {
+      document.getElementById('allergies-section').innerHTML = `
+        <div class="section-title">⚠️ Alergias / Sensibilidades</div>
+        <div class="info-block" style="border-color:rgba(224,168,0,0.3);background:rgba(224,168,0,0.06)">
+          <div style="font-size:0.88rem;color:var(--warning)">${data.allergies}</div>
+        </div>`;
+    }
+  },
+
+  _initCanvas() {
+    const canvas = document.getElementById('sig-canvas');
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = 180 * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.strokeStyle = '#f0e8f0';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false, lastX = 0, lastY = 0;
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - r.left, y: t.clientY - r.top };
+    }
+    function start(e) { e.preventDefault(); drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; }
+    function move(e) {
+      e.preventDefault(); if (!drawing) return;
+      const p = getPos(e);
+      ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+      lastX = p.x; lastY = p.y; SignPage._hasSig = true;
+      document.getElementById('sig-wrap').classList.add('signed');
+    }
+    function stop() { drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', stop);
+    canvas.addEventListener('mouseleave', stop);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', stop);
+  },
+
+  clearSig() {
+    const canvas = document.getElementById('sig-canvas');
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    SignPage._hasSig = false;
+    document.getElementById('sig-wrap').classList.remove('signed');
+  },
+
+  async submit() {
+    const errEl = document.getElementById('sign-error');
+    if (!SignPage._hasSig) {
+      errEl.textContent = '✍️ Por favor, assine o termo acima antes de enviar.';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (!document.getElementById('agree-check').checked) {
+      errEl.textContent = '☑️ Marque a caixa de aceite para confirmar.';
+      errEl.classList.remove('hidden'); return;
+    }
+    errEl.classList.add('hidden');
+
+    const btn = document.getElementById('btn-sign');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      const canvas = document.getElementById('sig-canvas');
+      const sigData = canvas.toDataURL('image/png', 0.5);
+      const now = new Date();
+
+      await db.collection('consents').doc(SignPage.consentId).update({
+        signature: sigData,
+        signedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        signedRemotely: true,
+        status: 'signed'
+      });
+
+      document.getElementById('sign-timestamp').textContent =
+        `Assinado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}`;
+
+      document.getElementById('main-form').style.display = 'none';
+      SignPage._showScreen('success-screen');
+    } catch(e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined">verified</span> Tentar Novamente';
+      errEl.textContent = 'Erro ao salvar. Verifique sua conexão e tente novamente.';
+      errEl.classList.remove('hidden');
+    }
+  }
+};
+
+SignPage.init();
+</script>
+</body>
+</html>

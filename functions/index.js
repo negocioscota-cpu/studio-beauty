@@ -1,517 +1,508 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-const cors = require("cors")({ origin: true });
-const axios = require("axios");
+const admin     = require("firebase-admin");
+const cors      = require("cors")({ origin: true });
+const axios     = require("axios");
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// ============================================================
-// HELPER: Asaas API
-// ============================================================
-function asaasApi() {
-  const apiKey = functions.config().asaas?.api_key;
-  if (!apiKey) throw new Error("Chave Asaas não configurada.");
-  return axios.create({
-    baseURL: "https://api.asaas.com/v3",
-    headers: {
-      "access_token": apiKey,
-      "Content-Type": "application/json",
-    },
-    timeout: 15000,
-  });
+// ══════════════════════════════════════════════════════════════════════
+// ⚙️  CONFIGURAÇÃO ASAAS
+//     Em produção, definir variáveis no console Firebase:
+//     firebase functions:secrets:set ASAAS_API_KEY
+//     (ou no arquivo .env local para o emulador)
+// ══════════════════════════════════════════════════════════════════════
+function getAsaasConfig() {
+  const env  = process.env.ASAAS_ENVIRONMENT || "sandbox";
+  const key  = process.env.ASAAS_API_KEY     || "";
+  const base = env === "production"
+    ? "https://api.asaas.com/v3"
+    : "https://sandbox.asaas.com/api/v3";
+  return { key, base, env };
 }
 
-// ============================================================
-// FUNÇÃO 1: CRIAR ASSINATURA ASAAS (subscribe.html)
-// ============================================================
-exports.createAsaasSubscription = functions.https.onRequest((req, res) => {
+function getWebhookToken() {
+  return process.env.ASAAS_WEBHOOK_TOKEN || "";
+}
+
+// ── Planos LashBrow ──────────────────────────────────────────────────
+const PLAN_PRICES = {
+  solo:    99.80,
+  studio:  149.80,
+  premium: 199.80,
+};
+
+const PLAN_LABELS = {
+  solo:    "Solo — Para lashistas autônomas",
+  studio:  "Studio — Para studios com 2-3 profissionais",
+  premium: "Premium — Até 10 profissionais",
+};
+
+// ── Helper: chamada à API Asaas ──────────────────────────────────────
+async function asaasRequest(method, endpoint, data = null) {
+  const { key, base } = getAsaasConfig();
+  const config = {
+    method,
+    url: `${base}${endpoint}`,
+    headers: {
+      "Content-Type": "application/json",
+      "access_token": key,
+    },
+  };
+  if (data) config.data = data;
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (err) {
+    const detail = err.response?.data?.errors?.[0]?.description || err.message;
+    throw new Error(`Asaas API [${method} ${endpoint}]: ${detail}`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 1. CRIAR CLIENTE NO ASAAS
+//    Chamado pelo frontend no fluxo de assinatura.
+//    POST { uid, name, email, phone }
+// ══════════════════════════════════════════════════════════════════════
+exports.createAsaasCustomer = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
     try {
-      const { uid, name, email, cpfCnpj, phone, plan, billingType } = req.body;
+      const { uid, name, email, phone } = req.body;
 
-      if (!uid || !name || !email || !plan) {
-        return res.status(400).json({ error: "Campos obrigatórios: uid, name, email, plan" });
+      if (!uid || !name || !email) {
+        return res.status(400).json({ error: "uid, name e email são obrigatórios" });
       }
 
-      const PLANS = {
-        starter:      { name: "Solo",    value: 69.00,  description: "Plano Solo — até 1 profissional" },
-        profissional: { name: "Studio",  value: 99.80,  description: "Plano Studio — até 3 profissionais" },
-        studio:       { name: "Premium", value: 149.90, description: "Plano Premium — até 10 profissionais" },
-      };
-
-      const planInfo = PLANS[plan];
-      if (!planInfo) return res.status(400).json({ error: "Plano inválido: " + plan });
-
-      const api = asaasApi();
-
-      // 1. Buscar ou criar cliente no Asaas
-      let asaasCustomerId;
-      const companyRef = db.collection("companies").doc(uid);
+      // Verificar se já existe customer salvo
+      const companyRef  = db.collection("companies").doc(uid);
       const companySnap = await companyRef.get();
-      const companyData = companySnap.exists ? companySnap.data() : {};
 
-      if (companyData.asaasCustomerId) {
-        asaasCustomerId = companyData.asaasCustomerId;
-      } else {
-        const customerPayload = {
-          name,
-          email,
-          ...(cpfCnpj && { cpfCnpj: cpfCnpj.replace(/\D/g, "") }),
-          ...(phone && { mobilePhone: phone.replace(/\D/g, "") }),
-          externalReference: uid,
-        };
-        const custResp = await api.post("/customers", customerPayload);
-        asaasCustomerId = custResp.data.id;
-        await companyRef.set({ asaasCustomerId }, { merge: true });
+      if (companySnap.data()?.asaasCustomerId) {
+        return res.json({
+          customerId: companySnap.data().asaasCustomerId,
+          existing: true,
+        });
       }
 
-      // 2. Criar assinatura (14 dias trial)
-      const nextDueDate = new Date();
-      nextDueDate.setDate(nextDueDate.getDate() + 14);
-      const nextDueDateStr = nextDueDate.toISOString().split("T")[0];
-
-      const subscriptionPayload = {
-        customer: asaasCustomerId,
-        billingType: billingType || "BOLETO",
-        value: planInfo.value,
-        nextDueDate: nextDueDateStr,
-        cycle: "MONTHLY",
-        description: planInfo.description,
+      // Criar customer no Asaas
+      const customer = await asaasRequest("POST", "/customers", {
+        name,
+        email,
+        mobilePhone: phone ? phone.replace(/\D/g, "") : undefined,
         externalReference: uid,
-      };
+        notificationDisabled: false,
+        observations: "LashBrow — Sistema de Gestão para Cílios e Sobrancelhas",
+      });
 
-      const subResp = await api.post("/subscriptions", subscriptionPayload);
-      const subscription = subResp.data;
+      // Salvar customerId no Firestore
+      await companyRef.update({
+        asaasCustomerId: customer.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-      // 3. Atualizar Firestore
-      const trialEndsAt = admin.firestore.Timestamp.fromDate(nextDueDate);
-      await companyRef.set({
-        plan,
-        asaasSubscriptionId: subscription.id,
-        asaasStatus: "PENDING",
-        subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
-        trialEndsAt,
-        status: "trial",
-      }, { merge: true });
+      console.log(`✅ Customer Asaas criado: ${customer.id} para uid: ${uid}`);
+      return res.json({ customerId: customer.id });
 
-      // 4. Buscar link de pagamento da primeira cobrança
+    } catch (err) {
+      console.error("createAsaasCustomer error:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 2. CRIAR ASSINATURA RECORRENTE
+//    POST { uid, plan, billingType }
+//    billingType: "PIX" | "BOLETO" | "CREDIT_CARD"  (default: PIX)
+//    Retorna: { subscriptionId, paymentLink, status }
+// ══════════════════════════════════════════════════════════════════════
+exports.createAsaasSubscription = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    try {
+      const { uid, plan, billingType } = req.body;
+
+      if (!uid || !plan) {
+        return res.status(400).json({ error: "uid e plan são obrigatórios" });
+      }
+
+      const price = PLAN_PRICES[plan];
+      if (!price) {
+        return res.status(400).json({ error: `Plano inválido: ${plan}. Use: solo, studio ou premium` });
+      }
+
+      // Buscar dados da empresa no Firestore
+      const companySnap = await db.collection("companies").doc(uid).get();
+      if (!companySnap.exists) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+      const company = companySnap.data();
+
+      // Garantir que o customer existe no Asaas
+      let customerId = company.asaasCustomerId;
+      if (!customerId) {
+        const customer = await asaasRequest("POST", "/customers", {
+          name: company.ownerName || company.companyName || "Cliente LashBrow",
+          email: company.ownerEmail || "",
+          mobilePhone: company.ownerPhone ? company.ownerPhone.replace(/\D/g, "") : undefined,
+          externalReference: uid,
+          notificationDisabled: false,
+          observations: "LashBrow — Sistema de Gestão para Cílios e Sobrancelhas",
+        });
+        customerId = customer.id;
+        await db.collection("companies").doc(uid).update({
+          asaasCustomerId: customerId,
+        });
+      }
+
+      // Primeira cobrança: amanhã (trial já expirou)
+      const nextDue = new Date();
+      nextDue.setDate(nextDue.getDate() + 1);
+      const nextDueFormatted = nextDue.toISOString().split("T")[0]; // YYYY-MM-DD
+
+      // Criar assinatura recorrente mensal
+      const subscription = await asaasRequest("POST", "/subscriptions", {
+        customer:      customerId,
+        billingType:   billingType || "PIX",
+        value:         price,
+        nextDueDate:   nextDueFormatted,
+        cycle:         "MONTHLY",
+        description:   `LashBrow — ${PLAN_LABELS[plan]}`,
+        externalReference: uid,
+      });
+
+      // Buscar link de pagamento da primeira cobrança
       let paymentLink = null;
       try {
-        const paymentsResp = await api.get(`/subscriptions/${subscription.id}/payments`);
-        const payments = paymentsResp.data?.data || [];
-        if (payments.length > 0) {
-          paymentLink = payments[0].bankSlipUrl || payments[0].invoiceUrl || null;
+        const payments = await asaasRequest("GET", `/subscriptions/${subscription.id}/payments`);
+        const firstPayment = payments?.data?.[0];
+        if (firstPayment) {
+          paymentLink = firstPayment.invoiceUrl
+            || firstPayment.bankSlipUrl
+            || null;
         }
       } catch (e) {
-        console.warn("Não foi possível buscar pagamentos:", e.message);
+        console.warn("Aviso: não foi possível buscar link de pagamento:", e.message);
+      }
+
+      // Atualizar Firestore
+      await db.collection("companies").doc(uid).update({
+        asaasSubscriptionId: subscription.id,
+        subscriptionStatus:  "pending_payment",
+        selectedPlan:        plan,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`✅ Subscription criada: ${subscription.id} | uid: ${uid} | plano: ${plan}`);
+      return res.json({
+        subscriptionId: subscription.id,
+        paymentLink,
+        status: subscription.status,
+      });
+
+    } catch (err) {
+      console.error("createAsaasSubscription error:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 3. WEBHOOK DO ASAAS
+//    Configurar no painel Asaas → Integrações → Webhooks:
+//    URL: https://us-central1-lashbrow-app.cloudfunctions.net/asaasWebhook
+//
+//    Eventos tratados:
+//    PAYMENT_CONFIRMED / PAYMENT_RECEIVED → status: active
+//    PAYMENT_OVERDUE                       → status: overdue
+//    SUBSCRIPTION_DELETED                  → status: cancelled
+//    PAYMENT_REFUNDED                      → status: cancelled
+// ══════════════════════════════════════════════════════════════════════
+exports.asaasWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    // Validar token de segurança (header enviado pelo Asaas)
+    const incomingToken = req.headers["asaas-access-token"] || req.query.token || "";
+    const expectedToken  = getWebhookToken();
+
+    if (expectedToken && incomingToken !== expectedToken) {
+      console.warn("⚠️ Webhook recusado: token inválido");
+      return res.sendStatus(401);
+    }
+
+    const event       = req.body;
+    const payment     = event?.payment;
+    const subscription = event?.subscription;
+
+    console.log("📩 Webhook Asaas recebido:", JSON.stringify({
+      event: event.event,
+      paymentId: payment?.id,
+      subscriptionId: payment?.subscription || subscription?.id,
+    }));
+
+    // Mapeamento evento → novo status
+    const eventMap = {
+      PAYMENT_CONFIRMED:        "active",
+      PAYMENT_RECEIVED:         "active",
+      PAYMENT_OVERDUE:          "overdue",
+      SUBSCRIPTION_DELETED:     "cancelled",
+      SUBSCRIPTION_INACTIVATED: "cancelled",
+      PAYMENT_REFUNDED:         "cancelled",
+      PAYMENT_DELETED:          null, // ignorar
+    };
+
+    const newStatus = eventMap[event.event];
+    if (newStatus === undefined) {
+      // Evento não mapeado — retornar 200 para o Asaas não reenviar
+      return res.sendStatus(200);
+    }
+    if (newStatus === null) {
+      return res.sendStatus(200);
+    }
+
+    // Identificar o uid do usuário via asaasSubscriptionId no Firestore
+    let uid = null;
+    const subscriptionId = payment?.subscription || subscription?.id;
+
+    if (subscriptionId) {
+      const snap = await db.collection("companies")
+        .where("asaasSubscriptionId", "==", subscriptionId)
+        .limit(1)
+        .get();
+      if (!snap.empty) uid = snap.docs[0].id;
+    }
+
+    // Fallback: externalReference direto no pagamento
+    if (!uid && payment?.externalReference) {
+      uid = payment.externalReference;
+    }
+
+    if (!uid) {
+      console.warn("⚠️ uid não identificado para o evento:", event.event);
+      return res.sendStatus(200);
+    }
+
+    // Montar update do Firestore
+    const updateData = {
+      subscriptionStatus: newStatus,
+      lastWebhookEvent:   event.event,
+      lastWebhookAt:      admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt:          admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (newStatus === "active") {
+      // Registrar data de ativação e estimar fim do período atual (+1 mês)
+      updateData.lastPaidAt    = admin.firestore.FieldValue.serverTimestamp();
+      updateData.lastPaymentId = payment?.id || null;
+
+      const periodEnd = new Date();
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      updateData.currentPeriodEnd = admin.firestore.Timestamp.fromDate(periodEnd);
+
+      // Promover plano selecionado para plano ativo
+      const companySnap = await db.collection("companies").doc(uid).get();
+      const selectedPlan = companySnap.data()?.selectedPlan;
+      if (selectedPlan) {
+        updateData.plan = selectedPlan;
+        updateData.status = "active";
+
+        // ── Sincronizar plano em studios (fonte usada pelo app) ──
+        try {
+          await db.collection("studios").doc(uid).update({
+            plan: selectedPlan,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`✅ studios/${uid}.plan sincronizado: ${selectedPlan}`);
+        } catch (e) {
+          console.warn(`⚠️ Não foi possível atualizar studios/${uid}:`, e.message);
+        }
+      }
+    }
+
+    if (newStatus === "cancelled") {
+      updateData.plan    = "free";
+      updateData.status  = "blocked";
+      updateData.cancelledAt = admin.firestore.FieldValue.serverTimestamp();
+
+      // ── Sincronizar cancelamento em studios ──
+      try {
+        await db.collection("studios").doc(uid).update({
+          plan: "free",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        console.warn(`⚠️ Não foi possível atualizar studios/${uid} (cancelamento):`, e.message);
+      }
+    }
+
+    if (newStatus === "overdue") {
+      updateData.status = "overdue";
+    }
+
+    await db.collection("companies").doc(uid).update(updateData);
+    console.log(`✅ Firestore atualizado: uid=${uid} → status=${newStatus} (${event.event})`);
+
+    return res.sendStatus(200);
+
+  } catch (err) {
+    console.error("asaasWebhook error:", err.message);
+    // Sempre 200 para evitar reenvios infinitos do Asaas
+    return res.sendStatus(200);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 4. STATUS DA ASSINATURA  (consultado pelo frontend na inicialização)
+//    GET ?uid=<uid>
+// ══════════════════════════════════════════════════════════════════════
+exports.getSubscriptionStatus = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    try {
+      const uid = req.query.uid;
+      if (!uid) return res.status(400).json({ error: "uid é obrigatório" });
+
+      const companySnap = await db.collection("companies").doc(uid).get();
+      if (!companySnap.exists) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+
+      const data = companySnap.data();
+
+      // Calcular se trial expirou (para usuários sem assinatura)
+      const createdAt   = data?.createdAt?.toDate?.() || new Date();
+      const TRIAL_DAYS  = 14;
+      const trialEndDate = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+      const now         = new Date();
+      const trialActive = now < trialEndDate;
+
+      let effectiveStatus = data?.subscriptionStatus || (trialActive ? "trial" : "trial_expired");
+
+      // Se tem assinatura Asaas, verificar diretamente na API
+      if (data?.asaasSubscriptionId && data.subscriptionStatus === "active") {
+        try {
+          const sub = await asaasRequest("GET", `/subscriptions/${data.asaasSubscriptionId}`);
+          if (sub.status === "INACTIVE" || sub.deleted) {
+            effectiveStatus = "cancelled";
+            await db.collection("companies").doc(uid).update({
+              subscriptionStatus: "cancelled",
+              status: "blocked",
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        } catch (e) {
+          console.warn("Não foi possível verificar assinatura na API Asaas:", e.message);
+        }
       }
 
       return res.json({
-        subscriptionId: subscription.id,
-        customerId: asaasCustomerId,
-        paymentLink,
-        trialEndsAt: nextDueDateStr,
-        plan,
-        value: planInfo.value,
+        status:            effectiveStatus,
+        plan:              data?.plan || "free",
+        selectedPlan:      data?.selectedPlan || null,
+        trialEndsAt:       trialEndDate.toISOString(),
+        trialActive,
+        currentPeriodEnd:  data?.currentPeriodEnd?.toDate?.()?.toISOString() || null,
+        asaasCustomerId:   data?.asaasCustomerId || null,
+        asaasSubscriptionId: data?.asaasSubscriptionId || null,
       });
 
-    } catch (error) {
-      const errData = error.response?.data || {};
-      console.error("createAsaasSubscription error:", error.message, errData);
-      return res.status(500).json({ error: error.message, details: errData });
+    } catch (err) {
+      console.error("getSubscriptionStatus error:", err.message);
+      return res.status(500).json({ error: err.message });
     }
   });
 });
 
-// ============================================================
-// FUNÇÃO 2: WEBHOOK ASAAS (assinaturas + agendamentos)
-// ============================================================
-exports.asaasWebhook = functions.https.onRequest(async (req, res) => {
-  // Validar token
-  const expectedToken = functions.config().asaas?.webhook_token;
-  const receivedToken = req.headers["asaas-access-token"];
-  if (expectedToken && receivedToken !== expectedToken) {
-    console.warn("asaasWebhook: token inválido:", receivedToken);
-    return res.sendStatus(401);
-  }
-
-  res.sendStatus(200); // Asaas exige resposta rápida
-
-  try {
-    const event = req.body;
-    const eventType = event?.event;
-    const payment = event?.payment;
-    const subscription = event?.subscription;
-
-    console.log("Asaas webhook:", eventType, JSON.stringify(event).substring(0, 300));
-
-    // ----------------------------------------------------------------
-    // Determinar se é pagamento de AGENDAMENTO ou ASSINATURA
-    // Agendamentos têm externalReference no formato de orderId (não uid)
-    // Assinaturas têm payment.subscription preenchido
-    // ----------------------------------------------------------------
-    const isSubscriptionPayment = !!payment?.subscription;
-    const extRef = payment?.externalReference || subscription?.externalReference;
-
-    // --- HELPER: encontrar empresa por uid ou asaasSubscriptionId ---
-    const findCompany = async (subId, uid) => {
-      if (uid) {
-        const snap = await db.collection("companies").doc(uid).get();
-        if (snap.exists) return { ref: snap.ref, data: snap.data() };
-      }
-      if (subId) {
-        const q = await db.collection("companies")
-          .where("asaasSubscriptionId", "==", subId)
-          .limit(1).get();
-        if (!q.empty) return { ref: q.docs[0].ref, data: q.docs[0].data() };
-      }
-      return null;
-    };
-
-    // --- HELPER: encontrar pedido por asaasPaymentId ou externalReference ---
-    const findOrder = async (asaasPaymentId, orderId) => {
-      if (orderId) {
-        const snap = await db.collection("orders").doc(orderId).get();
-        if (snap.exists) return { ref: snap.ref, data: snap.data() };
-      }
-      if (asaasPaymentId) {
-        const q = await db.collection("orders")
-          .where("asaasPaymentId", "==", asaasPaymentId)
-          .limit(1).get();
-        if (!q.empty) return { ref: q.docs[0].ref, data: q.docs[0].data() };
-      }
-      return null;
-    };
-
-    // ================================================================
-    // PAGAMENTO RECEBIDO / CONFIRMADO
-    // ================================================================
-    if (eventType === "PAYMENT_RECEIVED" || eventType === "PAYMENT_CONFIRMED") {
-      if (isSubscriptionPayment) {
-        // → Atualizar assinatura da empresa
-        const company = await findCompany(payment.subscription, extRef);
-        if (company) {
-          const nextExpiry = new Date();
-          nextExpiry.setDate(nextExpiry.getDate() + 31);
-          await company.ref.update({
-            asaasStatus: "ACTIVE",
-            status: "active",
-            lastPaymentAt: admin.firestore.FieldValue.serverTimestamp(),
-            subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(nextExpiry),
-          });
-          console.log("Empresa ativada:", company.ref.id);
-        }
-      } else {
-        // → Marcar pedido de agendamento como PAGO
-        const order = await findOrder(payment?.id, extRef);
-        if (order) {
-          await order.ref.update({
-            status: "paid",
-            paymentMethod: payment?.billingType || "unknown",
-            asaasPaymentId: payment?.id,
-            paidAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          // Também atualizar o agendamento, se existir
-          if (order.data.appointmentId && order.data.ownerUid) {
-            try {
-              await db.collection("users").doc(order.data.ownerUid)
-                .collection("appointments").doc(order.data.appointmentId)
-                .update({ paymentStatus: "paid", asaasPaymentId: payment?.id });
-            } catch (e) { console.warn("Appointment update skipped:", e.message); }
-          }
-          console.log("Pedido pago:", order.ref.id);
-        }
-      }
-    }
-
-    // ================================================================
-    // PAGAMENTO ATRASADO
-    // ================================================================
-    if (eventType === "PAYMENT_OVERDUE") {
-      if (isSubscriptionPayment) {
-        const company = await findCompany(payment.subscription, extRef);
-        if (company) {
-          await company.ref.update({
-            asaasStatus: "OVERDUE",
-            status: "overdue",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-      } else {
-        const order = await findOrder(payment?.id, extRef);
-        if (order) {
-          await order.ref.update({
-            status: "overdue",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-      }
-    }
-
-    // ================================================================
-    // ASSINATURA CANCELADA / INATIVADA
-    // ================================================================
-    if (eventType === "SUBSCRIPTION_DELETED" || eventType === "SUBSCRIPTION_INACTIVATED") {
-      const subId = subscription?.id || payment?.subscription;
-      const company = await findCompany(subId, extRef);
-      if (company) {
-        await company.ref.update({
-          asaasStatus: "CANCELLED",
-          status: "blocked",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        console.log("Empresa bloqueada:", company.ref.id);
-      }
-    }
-
-    // ================================================================
-    // PAGAMENTO ESTORNADO
-    // ================================================================
-    if (eventType === "PAYMENT_REFUNDED") {
-      if (isSubscriptionPayment) {
-        const company = await findCompany(payment.subscription, extRef);
-        if (company) {
-          await company.ref.update({
-            asaasStatus: "REFUNDED",
-            status: "blocked",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-      } else {
-        const order = await findOrder(payment?.id, extRef);
-        if (order) {
-          await order.ref.update({
-            status: "refunded",
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-      }
-    }
-
-  } catch (err) {
-    console.error("asaasWebhook processing error:", err.message);
-  }
-});
-
-// ============================================================
-// FUNÇÃO 3: CANCELAR ASSINATURA ASAAS
-// ============================================================
+// ══════════════════════════════════════════════════════════════════════
+// 5. CANCELAR ASSINATURA  (acionado pelo usuário ou admin)
+//    POST { uid }
+// ══════════════════════════════════════════════════════════════════════
 exports.cancelAsaasSubscription = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
     try {
       const { uid } = req.body;
       if (!uid) return res.status(400).json({ error: "uid é obrigatório" });
 
-      const companyRef = db.collection("companies").doc(uid);
-      const snap = await companyRef.get();
-      if (!snap.exists) return res.status(404).json({ error: "Empresa não encontrada" });
+      const companySnap    = await db.collection("companies").doc(uid).get();
+      const subscriptionId = companySnap.data()?.asaasSubscriptionId;
 
-      const { asaasSubscriptionId } = snap.data();
-      if (!asaasSubscriptionId) return res.status(400).json({ error: "Nenhuma assinatura ativa" });
+      if (!subscriptionId) {
+        return res.status(404).json({ error: "Assinatura não encontrada" });
+      }
 
-      const api = asaasApi();
-      await api.delete(`/subscriptions/${asaasSubscriptionId}`);
+      // Deletar assinatura no Asaas
+      await asaasRequest("DELETE", `/subscriptions/${subscriptionId}`);
 
-      await companyRef.update({
-        asaasStatus: "CANCELLED",
-        status: "blocked",
-        cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Atualizar Firestore
+      await db.collection("companies").doc(uid).update({
+        subscriptionStatus: "cancelled",
+        plan:               "free",
+        status:             "blocked",
+        cancelledAt:        admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt:          admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      return res.json({ success: true, message: "Assinatura cancelada com sucesso" });
+      console.log(`✅ Assinatura cancelada: ${subscriptionId} | uid: ${uid}`);
+      return res.json({ success: true });
 
-    } catch (error) {
-      const errData = error.response?.data || {};
-      console.error("cancelAsaasSubscription error:", error.message, errData);
-      return res.status(500).json({ error: error.message, details: errData });
+    } catch (err) {
+      console.error("cancelAsaasSubscription error:", err.message);
+      return res.status(500).json({ error: err.message });
     }
   });
 });
 
-// ============================================================
-// FUNÇÃO 4: CRIAR PAGAMENTO ASAAS (agendamentos — substitui MP)
-// ============================================================
-exports.createAsaasPayment = functions.https.onRequest((req, res) => {
+// ══════════════════════════════════════════════════════════════════════
+// 6. RECUPERAR LINK DE PAGAMENTO  (para usuários em overdue / pending)
+//    GET ?uid=<uid>
+// ══════════════════════════════════════════════════════════════════════
+exports.getPaymentLink = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
     try {
-      const { orderId, method } = req.body; // method: "PIX" | "BOLETO"
-      if (!orderId) return res.status(400).json({ error: "orderId é obrigatório" });
+      const uid = req.query.uid;
+      if (!uid) return res.status(400).json({ error: "uid é obrigatório" });
 
-      const orderRef = db.collection("orders").doc(orderId);
-      const orderSnap = await orderRef.get();
-      if (!orderSnap.exists) return res.status(404).json({ error: "Pedido não encontrado" });
+      const companySnap    = await db.collection("companies").doc(uid).get();
+      const subscriptionId = companySnap.data()?.asaasSubscriptionId;
 
-      const order = orderSnap.data();
-
-      // Verificar se já tem pagamento Asaas criado para este pedido
-      if (order.asaasPaymentId && order.asaasPaymentMethod === (method || "PIX")) {
-        // Reutilizar cobrança existente
-        const api = asaasApi();
-        try {
-          const existingResp = await api.get(`/payments/${order.asaasPaymentId}`);
-          const existing = existingResp.data;
-          if (existing.status === "PENDING") {
-            return res.json({
-              paymentId: existing.id,
-              status: existing.status,
-              pixQrCodeImage: existing.pixQrCodeImage || null,
-              pixCopiaECola: existing.pixCopiaECola || null,
-              bankSlipUrl: existing.bankSlipUrl || null,
-              invoiceUrl: existing.invoiceUrl || null,
-              billingType: existing.billingType,
-            });
-          }
-        } catch (e) {
-          console.warn("Não foi possível reutilizar cobrança:", e.message);
-        }
+      if (!subscriptionId) {
+        return res.status(404).json({ error: "Assinatura não encontrada" });
       }
 
-      // Buscar asaasCustomerId do proprietário do estúdio
-      // Para agendamentos, o cliente final (end-user) pode não ter conta Asaas.
-      // Usamos o customer da empresa como referência intermediária:
-      // → Se a empresa já tem asaasCustomerId, OK.
-      // → Caso contrário, usamos o cliente do próprio proprietário.
-      const companyRef = db.collection("companies").doc(order.ownerUid);
-      const companySnap = await companyRef.get();
+      // Buscar cobranças pendentes da assinatura
+      const payments = await asaasRequest("GET", `/subscriptions/${subscriptionId}/payments`);
+      const pending  = payments?.data?.find(p =>
+        ["PENDING", "OVERDUE"].includes(p.status)
+      );
 
-      // Criar cliente para o pagador (cliente final) se não existir
-      const api = asaasApi();
-      let clientCustomerId;
-
-      // Verificar se já temos customer para este cliente pelo telefone/email
-      if (order.clientPhone || order.clientEmail) {
-        try {
-          const searchParam = order.clientPhone
-            ? `?mobilePhone=${order.clientPhone.replace(/\D/g, "")}`
-            : `?email=${encodeURIComponent(order.clientEmail)}`;
-          const searchResp = await api.get(`/customers${searchParam}`);
-          const found = searchResp.data?.data?.[0];
-          if (found) clientCustomerId = found.id;
-        } catch (e) {
-          console.warn("Busca de customer falhou:", e.message);
-        }
-      }
-
-      if (!clientCustomerId) {
-        // Criar cliente do pagador
-        const custPayload = {
-          name: order.clientName || "Cliente",
-          ...(order.clientEmail && { email: order.clientEmail }),
-          ...(order.clientPhone && { mobilePhone: order.clientPhone.replace(/\D/g, "") }),
-        };
-        const custResp = await api.post("/customers", custPayload);
-        clientCustomerId = custResp.data.id;
-      }
-
-      // Criar a cobrança no Asaas
-      const billingType = (method || "PIX").toUpperCase();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 1); // vence amanhã
-      const dueDateStr = dueDate.toISOString().split("T")[0];
-
-      const chargePayload = {
-        customer: clientCustomerId,
-        billingType,
-        value: order.amount / 100, // amount está em centavos no Firestore
-        dueDate: dueDateStr,
-        description: `${order.service} — Studiobeauty`,
-        externalReference: orderId,
-      };
-
-      const chargeResp = await api.post("/payments", chargePayload);
-      const charge = chargeResp.data;
-
-      // Se for Pix, buscar QR code
-      let pixQrCodeImage = null;
-      let pixCopiaECola = null;
-      if (billingType === "PIX") {
-        try {
-          const pixResp = await api.get(`/payments/${charge.id}/pixQrCode`);
-          pixQrCodeImage = pixResp.data?.encodedImage || null;
-          pixCopiaECola = pixResp.data?.payload || null;
-        } catch (e) {
-          console.warn("Erro ao buscar QR Pix:", e.message);
-        }
-      }
-
-      // Persistir no Firestore
-      await orderRef.update({
-        asaasPaymentId: charge.id,
-        asaasPaymentMethod: billingType,
-        asaasStatus: charge.status,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      const paymentLink = pending?.invoiceUrl || pending?.bankSlipUrl || null;
 
       return res.json({
-        paymentId: charge.id,
-        status: charge.status,
-        pixQrCodeImage,
-        pixCopiaECola,
-        bankSlipUrl: charge.bankSlipUrl || null,
-        invoiceUrl: charge.invoiceUrl || null,
-        billingType,
+        paymentLink,
+        status: pending?.status || null,
+        dueDate: pending?.dueDate || null,
       });
 
-    } catch (error) {
-      const errData = error.response?.data || {};
-      console.error("createAsaasPayment error:", error.message, errData);
-      return res.status(500).json({ error: error.message, details: errData });
+    } catch (err) {
+      console.error("getPaymentLink error:", err.message);
+      return res.status(500).json({ error: err.message });
     }
   });
-});
-
-// ─────────────────────────────────────────────
-// Cancelar assinatura Asaas
-// ─────────────────────────────────────────────
-exports.cancelAsaasSubscription = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Autenticação necessária.");
-  }
-
-  const uid = context.auth.uid;
-  const companyRef = db.collection("companies").doc(uid);
-  const companyDoc = await companyRef.get();
-
-  if (!companyDoc.exists) {
-    throw new functions.https.HttpsError("not-found", "Empresa não encontrada.");
-  }
-
-  const companyData = companyDoc.data();
-  const subscriptionId = companyData.asaasSubscriptionId;
-
-  if (!subscriptionId) {
-    throw new functions.https.HttpsError("failed-precondition", "Nenhuma assinatura Asaas encontrada.");
-  }
-
-  try {
-    const asaasKey = functions.config().asaas.api_key;
-    const asaasBase = functions.config().asaas.base_url || "https://www.asaas.com/api/v3";
-
-    const api = axios.create({
-      baseURL: asaasBase,
-      headers: { access_token: asaasKey },
-    });
-
-    await api.delete(`/subscriptions/${subscriptionId}`);
-
-    await companyRef.update({
-      asaasStatus: "CANCELLED",
-      status: "cancelled",
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return { success: true };
-  } catch (error) {
-    const errData = error.response?.data || {};
-    console.error("cancelAsaasSubscription error:", error.message, errData);
-    throw new functions.https.HttpsError("internal", `Erro ao cancelar: ${error.message}`);
-  }
 });

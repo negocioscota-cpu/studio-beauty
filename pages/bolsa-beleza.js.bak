@@ -1,0 +1,908 @@
+// ==========================================
+// Bolsa da Beleza — Gestão de Ativos do Studio
+// ==========================================
+const BolsaBeleza = {
+    currentSection: 0,
+    sections: ['intro', 'ativos', 'minhaCarteira', 'plano14dias', 'ferramentas', 'insight'],
+
+    async render(container) {
+        container.innerHTML = this._renderShell();
+        this.init();
+    },
+
+    _renderShell() {
+        return `
+        <div class="bolsa-odonto-page" style="max-width:960px;margin:0 auto;padding-bottom:48px">
+            <!-- Hero Header -->
+            <div class="bolsa-hero">
+                <div class="bolsa-hero-content">
+                    <span class="bolsa-hero-icon">💼</span>
+                    <h1 class="bolsa-hero-title">A Bolsa da Beleza</h1>
+                    <p class="bolsa-hero-subtitle">Gestão Estratégica de Ativos do seu Studio</p>
+                    <div class="bolsa-hero-badges">
+                        <span class="bolsa-badge bolsa-badge-gold">✦ Estratégia</span>
+                        <span class="bolsa-badge bolsa-badge-rose">✦ Gestão</span>
+                        <span class="bolsa-badge bolsa-badge-gold">✦ Marketing</span>
+                        <span class="bolsa-badge bolsa-badge-rose">✦ Vendas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="bolsa-tabs-wrapper">
+                <button data-section="0" class="bolsa-tab-btn active">
+                    <span class="tab-icon">💡</span>Introdução
+                </button>
+                <button data-section="1" class="bolsa-tab-btn">
+                    <span class="tab-icon">📊</span>5 Ativos
+                </button>
+                <button data-section="2" class="bolsa-tab-btn">
+                    <span class="tab-icon">💰</span>Minha Carteira
+                </button>
+                <button data-section="3" class="bolsa-tab-btn">
+                    <span class="tab-icon">🚀</span>Plano 14 Dias
+                </button>
+                <button data-section="4" class="bolsa-tab-btn">
+                    <span class="tab-icon">🔧</span>Ferramentas
+                </button>
+                <button data-section="5" class="bolsa-tab-btn">
+                    <span class="tab-icon">💎</span>Insight de Ouro
+                </button>
+            </div>
+
+            <!-- Content Sections -->
+            <div id="bolsa-content" style="transition:opacity 0.2s,transform 0.2s">
+                ${this.renderIntro()}
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)">
+                <button id="bolsa-prev" class="btn btn-ghost" style="display:flex;align-items:center;gap:6px" disabled>
+                    <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span>Anterior
+                </button>
+                <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600" id="bolsa-counter">1 / 6</span>
+                <button id="bolsa-next" class="btn btn-primary" style="display:flex;align-items:center;gap:6px">
+                    Próximo<span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+        `;
+    },
+
+    // ──────────────────────────────────────────
+    // SEÇÃO 1: INTRODUÇÃO
+    // ──────────────────────────────────────────
+    renderIntro() {
+        return `
+        <div class="bolsa-section">
+            <div class="bolsa-card">
+                <div class="bolsa-section-header">
+                    <div class="bolsa-icon-box bolsa-icon-box-gold">⚠️</div>
+                    <h2 class="bolsa-section-title">O Fim da Ilusão da Agenda Cheia</h2>
+                </div>
+                <div class="bolsa-prose">
+                    <p>Vamos direto ao ponto. Existe uma <strong>mentira confortável</strong> que a maioria das profissionais de beleza ainda acredita: <em>"Se minha agenda está cheia, meu studio está indo bem."</em></p>
+                    <div class="bolsa-alert bolsa-alert-danger">
+                        <p class="bolsa-alert-title">🚨 A Verdade Inconveniente</p>
+                        <p>Agenda lotada não é sinônimo de lucro. É sinônimo de <strong>trabalho</strong>. E trabalho sem estratégia é apenas <strong>exaustão remunerada — mal remunerada</strong>.</p>
+                    </div>
+                    <p>Pense comigo: você pode ter 8 clientes por dia e ainda fechar o mês no vermelho. <strong>Quando sua agenda é preenchida por serviços de baixa margem</strong>, você está basicamente <strong>alugando sua cadeira por centavos</strong>.</p>
+                    <p>Agora imagine: <strong>5 clientes por dia, 4 dias por semana</strong>, distribuídas entre extensões volume russo, brow lamination e combos recorrentes. O faturamento? <strong>3 a 5 vezes maior</strong>. O desgaste? Uma fração.</p>
+                    <div class="bolsa-highlight-box">
+                        <p class="bolsa-highlight-title">📈 O Conceito: Bolsa da Beleza</p>
+                        <p>Na Bolsa de Valores, <strong>nenhum investidor coloca tudo em um único ativo</strong>. Ele diversifica para estabilidade, crescimento e retorno acima da média. <strong>Seu studio segue a mesma lógica.</strong> Cada serviço é um "ativo" no seu portfólio. O segredo está no <strong>equilíbrio entre eles</strong>.</p>
+                    </div>
+                    <div class="bolsa-compare-grid">
+                        <div class="bolsa-compare-card bolsa-compare-bad">
+                            <p class="bolsa-compare-label">✗ Mentalidade Antiga</p>
+                            <ul>
+                                <li>• "Preciso lotar minha agenda"</li>
+                                <li>• "Qualquer cliente é boa cliente"</li>
+                                <li>• "Desconto pelo menos traz alguém"</li>
+                                <li>• "Marketing é postar qualquer coisa"</li>
+                            </ul>
+                        </div>
+                        <div class="bolsa-compare-card bolsa-compare-good">
+                            <p class="bolsa-compare-label">✓ Mentalidade Investidora</p>
+                            <ul>
+                                <li>• "Preciso otimizar minha agenda"</li>
+                                <li>• "Cada horário tem custo de oportunidade"</li>
+                                <li>• "Desconto corrói meu ativo: o preço"</li>
+                                <li>• "Marketing é isca para o serviço certo"</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p>A partir de agora, <strong>sua cadeira é um ativo financeiro</strong>. Cada cliente precisa gerar retorno proporcional ao investimento de tempo, energia e material. Se não gera — está <strong>desvalorizando sua carteira</strong>.</p>
+                    <p style="text-align:center;color:var(--text-muted);font-size:0.75rem;letter-spacing:0.1em;font-weight:600;padding:16px 0">— PRÓXIMO: AS 5 CATEGORIAS DE ATIVOS —</p>
+                </div>
+            </div>
+        </div>
+        `;
+    },
+                    <p>
+                        Vamos direto ao ponto. Existe uma <strong>mentira confortável</strong> que a maioria das profissionais de beleza ainda acredita:
+                        <em>"Se minha agenda está cheia, meu studio está indo bem."</em>
+                    </p>
+                    
+                    <div class="bg-red-50 border-l-4 border-red-400 rounded-r-xl p-5 my-6">
+                        <p class="font-bold text-red-800 text-base mb-2">🚨 A Verdade Inconveniente</p>
+                        <p class="text-red-700 text-sm">
+                            Agenda lotada não é sinônimo de lucro. É sinônimo de <strong>trabalho</strong>. 
+                            E trabalho sem estratégia é apenas <strong>exaustão remunerada — mal remunerada</strong>.
+                        </p>
+                    </div>
+
+                    <p>
+                        Pense comigo: você pode ter 8 clientes por dia, das 8h às 20h, e ainda assim 
+                        fechar o mês no vermelho. Como? Simples: <strong>quando sua agenda é preenchida por 
+                        serviços de baixa margem</strong> — manutenções baratas, designs simples sem upgrade, 
+                        retoques que não convertem — você está basicamente <strong>alugando sua cadeira por centavos</strong>.
+                    </p>
+
+                    <p>
+                        Agora imagine outro cenário: <strong>5 clientes por dia, 4 dias por semana</strong>. 
+                        Só que essas clientes estão distribuídas entre extensões volume russo premium, 
+                        brow lamination com design, lash lifting com tintura e combos de manutenção recorrente. 
+                        O faturamento? <strong>3 a 5 vezes maior</strong>. O desgaste? Uma fração.
+                    </p>
+
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 my-6">
+                        <p class="font-bold text-emerald-800 text-lg mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-600">trending_up</span>
+                            O Conceito: Bolsa da Beleza
+                        </p>
+                        <p class="text-emerald-800 text-sm mb-4">
+                            Na Bolsa de Valores, <strong>nenhum investidor inteligente coloca todo seu dinheiro em um único ativo</strong>. 
+                            Ele diversifica: renda fixa para estabilidade, ações para crescimento, fundos alternativos para retorno acima da média.
+                        </p>
+                        <p class="text-emerald-800 text-sm">
+                            <strong>Seu studio segue a mesma lógica.</strong> Cada serviço que você oferece é um "ativo" 
+                            no seu portfólio. Alguns dão previsibilidade. Outros dão lucro. Outros constroem autoridade. 
+                            O segredo está no <strong>equilíbrio entre eles</strong>.
+                        </p>
+                    </div>
+
+                    <p>
+                        A <strong>"Bolsa da Beleza"</strong> é a metodologia que substitui o modelo 
+                        <em>"atender tudo que aparece e torcer para sobrar dinheiro no final do mês"</em> 
+                        por um modelo de gestão de portfólio — onde <strong>cada horário da sua agenda é um investimento</strong>, 
+                        e cada serviço precisa justificar o retorno que ocupa.
+                    </p>
+
+                    <div class="grid md:grid-cols-2 gap-4 my-6">
+                        <div class="bg-red-50 rounded-xl p-5 border border-red-100">
+                            <p class="font-bold text-red-700 text-sm mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">close</span>Mentalidade Antiga
+                            </p>
+                            <ul class="text-sm text-red-600 space-y-2">
+                                <li>• "Preciso lotar minha agenda"</li>
+                                <li>• "Qualquer cliente é boa cliente"</li>
+                                <li>• "Se der desconto, pelo menos entra alguém"</li>
+                                <li>• "Marketing é postar qualquer coisa"</li>
+                            </ul>
+                        </div>
+                        <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
+                            <p class="font-bold text-emerald-700 text-sm mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">check</span>Mentalidade Investidora
+                            </p>
+                            <ul class="text-sm text-emerald-600 space-y-2">
+                                <li>• "Preciso otimizar minha agenda"</li>
+                                <li>• "Cada horário tem um custo de oportunidade"</li>
+                                <li>• "Desconto corrói meu ativo mais valioso: o preço"</li>
+                                <li>• "Marketing é isca para o serviço certo"</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p>
+                        A partir de agora, <strong>sua cadeira é um ativo financeiro</strong>. 
+                        Seu tempo é <strong>capital</strong>. Cada cliente que senta naquela maca precisa 
+                        gerar um retorno proporcional ao investimento de tempo, energia e material que você despendeu. 
+                        Se não gera — está <strong>desvalorizando sua carteira</strong>.
+                    </p>
+
+                    <div class="text-center py-4">
+                        <p class="text-slate-400 text-xs font-mono tracking-wider">— PRÓXIMO: AS 5 CATEGORIAS DE ATIVOS —</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    },
+
+    // PLACEHOLDER — será preenchido nas próximas partes
+    renderAtivos() {
+        const ativos = [
+            {
+                icon: 'spa', color: 'emerald', nome: 'Renda Fixa — Manutenções & Retoques',
+                desc: 'Serviços recorrentes e previsíveis: manutenções de cílios, preenchimentos de falhas, retoques de henna. Margens menores, mas fluxo de caixa <strong>constante e previsível</strong>.',
+                ex: 'Manutenção fio a fio, retoque de henna, remoção de cílios, manutenção volume brasileiro.',
+                peso: '20-30%', risco: 'Baixo', retorno: 'Estável',
+                tip: 'É a base da sua agenda. Garante que as contas fixas sejam pagas. Mas se passar de 40%, você está subsidiando sua agenda com trabalho barato.'
+            },
+            {
+                icon: 'auto_awesome', color: 'purple', nome: 'Ações de Crescimento — Extensões Premium',
+                desc: 'Serviços de alto valor e ticket médio elevado: volume russo, mega volume, extensões com fios premium de seda/mink. <strong>Alto retorno por hora trabalhada</strong>.',
+                ex: 'Volume Russo, Mega Volume, Extensão Efeito Sirena, Extensão com Fios de Seda Premium.',
+                peso: '25-35%', risco: 'Moderado', retorno: 'Alto',
+                tip: 'É aqui que o lucro real mora. Cada slot de volume russo que você perde para uma manutenção simples é dinheiro que sai do seu bolso.'
+            },
+            {
+                icon: 'emoji_events', color: 'amber', nome: 'Fundos Premium — Procedimentos de Alto Valor',
+                desc: 'Procedimentos com ticket altíssimo e alta percepção de valor: brow lamination, lash lifting com botox capilar, design de sobrancelhas com henna premium. <strong>Alta margem, efeito uau</strong>.',
+                ex: 'Brow Lamination, Lash Lifting com Tintura, Design HD com Henna Profissional, Combo Olhar Completo.',
+                peso: '20-25%', risco: 'Moderado-Alto', retorno: 'Muito Alto',
+                tip: 'Estes são seus geradores de autoridade. Cada vez que uma cliente posta o resultado, é propaganda gratuita que atrai mais clientes premium.'
+            },
+            {
+                icon: 'diversity_3', color: 'sky', nome: 'Dividendos — Programas de Fidelidade & Recorrência',
+                desc: 'Renda passiva e previsível: pacotes mensais de manutenção, assinaturas de beleza, combos trimestrais. <strong>Receita garantida antes do mês começar</strong>.',
+                ex: 'Pacote Mensal 2 Manutenções, Assinatura Olhar VIP, Combo Trimestral Cílios + Sobrancelha.',
+                peso: '10-20%', risco: 'Muito Baixo', retorno: 'Previsível',
+                tip: 'Se 15 clientes pagam R$150/mês no pacote de manutenção, você começa todo mês com R$2.250 já garantidos — antes de atender qualquer encaixe.'
+            },
+            {
+                icon: 'school', color: 'rose', nome: 'Venture Capital — Cursos & Workshops',
+                desc: 'Monetização do seu conhecimento: workshops de automaquiagem, cursos para iniciantes, mentorias para profissionais. <strong>Escala sem trocar hora por dinheiro</strong>.',
+                ex: 'Workshop "Cílios Perfeitos em Casa", Curso Online de Design de Sobrancelhas, Mentoria para Profissionais.',
+                peso: '5-10%', risco: 'Alto', retorno: 'Exponencial',
+                tip: 'É o ativo mais escalável. Um curso gravado pode gerar renda por anos. Mas exige autoridade construída — só funciona depois que os outros 4 ativos estão sólidos.'
+            }
+        ];
+
+        let cards = ativos.map((a, i) => `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all duration-300">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-${a.color}-100 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-${a.color}-600 text-2xl" style="font-variation-settings: 'FILL' 1;">${a.icon}</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-${a.color}-600 mb-1">ATIVO ${i + 1}</p>
+                        <h3 class="font-headline font-extrabold text-base text-on-surface">${a.nome}</h3>
+                    </div>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed mb-4">${a.desc}</p>
+                <div class="bg-slate-50 rounded-xl p-4 mb-4">
+                    <p class="text-xs font-bold text-slate-500 mb-1">EXEMPLOS NO SEU STUDIO</p>
+                    <p class="text-sm text-slate-700">${a.ex}</p>
+                </div>
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="text-center p-2 rounded-lg bg-${a.color}-50">
+                        <p class="text-[10px] font-bold text-slate-400">PESO IDEAL</p>
+                        <p class="text-sm font-black text-${a.color}-700">${a.peso}</p>
+                    </div>
+                    <div class="text-center p-2 rounded-lg bg-${a.color}-50">
+                        <p class="text-[10px] font-bold text-slate-400">RISCO</p>
+                        <p class="text-sm font-black text-${a.color}-700">${a.risco}</p>
+                    </div>
+                    <div class="text-center p-2 rounded-lg bg-${a.color}-50">
+                        <p class="text-[10px] font-bold text-slate-400">RETORNO</p>
+                        <p class="text-sm font-black text-${a.color}-700">${a.retorno}</p>
+                    </div>
+                </div>
+                <div class="border-t border-dashed border-slate-200 pt-3">
+                    <p class="text-xs text-slate-500 italic flex items-start gap-1.5">
+                        <span class="material-symbols-outlined text-amber-500 text-sm flex-shrink-0 mt-0.5">tips_and_updates</span>
+                        ${a.tip}
+                    </p>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+        <div class="bolsa-section animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 mb-6">
+                <h2 class="font-headline font-extrabold text-xl md:text-2xl text-on-surface mb-3 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-purple-500" style="font-variation-settings: 'FILL' 1;">pie_chart</span>
+                    Os 5 Ativos do Seu Studio
+                </h2>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    Assim como na bolsa de valores, seu studio possui <strong>5 categorias de ativos</strong>. 
+                    Cada uma tem um papel estratégico. O segredo não é apostar tudo em uma — 
+                    é encontrar o <strong>equilíbrio perfeito</strong> entre risco, retorno e previsibilidade.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-5">
+                ${cards}
+            </div>
+            <div class="text-center pt-6">
+                <p class="text-slate-400 text-xs font-mono tracking-wider">— PRÓXIMO: MONTE SUA CARTEIRA —</p>
+            </div>
+        </div>
+        `;
+    },
+    renderMinhaCarteira() {
+        return `
+        <div class="bolsa-section animate-fadeIn">
+            <!-- HORA CEM ENGINE -->
+            <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 rounded-2xl p-6 md:p-8 mb-6 text-white">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-emerald-400 text-3xl" style="font-variation-settings: 'FILL' 1;">speed</span>
+                    <div>
+                        <h2 class="font-headline font-extrabold text-xl">Motor Hora Cem 💰</h2>
+                        <p class="text-emerald-300 text-xs">Calcule quanto vale <strong>cada hora</strong> da sua cadeira</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Custo Fixo Mensal (R$)</label>
+                        <input type="number" id="hc-custo-fixo" class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="3.500" value="3500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Dias de Trabalho / Mês</label>
+                        <input type="number" id="hc-dias" class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="22" value="22">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Horas de Atendimento / Dia</label>
+                        <input type="number" id="hc-horas" class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="8" value="8">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Meta de Lucro Mensal (R$)</label>
+                        <input type="number" id="hc-meta-lucro" class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="8.000" value="8000">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Custo Variável Médio por Atend. (R$)</label>
+                        <input type="number" id="hc-custo-var" class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="25" value="25">
+                        <p class="text-[10px] text-slate-500 mt-1">Cola, fios, pigmentos, consumíveis</p>
+                    </div>
+                </div>
+
+                <button onclick="BolsaBeleza.calcularHoraCem()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold transition-all flex items-center justify-center gap-2 mb-6">
+                    <span class="material-symbols-outlined">calculate</span>Calcular Meu Hora Cem
+                </button>
+
+                <!-- Resultado -->
+                <div id="hc-resultado" class="hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-slate-700/50 rounded-xl p-4 text-center border border-slate-600">
+                            <p class="text-[10px] font-bold text-slate-400">CUSTO/HORA</p>
+                            <p class="text-xl font-black text-red-400" id="hc-custo-hora">R$ 0</p>
+                        </div>
+                        <div class="bg-slate-700/50 rounded-xl p-4 text-center border border-slate-600">
+                            <p class="text-[10px] font-bold text-slate-400">HORA CEM</p>
+                            <p class="text-xl font-black text-emerald-400" id="hc-hora-cem">R$ 0</p>
+                        </div>
+                        <div class="bg-slate-700/50 rounded-xl p-4 text-center border border-slate-600">
+                            <p class="text-[10px] font-bold text-slate-400">META/DIA</p>
+                            <p class="text-xl font-black text-amber-400" id="hc-meta-dia">R$ 0</p>
+                        </div>
+                        <div class="bg-slate-700/50 rounded-xl p-4 text-center border border-slate-600">
+                            <p class="text-[10px] font-bold text-slate-400">TICKET MÍNIMO</p>
+                            <p class="text-xl font-black text-sky-400" id="hc-ticket-min">R$ 0</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-900/30 border border-emerald-700/50 rounded-xl p-4">
+                        <p class="text-sm text-emerald-200" id="hc-insight"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEUS SERVIÇOS -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 mb-6">
+                <h3 class="font-headline font-extrabold text-lg text-on-surface mb-2 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-purple-500">list_alt</span>
+                    Meus Serviços — Composição da Carteira
+                </h3>
+                <p class="text-slate-500 text-xs mb-6">Cadastre seus serviços e veja como sua carteira está distribuída entre os 5 ativos.</p>
+
+                <div id="servicos-lista" class="space-y-3 mb-4"></div>
+
+                <button onclick="BolsaBeleza.adicionarServico()" class="w-full py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 font-bold hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">add_circle</span>Adicionar Serviço
+                </button>
+            </div>
+
+            <!-- ALOCAÇÃO VISUAL -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+                <h3 class="font-headline font-extrabold text-lg text-on-surface mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">donut_large</span>
+                    Alocação da Carteira
+                </h3>
+                <div class="grid md:grid-cols-5 gap-3" id="alocacao-grid">
+                    <div class="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <p class="text-[10px] font-bold text-emerald-600">RENDA FIXA</p>
+                        <p class="text-2xl font-black text-emerald-700" id="aloc-0">0%</p>
+                        <p class="text-[10px] text-slate-400">Ideal: 20-30%</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-purple-50 border border-purple-100">
+                        <p class="text-[10px] font-bold text-purple-600">CRESCIMENTO</p>
+                        <p class="text-2xl font-black text-purple-700" id="aloc-1">0%</p>
+                        <p class="text-[10px] text-slate-400">Ideal: 25-35%</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <p class="text-[10px] font-bold text-amber-600">PREMIUM</p>
+                        <p class="text-2xl font-black text-amber-700" id="aloc-2">0%</p>
+                        <p class="text-[10px] text-slate-400">Ideal: 20-25%</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-sky-50 border border-sky-100">
+                        <p class="text-[10px] font-bold text-sky-600">DIVIDENDOS</p>
+                        <p class="text-2xl font-black text-sky-700" id="aloc-3">0%</p>
+                        <p class="text-[10px] text-slate-400">Ideal: 10-20%</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-rose-50 border border-rose-100">
+                        <p class="text-[10px] font-bold text-rose-600">VENTURE</p>
+                        <p class="text-2xl font-black text-rose-700" id="aloc-4">0%</p>
+                        <p class="text-[10px] text-slate-400">Ideal: 5-10%</p>
+                    </div>
+                </div>
+                <div class="w-full h-4 rounded-full bg-slate-100 mt-4 flex overflow-hidden" id="alocacao-bar">
+                    <div class="h-full bg-emerald-500 transition-all" style="width:0%" id="bar-0"></div>
+                    <div class="h-full bg-purple-500 transition-all" style="width:0%" id="bar-1"></div>
+                    <div class="h-full bg-amber-500 transition-all" style="width:0%" id="bar-2"></div>
+                    <div class="h-full bg-sky-500 transition-all" style="width:0%" id="bar-3"></div>
+                    <div class="h-full bg-rose-500 transition-all" style="width:0%" id="bar-4"></div>
+                </div>
+                <p class="text-center text-xs text-slate-400 mt-2" id="alocacao-total">Faturamento total: R$ 0</p>
+            </div>
+        </div>
+        `;
+    },
+    renderPlano14Dias() {
+        const dias = [
+            { dia: 1, titulo: 'Audite Sua Agenda', desc: 'Revise os últimos 30 dias. Quantos atendimentos foram de manutenção barata? Quantos de extensão premium? Anote a proporção real.', cat: 'Diagnóstico' },
+            { dia: 2, titulo: 'Calcule Seu Hora Cem', desc: 'Use o motor na aba anterior. Descubra o custo real de cada hora da sua cadeira e quanto precisa cobrar para lucrar de verdade.', cat: 'Financeiro' },
+            { dia: 3, titulo: 'Catalogue Seus Serviços', desc: 'Liste todos os serviços que oferece com preço, tempo médio e custo de material. Classifique cada um nos 5 ativos.', cat: 'Estratégia' },
+            { dia: 4, titulo: 'Elimine os Vilões', desc: 'Identifique serviços que dão prejuízo (ticket < custo/hora). Reajuste o preço ou retire do portfólio.', cat: 'Financeiro' },
+            { dia: 5, titulo: 'Crie Seu Combo Premium', desc: 'Monte um combo "Olhar Completo" (cílios + sobrancelha + tintura). Preço premium com percepção de valor alto.', cat: 'Produto' },
+            { dia: 6, titulo: 'Lance o Pacote de Fidelidade', desc: 'Crie um pacote mensal com 2 manutenções incluídas. Ofereça às 10 melhores clientes. Meta: 5 adesões.', cat: 'Recorrência' },
+            { dia: 7, titulo: 'Faça 5 Stories de Bastidores', desc: 'Mostre seu material premium, o antes/depois, seu setup. Não venda — gere desejo e autoridade.', cat: 'Marketing' },
+            { dia: 8, titulo: 'Reajuste 3 Preços', desc: 'Escolha 3 serviços que estão abaixo do seu Hora Cem e aumente o preço em 15-25%. Comunique valor, não custo.', cat: 'Financeiro' },
+            { dia: 9, titulo: 'Crie Sua Lista VIP', desc: 'Identifique as 20 clientes que mais gastam. Ofereça agendamento prioritário e um mimo exclusivo.', cat: 'Fidelização' },
+            { dia: 10, titulo: 'Grave Um Reels Tutorial', desc: 'Ensine algo simples (cuidados pós-extensão). Posicione-se como especialista. Marketing de autoridade.', cat: 'Marketing' },
+            { dia: 11, titulo: 'Prospecte 3 Parcerias', desc: 'Busque salões, dermatologistas, espaços de estética para indicação mútua. Construa sua rede de referências.', cat: 'Parcerias' },
+            { dia: 12, titulo: 'Implemente Upsell Automático', desc: 'Para cada manutenção, sugira um upgrade: "Por +R$30 incluo a tintura dos cílios". Treine o pitch.', cat: 'Vendas' },
+            { dia: 13, titulo: 'Analise Sua Nova Alocação', desc: 'Volte à aba "Minha Carteira" e atualize os números. Compare com o dia 1. A proporção melhorou?', cat: 'Análise' },
+            { dia: 14, titulo: 'Defina Metas do Mês', desc: 'Com base nos dados, defina: faturamento-alvo, ticket médio ideal, número mínimo de procedimentos premium por semana.', cat: 'Planejamento' }
+        ];
+
+        const catColors = {
+            'Diagnóstico': 'purple', 'Financeiro': 'emerald', 'Estratégia': 'amber',
+            'Produto': 'sky', 'Recorrência': 'indigo', 'Marketing': 'pink',
+            'Fidelização': 'orange', 'Vendas': 'red', 'Parcerias': 'teal',
+            'Análise': 'blue', 'Planejamento': 'violet'
+        };
+
+        const items = dias.map(d => {
+            const c = catColors[d.cat] || 'slate';
+            return `
+            <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md transition-all">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-black text-sm">${d.dia}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-bold text-sm text-on-surface">${d.titulo}</h4>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-${c}-100 text-${c}-700">${d.cat}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">${d.desc}</p>
+                    </div>
+                    <label class="flex-shrink-0">
+                        <input type="checkbox" class="plano14-check w-5 h-5 rounded accent-emerald-500" data-dia="${d.dia}">
+                    </label>
+                </div>
+            </div>`;
+        }).join('');
+
+        return `
+        <div class="bolsa-section animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 mb-6">
+                <h2 class="font-headline font-extrabold text-xl md:text-2xl text-on-surface mb-3 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+                    Plano de Tração: 14 Dias Para Rebalancear Seu Studio
+                </h2>
+                <p class="text-slate-600 text-sm leading-relaxed mb-2">
+                    Um protocolo <strong>dia a dia</strong> para otimizar sua carteira de serviços. 
+                    Cada ação é pequena, mas o efeito acumulado transforma seu faturamento.
+                </p>
+                <div class="flex items-center gap-3 mt-4 mb-6">
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full transition-all" id="plano14-progress" style="width:0%"></div>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500" id="plano14-counter">0/14</span>
+                </div>
+            </div>
+            <div class="space-y-3">
+                ${items}
+            </div>
+        </div>`;
+    },
+    renderFerramentas() {
+        const ferramentas = [
+            {
+                icon: 'price_change', titulo: 'Calculadora de Margem',
+                desc: 'Para cada serviço, calcule: (Preço - Custo Material - Custo Hora) = Margem Líquida. Se a margem for menor que 40%, revise.',
+                acao: 'Fórmula: (Preço Cobrado - Material - (Custo Fixo/Hora × Tempo do Serviço)) ÷ Preço × 100 = Margem %'
+            },
+            {
+                icon: 'swap_vert', titulo: 'Matriz de Rebalanceamento',
+                desc: 'Monte uma tabela com todos os serviços. Classifique por: Frequência, Ticket, Margem, Tempo. Elimine os que pontuam baixo em tudo.',
+                acao: 'Regra: Se um serviço pontua abaixo de 2/4 critérios, ele está desbalanceando sua carteira.'
+            },
+            {
+                icon: 'campaign', titulo: 'Script de Upsell',
+                desc: 'Para cada serviço básico, tenha um upgrade pronto: "Que tal incluir a tintura por apenas +R$X?"',
+                acao: 'Template: "[Nome], como você já está fazendo [serviço base], fica perfeito complementar com [upgrade]. É um investimento de apenas +R$[valor]."'
+            },
+            {
+                icon: 'calendar_month', titulo: 'Régua de Agendamento',
+                desc: 'Defina slots premium no horário nobre (10h-15h) para extensões/combos. Manutenções ficam nos extremos.',
+                acao: 'Slots 10h, 11h, 13h, 14h = Premium. Slots 8h, 9h, 16h, 17h = Manutenções e retoques.'
+            }
+        ];
+
+        const cards = ferramentas.map(f => `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-all">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-indigo-600" style="font-variation-settings: 'FILL' 1;">${f.icon}</span>
+                    </div>
+                    <h3 class="font-bold text-base text-on-surface">${f.titulo}</h3>
+                </div>
+                <p class="text-sm text-slate-600 mb-4">${f.desc}</p>
+                <div class="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                    <p class="text-xs text-indigo-700 font-mono">${f.acao}</p>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+        <div class="bolsa-section animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 mb-6">
+                <h2 class="font-headline font-extrabold text-xl md:text-2xl text-on-surface mb-3 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-indigo-500" style="font-variation-settings: 'FILL' 1;">build</span>
+                    Ferramentas de Rebalanceamento
+                </h2>
+                <p class="text-slate-600 text-sm">Ferramentas práticas para otimizar sua carteira de serviços e maximizar cada hora da sua cadeira.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-5">
+                ${cards}
+            </div>
+        </div>`;
+    },
+    renderInsight() {
+        return `
+        <div class="bolsa-section animate-fadeIn">
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6 md:p-10">
+                <div class="text-center mb-8">
+                    <span class="material-symbols-outlined text-amber-500 text-5xl mb-4" style="font-variation-settings: 'FILL' 1;">diamond</span>
+                    <h2 class="font-headline font-black text-2xl md:text-3xl text-amber-900 mb-3">O Insight de Ouro</h2>
+                    <div class="w-16 h-1 bg-amber-400 rounded-full mx-auto"></div>
+                </div>
+
+                <div class="max-w-2xl mx-auto space-y-6 text-amber-900">
+                    <blockquote class="text-xl md:text-2xl font-bold text-center leading-relaxed italic">
+                        "Você não precisa de mais clientes.<br>Você precisa das <span class='text-amber-600 underline decoration-wavy'>clientes certas</span>,<br>nos <span class='text-amber-600 underline decoration-wavy'>serviços certos</span>,<br>no <span class='text-amber-600 underline decoration-wavy'>preço certo</span>."
+                    </blockquote>
+
+                    <div class="bg-white/60 rounded-2xl p-6 border border-amber-200">
+                        <p class="text-sm leading-relaxed mb-4">
+                            A maioria das profissionais de beleza tenta resolver problemas de faturamento com <strong>mais trabalho</strong>. 
+                            Mais horários, mais clientes, mais cansaço. Isso é a esteira — você corre muito e não sai do lugar.
+                        </p>
+                        <p class="text-sm leading-relaxed mb-4">
+                            A <strong>Bolsa da Beleza</strong> é o oposto. É olhar para sua agenda como um investidor olha 
+                            para sua carteira: quais ativos estão performando? Quais estão queimando capital? 
+                            Onde realocar para maximizar retorno?
+                        </p>
+                        <p class="text-sm leading-relaxed font-bold">
+                            Quando você domina essa mentalidade, <span class="text-emerald-700">trabalha menos, ganha mais, 
+                            e constrói um studio que funciona como uma máquina de lucro previsível</span>.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 mt-6">
+                        <div class="text-center bg-white/60 rounded-xl p-4 border border-amber-200">
+                            <p class="text-2xl font-black text-amber-700">-30%</p>
+                            <p class="text-[10px] text-amber-600 font-bold">MENOS HORAS</p>
+                        </div>
+                        <div class="text-center bg-white/60 rounded-xl p-4 border border-amber-200">
+                            <p class="text-2xl font-black text-emerald-700">+80%</p>
+                            <p class="text-[10px] text-emerald-600 font-bold">MAIS LUCRO</p>
+                        </div>
+                        <div class="text-center bg-white/60 rounded-xl p-4 border border-amber-200">
+                            <p class="text-2xl font-black text-purple-700">∞</p>
+                            <p class="text-[10px] text-purple-600 font-bold">QUALIDADE DE VIDA</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    // ══════════════════════════════════════════
+    // NAVEGAÇÃO E EVENTOS
+    // ══════════════════════════════════════════
+    init() {
+        this.currentSection = 0;
+        this.bindNavigation();
+    },
+
+    bindNavigation() {
+        document.querySelectorAll('.bolsa-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.section);
+                this.navigateTo(idx);
+            });
+        });
+        const prev = document.getElementById('bolsa-prev');
+        const next = document.getElementById('bolsa-next');
+        if (prev) prev.addEventListener('click', () => this.navigateTo(this.currentSection - 1));
+        if (next) next.addEventListener('click', () => this.navigateTo(this.currentSection + 1));
+    },
+
+    navigateTo(idx) {
+        if (idx < 0 || idx >= this.sections.length) return;
+        this.currentSection = idx;
+        const contentEl = document.getElementById('bolsa-content');
+        if (!contentEl) return;
+
+        contentEl.style.opacity = '0';
+        contentEl.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+            switch (idx) {
+                case 0: contentEl.innerHTML = this.renderIntro(); break;
+                case 1: contentEl.innerHTML = this.renderAtivos(); break;
+                case 2:
+                    contentEl.innerHTML = this.renderMinhaCarteira();
+                    this.atualizarAlocacao();
+                    this._carregarDadosFirestore();
+                    break;
+                case 3:
+                    contentEl.innerHTML = this.renderPlano14Dias();
+                    this._carregarDadosFirestore().then(() => this._bindPlano14());
+                    break;
+                case 4: contentEl.innerHTML = this.renderFerramentas(); break;
+                case 5: contentEl.innerHTML = this.renderInsight(); break;
+            }
+            contentEl.style.opacity = '1';
+            contentEl.style.transform = 'translateY(0)';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 200);
+
+        // Update tabs
+        document.querySelectorAll('.bolsa-tab').forEach((tab, i) => {
+            if (i === idx) {
+                tab.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.remove('bg-slate-100', 'text-slate-600');
+            } else {
+                tab.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.add('bg-slate-100', 'text-slate-600');
+            }
+        });
+
+        // Minha Carteira tab special style
+        document.querySelectorAll('.bolsa-tab').forEach((tab, i) => {
+            if (i === 2 && i !== idx) {
+                tab.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+                tab.classList.add('bg-emerald-50', 'text-emerald-700');
+            }
+        });
+
+        // Update prev/next
+        const prev = document.getElementById('bolsa-prev');
+        const next = document.getElementById('bolsa-next');
+        if (prev) prev.disabled = idx === 0;
+        if (next) {
+            if (idx === this.sections.length - 1) {
+                next.innerHTML = '<span class="material-symbols-outlined text-lg">check</span>Concluído';
+                next.disabled = true;
+                next.classList.add('opacity-50');
+            } else {
+                next.innerHTML = 'Próximo<span class="material-symbols-outlined text-lg">arrow_forward</span>';
+                next.disabled = false;
+                next.classList.remove('opacity-50');
+            }
+        }
+
+        const counter = document.getElementById('bolsa-counter');
+        if (counter) counter.textContent = `${idx + 1} / ${this.sections.length}`;
+    },
+
+    // ══════════════════════════════════════════
+    // HORA CEM — MOTOR DE CÁLCULO
+    // ══════════════════════════════════════════
+    calcularHoraCem() {
+        const custoFixo = parseFloat(document.getElementById('hc-custo-fixo')?.value) || 0;
+        const dias = parseFloat(document.getElementById('hc-dias')?.value) || 22;
+        const horas = parseFloat(document.getElementById('hc-horas')?.value) || 8;
+        const metaLucro = parseFloat(document.getElementById('hc-meta-lucro')?.value) || 0;
+        const custoVar = parseFloat(document.getElementById('hc-custo-var')?.value) || 0;
+
+        const totalHoras = dias * horas;
+        const custoHora = totalHoras > 0 ? custoFixo / totalHoras : 0;
+        const metaDia = dias > 0 ? (custoFixo + metaLucro) / dias : 0;
+        const horaCem = custoHora + custoVar + (metaLucro / totalHoras);
+        const ticketMin = custoHora + custoVar;
+
+        document.getElementById('hc-custo-hora').textContent = `R$ ${custoHora.toFixed(0)}`;
+        document.getElementById('hc-hora-cem').textContent = `R$ ${horaCem.toFixed(0)}`;
+        document.getElementById('hc-meta-dia').textContent = `R$ ${metaDia.toFixed(0)}`;
+        document.getElementById('hc-ticket-min').textContent = `R$ ${ticketMin.toFixed(0)}`;
+
+        const insight = `Para atingir sua meta de R$ ${metaLucro.toLocaleString('pt-BR')} de lucro, cada hora na cadeira precisa gerar pelo menos <strong>R$ ${horaCem.toFixed(0)}</strong>. Qualquer serviço que cobre menos que <strong>R$ ${ticketMin.toFixed(0)}/hora</strong> está gerando prejuízo real.`;
+        document.getElementById('hc-insight').innerHTML = insight;
+        document.getElementById('hc-resultado').classList.remove('hidden');
+
+        // Salvar no Firestore
+        this._salvarFirestore('horaCem', { custoFixo, dias, horas, metaLucro, custoVar, custoHora, horaCem, metaDia, ticketMin });
+    },
+
+    // ══════════════════════════════════════════
+    // SERVIÇOS — GESTÃO DA CARTEIRA
+    // ══════════════════════════════════════════
+    servicos: [],
+
+    adicionarServico() {
+        const id = Date.now();
+        this.servicos.push({ id, nome: '', preco: 0, tempo: 1, custo: 0, categoria: 0 });
+        this._renderServicos();
+    },
+
+    removerServico(id) {
+        this.servicos = this.servicos.filter(s => s.id !== id);
+        this._renderServicos();
+        this.atualizarAlocacao();
+        this._salvarFirestore('servicos', this.servicos);
+    },
+
+    _renderServicos() {
+        const container = document.getElementById('servicos-lista');
+        if (!container) return;
+
+        const catNomes = ['Renda Fixa', 'Crescimento', 'Premium', 'Dividendos', 'Venture Capital'];
+        const catColors = ['emerald', 'purple', 'amber', 'sky', 'rose'];
+
+        container.innerHTML = this.servicos.map(s => `
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">SERVIÇO</label>
+                        <input type="text" value="${s.nome}" onchange="BolsaBeleza._updateServico(${s.id}, 'nome', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="Ex: Volume Russo">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">PREÇO (R$)</label>
+                        <input type="number" value="${s.preco}" onchange="BolsaBeleza._updateServico(${s.id}, 'preco', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="250">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">TEMPO (H)</label>
+                        <input type="number" step="0.5" value="${s.tempo}" onchange="BolsaBeleza._updateServico(${s.id}, 'tempo', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none" placeholder="2">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 block mb-1">ATIVO</label>
+                        <select onchange="BolsaBeleza._updateServico(${s.id}, 'categoria', this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:outline-none">
+                            ${catNomes.map((n, i) => `<option value="${i}" ${s.categoria == i ? 'selected' : ''}>${n}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="BolsaBeleza.removerServico(${s.id})" class="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
+                            <span class="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    _updateServico(id, campo, valor) {
+        const s = this.servicos.find(s => s.id === id);
+        if (!s) return;
+        s[campo] = campo === 'nome' ? valor : parseFloat(valor) || 0;
+        this.atualizarAlocacao();
+        this._salvarFirestore('servicos', this.servicos);
+    },
+
+    // ══════════════════════════════════════════
+    // ALOCAÇÃO — DISTRIBUIÇÃO DA CARTEIRA
+    // ══════════════════════════════════════════
+    atualizarAlocacao() {
+        const totais = [0, 0, 0, 0, 0];
+        this.servicos.forEach(s => {
+            totais[s.categoria] += s.preco || 0;
+        });
+        const total = totais.reduce((a, b) => a + b, 0);
+
+        for (let i = 0; i < 5; i++) {
+            const pct = total > 0 ? ((totais[i] / total) * 100).toFixed(0) : 0;
+            const el = document.getElementById(`aloc-${i}`);
+            const bar = document.getElementById(`bar-${i}`);
+            if (el) el.textContent = `${pct}%`;
+            if (bar) bar.style.width = `${pct}%`;
+        }
+
+        const totalEl = document.getElementById('alocacao-total');
+        if (totalEl) totalEl.textContent = `Faturamento total: R$ ${total.toLocaleString('pt-BR')}`;
+    },
+
+    // ══════════════════════════════════════════
+    // FIRESTORE — PERSISTÊNCIA
+    // ══════════════════════════════════════════
+    async _salvarFirestore(campo, dados) {
+        try {
+            const uid = Store._uid();
+            if (!uid) return;
+            const docRef = firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados');
+            await docRef.set({ [campo]: dados, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        } catch (e) {
+            console.warn('Bolsa Beleza — Erro ao salvar:', e);
+        }
+    },
+
+    async _carregarDadosFirestore() {
+        try {
+            const uid = Store._uid();
+            if (!uid) return;
+            const docRef = firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados');
+            const snap = await docRef.get();
+            if (!snap.exists) return;
+            const data = snap.data();
+
+            // Carregar serviços
+            if (data.servicos && Array.isArray(data.servicos)) {
+                this.servicos = data.servicos;
+                this._renderServicos();
+                this.atualizarAlocacao();
+            }
+
+            // Carregar Hora Cem
+            if (data.horaCem) {
+                const hc = data.horaCem;
+                const el = (id, val) => { const e = document.getElementById(id); if (e) e.value = val; };
+                el('hc-custo-fixo', hc.custoFixo);
+                el('hc-dias', hc.dias);
+                el('hc-horas', hc.horas);
+                el('hc-meta-lucro', hc.metaLucro);
+                el('hc-custo-var', hc.custoVar);
+                this.calcularHoraCem();
+            }
+
+            // Carregar Plano 14 dias
+            if (data.plano14 && Array.isArray(data.plano14)) {
+                this._plano14Concluidos = data.plano14;
+            }
+        } catch (e) {
+            console.warn('Bolsa Beleza — Erro ao carregar:', e);
+        }
+    },
+
+    // ══════════════════════════════════════════
+    // PLANO 14 DIAS — PROGRESSO
+    // ══════════════════════════════════════════
+    _plano14Concluidos: [],
+
+    _bindPlano14() {
+        document.querySelectorAll('.plano14-check').forEach(cb => {
+            const dia = parseInt(cb.dataset.dia);
+            cb.checked = this._plano14Concluidos.includes(dia);
+            cb.addEventListener('change', () => {
+                if (cb.checked) {
+                    if (!this._plano14Concluidos.includes(dia)) this._plano14Concluidos.push(dia);
+                } else {
+                    this._plano14Concluidos = this._plano14Concluidos.filter(d => d !== dia);
+                }
+                this._atualizarProgressoPlano14();
+                this._salvarFirestore('plano14', this._plano14Concluidos);
+            });
+        });
+        this._atualizarProgressoPlano14();
+    },
+
+    _atualizarProgressoPlano14() {
+        const total = 14;
+        const feitos = this._plano14Concluidos.length;
+        const pct = ((feitos / total) * 100).toFixed(0);
+        const bar = document.getElementById('plano14-progress');
+        const counter = document.getElementById('plano14-counter');
+        if (bar) bar.style.width = `${pct}%`;
+        if (counter) counter.textContent = `${feitos}/${total}`;
+    },
+};

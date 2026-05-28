@@ -1,7 +1,7 @@
 {
   "firestore": {
     "database": "(default)",
-    "location": "nam5",
+    "location": "us-east1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
@@ -15,12 +15,31 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/booking/**",
+        "destination": "/booking.html"
+      },
+      {
+        "source": "/portfolio/**",
+        "destination": "/portfolio.html"
+      },
+      {
+        "source": "/bio/**",
+        "destination": "/bio.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   },
   "auth": {
     "providers": {
+      "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "Studiobeauty",
+        "oAuthBrandDisplayName": "LashBrow",
         "supportEmail": "negocioscota@gmail.com"
       }
     }

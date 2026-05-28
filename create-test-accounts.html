@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>LashBrow — Criar Contas de Teste</title>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #1a0a10; color: #e8a4b8; padding: 40px; }
+    .card { background: #2d0f1e; border-radius: 12px; padding: 24px; margin-bottom: 20px; max-width: 600px; }
+    h1 { font-size: 1.4rem; margin-bottom: 20px; }
+    .log { font-size: 0.85rem; line-height: 1.8; white-space: pre-wrap; color: #ccc; }
+    .success { color: #4CAF50; font-weight: bold; }
+    .error { color: #f44336; font-weight: bold; }
+    button { background: #e8a4b8; color: #1a0a10; border: none; padding: 12px 24px; border-radius: 8px; 
+             font-weight: 700; cursor: pointer; font-size: 1rem; margin-top: 16px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>✨ LashBrow — Criar Contas de Teste</h1>
+
+  <div class="card">
+    <p>Este script vai criar 2 contas no Firebase Auth + Firestore com planos ativos:</p>
+    <ul>
+      <li><strong>Studio</strong>: studio@lashbrow.test / LashBrow2024!</li>
+      <li><strong>Premium</strong>: premium@lashbrow.test / LashBrow2024!</li>
+    </ul>
+    <button id="btn-create" onclick="createAccounts()">🚀 Criar Contas</button>
+  </div>
+
+  <div class="card">
+    <div class="log" id="log">Aguardando...</div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDu_7cRKPc2rLcukZTsb58yMN-g0IlvIYc",
+      authDomain: "lashbrow-app.firebaseapp.com",
+      projectId: "lashbrow-app",
+      storageBucket: "lashbrow-app.firebasestorage.app",
+      messagingSenderId: "516369013329",
+      appId: "1:516369013329:web:0fd76e28780b2c98703670"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const logEl = document.getElementById('log');
+    function log(msg, cls = '') {
+      logEl.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const ACCOUNTS = [
+      {
+        email: 'studio@lashbrow.test',
+        password: 'LashBrow2024!',
+        plan: 'studio',
+        studioName: 'Studio Bella Lash',
+        ownerName: 'Mariana Studio',
+      },
+      {
+        email: 'premium@lashbrow.test',
+        password: 'LashBrow2024!',
+        plan: 'premium',
+        studioName: 'Premium Lash & Brow',
+        ownerName: 'Carolina Premium',
+      }
+    ];
+
+    function generateCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      return Array.from({length: 8}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    async function createAccounts() {
+      const btn = document.getElementById('btn-create');
+      btn.disabled = true;
+      logEl.innerHTML = '';
+
+      for (const acc of ACCOUNTS) {
+        log(`\n━━━ Criando conta ${acc.plan.toUpperCase()} ━━━`);
+        log(`📧 E-mail: ${acc.email}`);
+        log(`🔑 Senha: ${acc.password}`);
+        
+        try {
+          // 1. Criar usuário no Firebase Auth
+          log('→ Criando usuário no Firebase Auth...');
+          const cred = await auth.createUserWithEmailAndPassword(acc.email, acc.password);
+          await cred.user.updateProfile({ displayName: acc.ownerName });
+          const uid = cred.user.uid;
+          log(`✅ Auth criado! UID: ${uid}`, 'success');
+
+          // 2. Criar documento na coleção "companies" com plano ativo
+          log('→ Criando documento Firestore (companies)...');
+          await db.collection('companies').doc(uid).set({
+            companyName: acc.studioName,
+            ownerName: acc.ownerName,
+            ownerPhone: '',
+            ownerEmail: acc.email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            plan: acc.plan,
+            selectedPlan: acc.plan,
+            status: 'active',
+            subscriptionStatus: 'active',  // Simula assinatura ativa
+            referredBy: null,
+            pixKey: '',
+            referralCode: generateCode()
+          });
+          log(`✅ Firestore "companies" criado!`, 'success');
+
+          // 3. Criar documento na coleção "studios" (perfil do studio)
+          log('→ Criando documento Firestore (studios)...');
+          await db.collection('studios').doc(uid).set({
+            studioName: acc.studioName,
+            companyName: acc.studioName,
+            ownerPhone: '',
+            ownerEmail: acc.email,
+            city: '',
+            state: '',
+            plan: acc.plan
+          });
+          log(`✅ Firestore "studios" criado!`, 'success');
+
+          log(`\n🎉 Conta ${acc.plan.toUpperCase()} pronta!`, 'success');
+          log(`   Login: ${acc.email}`);
+          log(`   Senha: ${acc.password}`);
+
+          // Fazer logout para criar a próxima conta
+          await auth.signOut();
+          log('→ Logout realizado para criar próxima conta...');
+
+        } catch (err) {
+          if (err.code === 'auth/email-already-in-use') {
+            log(`⚠️ Conta já existe! Tentando atualizar Firestore...`, 'error');
+            try {
+              // Login para obter UID
+              const cred = await auth.signInWithEmailAndPassword(acc.email, acc.password);
+              const uid = cred.user.uid;
+              log(`→ Login OK. UID: ${uid}`);
+              
+              // Atualizar documentos
+              await db.collection('companies').doc(uid).set({
+                plan: acc.plan,
+                selectedPlan: acc.plan,
+                status: 'active',
+                subscriptionStatus: 'active',
+              }, { merge: true });
+              
+              await db.collection('studios').doc(uid).set({
+                studioName: acc.studioName,
+                plan: acc.plan
+              }, { merge: true });
+
+              log(`✅ Firestore atualizado para plano ${acc.plan.toUpperCase()}!`, 'success');
+              await auth.signOut();
+            } catch (e2) {
+              log(`❌ Erro: ${e2.message}`, 'error');
+            }
+          } else {
+            log(`❌ Erro: ${err.message}`, 'error');
+          }
+        }
+      }
+
+      log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      log('🎉 RESUMO DAS CONTAS:', 'success');
+      log('');
+      log('  📋 Plano STUDIO:');
+      log('     E-mail: studio@lashbrow.test');
+      log('     Senha:  LashBrow2024!');
+      log('');
+      log('  📋 Plano PREMIUM:');
+      log('     E-mail: premium@lashbrow.test');
+      log('     Senha:  LashBrow2024!');
+      log('');
+      log('  Acesse: https://lashbrow.clientehub.app.br/app.html');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      btn.disabled = false;
+      btn.textContent = '✅ Concluído!';
+    }
+  </script>
+</body>
+</html>

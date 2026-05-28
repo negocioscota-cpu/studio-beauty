@@ -1,0 +1,5 @@
+/app         /app.html    200
+/app/*       /app.html    200
+/booking/*   /booking.html 200
+/portfolio/* /portfolio.html 200
+/bio/*       /bio.html    200

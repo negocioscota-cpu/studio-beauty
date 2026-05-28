@@ -1,0 +1,24 @@
+[[redirects]]
+  from = "/app"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/*"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/booking/*"
+  to = "/booking.html"
+  status = 200
+
+[[redirects]]
+  from = "/portfolio/*"
+  to = "/portfolio.html"
+  status = 200
+
+[[redirects]]
+  from = "/bio/*"
+  to = "/bio.html"
+  status = 200

@@ -1,215 +1,162 @@
-// === Loyalty Program Page ===
-const LoyaltyPage = {
-    clients: [],
-    rules: { pointsPerReal: 1, rewardPoints: 500, rewardName: "Design de Sobrancelha Premium" },
+// === PROGRAMA DE FIDELIDADE ===
+const Loyalty = {
+    async render(container) {
+        container.innerHTML = '<div style="text-align:center;padding:48px"><div class="spinner"></div></div>';
 
-    render() {
-        return `
-        <div class="space-y-8 max-w-[1400px] mobile-full-width mx-auto animation-fade-in pb-20">
-            <!-- Header -->
-            <section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface">Programa de Fidelidade</h2>
-                    <p class="text-on-surface-variant mt-1">Estimule o retorno das suas clientes com pontuação por procedimentos e resgate de recompensas.</p>
-                </div>
-            </section>
+        const [config, clients, allAppts] = await Promise.all([
+            Store.getLoyaltyConfig().catch(() => ({ threshold: 10, reward: 'Manutenção grátis' })),
+            Store.getClients(),
+            Store.getAllAppointmentsDone()
+        ]);
 
-            <!-- Grid de Regras e Busca -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Regras do Programa -->
-                <div class="bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/10 shadow-xs space-y-4">
-                    <h3 class="font-headline font-bold text-lg text-primary flex items-center gap-1.5">
-                        <span class="material-symbols-outlined">settings_suggest</span>
-                        Regras do Estúdio
-                    </h3>
-                    <div class="space-y-3 text-sm text-on-surface">
-                        <div class="p-3 bg-primary/5 rounded-xl border border-primary/10" style="background-color: rgba(199, 123, 107, 0.05);">
-                            <span class="text-xs text-on-surface-variant block uppercase font-bold">Conversão Básica</span>
-                            <strong>R$ 1,00 Gasto = ${LoyaltyPage.rules.pointsPerReal} Ponto(s)</strong>
-                        </div>
-                        <div class="p-3 bg-surface-container rounded-xl">
-                            <span class="text-xs text-on-surface-variant block uppercase font-bold">Recompensa Atual</span>
-                            <strong>${LoyaltyPage.rules.rewardPoints} Pontos = ${LoyaltyPage.rules.rewardName}</strong>
-                        </div>
-                    </div>
-                </div>
+        // Contar visitas por cliente
+        const visitMap = {};
+        allAppts.forEach(a => {
+            if (!a.clientId) return;
+            visitMap[a.clientId] = (visitMap[a.clientId] || 0) + 1;
+        });
 
-                <!-- Painel de Busca e Ação rápida por Cliente -->
-                <div class="lg:col-span-2 bg-surface-container-lowest rounded-3xl p-6 border border-outline-variant/10 shadow-xs space-y-6">
-                    <div>
-                        <h3 class="font-headline font-bold text-lg text-on-surface">Clientes & Saldos</h3>
-                        <p class="text-xs text-on-surface-variant mt-0.5">Busque a cliente e gerencie seus pontos em tempo real.</p>
-                    </div>
-                    
-                    <!-- Search input -->
-                    <div class="relative">
-                        <input type="text" id="loyalty-search" class="w-full pl-11 pr-4 py-3 bg-surface-container border-none rounded-xl text-sm text-on-surface" placeholder="Digite o nome da cliente..." />
-                        <span class="material-symbols-outlined absolute left-4 top-3 text-on-surface-variant text-xl">search</span>
-                    </div>
+        // Enriquecer clientes com visitas
+        const enriched = clients.map(c => ({
+            ...c,
+            visits: visitMap[c.id] || 0,
+            progress: Math.min(100, Math.round(((visitMap[c.id] || 0) % config.threshold) / config.threshold * 100)),
+            milestones: Math.floor((visitMap[c.id] || 0) / config.threshold),
+            nextIn: config.threshold - ((visitMap[c.id] || 0) % config.threshold)
+        })).sort((a, b) => b.visits - a.visits);
 
-                    <!-- Clientes Saldos Lista -->
-                    <div id="loyalty-list" class="space-y-3 max-h-[300px] overflow-y-auto">
-                        <div class="text-center py-6 text-on-surface-variant text-sm">Carregando dados das clientes...</div>
-                    </div>
-                </div>
+        const reachedMilestone = enriched.filter(c => c.visits > 0 && c.visits % config.threshold === 0);
+
+        container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:20px">
+
+          <!-- Hero -->
+          <div class="loyalty-hero">
+            <div class="loyalty-hero-icon">🎁</div>
+            <div>
+              <h2 class="loyalty-hero-title">Programa de Fidelidade</h2>
+              <p class="loyalty-hero-sub">Recompense suas clientes mais fiéis automaticamente.</p>
             </div>
+            <button class="btn btn-outline btn-sm" onclick="Loyalty.openConfig()">
+              <span class="material-symbols-outlined">settings</span> Configurar
+            </button>
+          </div>
+
+          <!-- Config atual -->
+          <div class="loyalty-config-banner">
+            <span class="material-symbols-outlined" style="color:var(--gold);font-size:20px">stars</span>
+            <span>A cada <strong>${config.threshold} atendimentos</strong>, a cliente ganha: <strong>${config.reward || 'Brinde não configurado'}</strong></span>
+          </div>
+
+          <!-- Clientes que atingiram o marco -->
+          ${reachedMilestone.length > 0 ? `
+          <div class="card" style="border:2px solid var(--gold);background:rgba(201,169,110,0.06)">
+            <div class="card-header">
+              <span class="card-title">🎉 Prêmio a Entregar!</span>
+              <span class="badge badge-gold">${reachedMilestone.length} cliente${reachedMilestone.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="card-body" style="padding:0">
+              ${reachedMilestone.map(c => `
+              <div class="loyalty-milestone-row">
+                <div class="loyalty-avatar">${c.name.charAt(0)}</div>
+                <div style="flex:1">
+                  <div style="font-weight:700">${c.name}</div>
+                  <div style="font-size:0.78rem;color:var(--text-muted)">${c.visits} atendimentos · ${c.milestones}× premiada</div>
+                </div>
+                ${c.phone ? `<button class="btn btn-wa btn-sm" onclick="WA.loyaltyReward('${c.name}','${c.phone}','${config.reward}','${c.visits}')">
+                  📲 Avisar
+                </button>` : '<span class="badge badge-brown" style="font-size:0.7rem">Sem tel.</span>'}
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+
+          <!-- Ranking de clientes -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🏆 Ranking de Fidelidade</span>
+              <span style="font-size:0.8rem;color:var(--text-muted)">${enriched.filter(c => c.visits > 0).length} clientes ativas</span>
+            </div>
+            <div class="card-body" style="padding:0">
+              ${enriched.filter(c => c.visits > 0).length === 0
+                ? `<div class="empty-state" style="padding:40px">
+                    <span class="material-symbols-outlined empty-state-icon">loyalty</span>
+                    <p class="empty-state-title">Nenhum atendimento registrado ainda</p>
+                    <p class="empty-state-desc">Conclua agendamentos para começar o ranking.</p>
+                  </div>`
+                : enriched.filter(c => c.visits > 0).map((c, i) => `
+                <div class="loyalty-rank-row">
+                  <div class="loyalty-rank-pos ${i < 3 ? 'top-' + (i+1) : ''}">${i + 1}</div>
+                  <div class="loyalty-avatar">${c.name.charAt(0)}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                      <span style="font-weight:600;font-size:0.9rem">${c.name}</span>
+                      <span style="font-size:0.78rem;color:var(--text-muted)">${c.visits} visit${c.visits > 1 ? 'as' : 'a'}</span>
+                    </div>
+                    <!-- Barra de progresso -->
+                    <div class="loyalty-progress-bar-bg">
+                      <div class="loyalty-progress-bar-fill" style="width:${c.progress}%"></div>
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">
+                      ${c.visits % config.threshold === 0
+                        ? `🎉 Marco atingido! (${c.milestones}× premiada)`
+                        : `Faltam ${c.nextIn} para o próximo prêmio`}
+                    </div>
+                  </div>
+                  ${c.milestones > 0 ? `<div class="loyalty-medal" title="${c.milestones} prêmio(s)">🏅 ×${c.milestones}</div>` : ''}
+                </div>`).join('')
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal de Configuração -->
+        <div id="loyalty-modal" class="modal-overlay hidden" onclick="Loyalty.closeConfig(event)">
+          <div class="modal-container" onclick="event.stopPropagation()" style="max-width:420px">
+            <div class="modal-header">
+              <h3 class="modal-title">⚙️ Configurar Fidelidade</h3>
+              <button class="modal-close" onclick="Loyalty.closeConfig()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="form-label">Número de atendimentos para o prêmio *</label>
+                <input class="form-control" type="number" id="loyalty-threshold" min="1" max="100"
+                  value="${config.threshold}" placeholder="Ex: 10" />
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">Cada vez que a cliente atingir este número, ela ganha a recompensa.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Recompensa *</label>
+                <input class="form-control" id="loyalty-reward" value="${config.reward || ''}"
+                  placeholder="Ex: Manutenção grátis, 20% de desconto..." />
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="Loyalty.closeConfig()">Cancelar</button>
+                <button class="btn btn-primary" onclick="Loyalty.saveConfig()">
+                  <span class="material-symbols-outlined">save</span> Salvar
+                </button>
+              </div>
+            </div>
+          </div>
         </div>`;
     },
 
-    async init() {
-        // Search trigger
-        const searchInput = document.getElementById('loyalty-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                LoyaltyPage.renderList(searchInput.value.trim());
-            });
-        }
-
-        await LoyaltyPage.loadData();
+    openConfig() {
+        document.getElementById('loyalty-modal')?.classList.remove('hidden');
     },
 
-    async loadData() {
-        try {
-            LoyaltyPage.clients = await Store.getClients();
-            LoyaltyPage.renderList();
-        } catch (error) {
-            console.error("Erro ao carregar dados do fidelidade:", error);
-            App.showToast("Falha ao carregar saldos de fidelidade.", "error");
-        }
+    closeConfig(event) {
+        if (event && event.target !== document.getElementById('loyalty-modal')) return;
+        document.getElementById('loyalty-modal')?.classList.add('hidden');
     },
 
-    renderList(query = '') {
-        const list = document.getElementById('loyalty-list');
-        if (!list) return;
-
-        const filtered = query.length === 0
-            ? LoyaltyPage.clients
-            : LoyaltyPage.clients.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
-
-        if (filtered.length === 0) {
-            list.innerHTML = `<div class="text-center py-8 text-on-surface-variant text-xs">Nenhuma cliente encontrada com o nome digitado.</div>`;
-            return;
-        }
-
-        list.innerHTML = filtered.map(client => {
-            const points = client.loyaltyPoints || 0;
-            const progress = Math.min(Math.round((points / LoyaltyPage.rules.rewardPoints) * 100), 100);
-            const canRedeem = points >= LoyaltyPage.rules.rewardPoints;
-
-            return `
-            <div class="p-4 bg-surface-container-low rounded-2xl border border-outline-variant/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex-1 space-y-2">
-                    <div class="flex items-center gap-2">
-                        <h4 class="font-headline font-bold text-sm text-on-surface">${client.name}</h4>
-                        <span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black rounded-full" style="background-color: rgba(199, 123, 107, 0.1);">
-                            ${points} pts
-                        </span>
-                    </div>
-
-                    <!-- Progress bar to reward -->
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-[10px] text-on-surface-variant font-medium">
-                            <span>Progresso para o Prêmio</span>
-                            <span>${progress}% (${points}/${LoyaltyPage.rules.rewardPoints} pts)</span>
-                        </div>
-                        <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                            <div class="h-full vitality-gradient rounded-full" style="width: ${progress}%;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex items-center gap-2 self-end md:self-center shrink-0">
-                    <!-- Lancar pontos -->
-                    <button onclick="LoyaltyPage.showAddPointsModal('${client.id}')" class="px-3.5 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs rounded-xl flex items-center gap-1 transition-colors">
-                        <span class="material-symbols-outlined text-base">add</span>
-                        Crédito
-                    </button>
-                    <!-- Resgatar -->
-                    <button onclick="LoyaltyPage.redeemPoints('${client.id}')" ${!canRedeem ? 'disabled' : ''} 
-                        class="px-4 py-2 text-xs font-bold text-white rounded-xl shadow-md flex items-center gap-1 transition-all ${canRedeem ? 'vitality-gradient hover:scale-102 cursor-pointer shadow-primary/10' : 'bg-slate-300 shadow-none cursor-not-allowed opacity-60'}">
-                        <span class="material-symbols-outlined text-base">celebration</span>
-                        Resgatar Prêmio
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-    },
-
-    showAddPointsModal(clientId) {
-        const client = LoyaltyPage.clients.find(c => c.id === clientId);
-        if (!client) return;
-
-        const modal = document.getElementById('modal-content');
-        modal.innerHTML = `
-        <div class="p-8 max-w-sm mx-auto">
-            <h3 class="font-headline font-bold text-xl mb-1">Pontuar Cliente</h3>
-            <p class="text-on-surface-variant text-xs mb-6">Insira o valor em dinheiro do procedimento para converter em pontos para <strong>${client.name}</strong>.</p>
-            <form id="points-form" class="space-y-4">
-                <div>
-                    <label class="block font-label text-[0.6875rem] font-semibold uppercase tracking-wider text-on-surface-variant mb-1.5">Valor do Procedimento (R$)</label>
-                    <input type="number" id="pts-amount" step="0.01" class="w-full px-4 py-2.5 bg-surface-container-high border-none rounded-xl text-on-surface text-sm" placeholder="Ex: 180.00" required />
-                </div>
-                <div class="p-3 bg-primary/5 rounded-xl border border-primary/10 text-xs text-primary" style="background-color: rgba(199, 123, 107, 0.05);">
-                    💡 Equivalência estimada: <strong id="pts-calc-preview">0 pontos</strong>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant/10">
-                    <button type="button" onclick="App.closeModal()" class="px-5 py-2 text-on-surface-variant font-bold hover:bg-surface-container-low rounded-xl text-xs transition-colors">Cancelar</button>
-                    <button type="submit" class="px-5 py-2 vitality-gradient text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:opacity-95 transition-all text-xs flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-base">save</span>
-                        Salvar Pontos
-                    </button>
-                </div>
-            </form>
-        </div>`;
-        App.openModal();
-
-        const amtInput = document.getElementById('pts-amount');
-        const calcPreview = document.getElementById('pts-calc-preview');
-
-        amtInput.addEventListener('input', () => {
-            const val = parseFloat(amtInput.value) || 0;
-            const pts = Math.round(val * LoyaltyPage.rules.pointsPerReal);
-            calcPreview.textContent = `${pts} ponto${pts > 1 || pts === 0 ? 's' : ''}`;
-        });
-
-        document.getElementById('points-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const val = parseFloat(amtInput.value) || 0;
-            const pts = Math.round(val * LoyaltyPage.rules.pointsPerReal);
-
-            try {
-                const currentPoints = client.loyaltyPoints || 0;
-                await Store.updateClient(clientId, {
-                    loyaltyPoints: currentPoints + pts
-                });
-                App.closeModal();
-                App.showToast(`Creditados ${pts} pontos com sucesso!`, "success");
-                await LoyaltyPage.loadData();
-            } catch (err) {
-                console.error("Erro ao creditar pontos:", err);
-                App.showToast("Erro ao creditar pontos no Firebase.", "error");
-            }
-        });
-    },
-
-    async redeemPoints(clientId) {
-        const client = LoyaltyPage.clients.find(c => c.id === clientId);
-        if (!client) return;
-
-        if (!confirm(`Confirmar o resgate da recompensa "${LoyaltyPage.rules.rewardName}" para ${client.name}? Serão debitados ${LoyaltyPage.rules.rewardPoints} pontos.`)) return;
-
-        try {
-            const currentPoints = client.loyaltyPoints || 0;
-            await Store.updateClient(clientId, {
-                loyaltyPoints: Math.max(0, currentPoints - LoyaltyPage.rules.rewardPoints)
-            });
-            App.showToast("Prêmio resgatado e entregue com sucesso! 🎉", "success");
-            await LoyaltyPage.loadData();
-        } catch (err) {
-            console.error("Erro ao resgatar pontos:", err);
-            App.showToast("Erro ao processar resgate no Firebase.", "error");
-        }
+    async saveConfig() {
+        const threshold = parseInt(document.getElementById('loyalty-threshold').value) || 10;
+        const reward    = document.getElementById('loyalty-reward').value.trim();
+        if (!reward) { App.showToast('Informe a recompensa.', 'error'); return; }
+        await Store.saveLoyaltyConfig({ threshold, reward });
+        document.getElementById('loyalty-modal')?.classList.add('hidden');
+        App.showToast('Programa de fidelidade configurado! ✅', 'success');
+        App.currentPage = null;
+        await App.navigate('loyalty');
     }
 };

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avalie seu Atendimento — LashBrow</title>
+  <meta name="description" content="Deixe sua avaliação sobre o atendimento no studio de cílios e sobrancelhas." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rose: #C4758A;
+      --gold: #C9A96E;
+      --dark: #0f0710;
+      --card-bg: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.1);
+      --text: #f0e8f0;
+      --muted: rgba(240,232,240,0.55);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--dark);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Orbs de fundo */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::before {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(196,117,138,0.25) 0%, transparent 70%);
+      top: -100px; left: -100px;
+      animation: orb1 8s ease-in-out infinite;
+    }
+    body::after {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(201,169,110,0.2) 0%, transparent 70%);
+      bottom: -80px; right: -80px;
+      animation: orb2 10s ease-in-out infinite;
+    }
+    @keyframes orb1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
+    @keyframes orb2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,-20px)} }
+
+    /* Partículas flutuantes */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle {
+      position: absolute;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(201,169,110,0.5);
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      from { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      to   { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Card principal */
+    .card {
+      position: relative; z-index: 1;
+      background: rgba(20, 8, 16, 0.7);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 36px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(196,117,138,0.1);
+      text-align: center;
+      animation: slideUp 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Topo / branding */
+    .logo-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 6px;
+    }
+    .logo-emoji { font-size: 2.4rem; animation: pulse-logo 2s ease-in-out infinite; }
+    @keyframes pulse-logo { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    .brand {
+      font-size: 1.7rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--rose), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .subtitle { font-size: 0.8rem; color: var(--muted); margin-bottom: 28px; }
+
+    /* Saudação personalizada */
+    .greeting {
+      background: rgba(196,117,138,0.08);
+      border: 1px solid rgba(196,117,138,0.2);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 24px;
+      font-size: 0.88rem; color: var(--text); line-height: 1.5;
+      display: none;
+    }
+    .greeting.show { display: block; }
+    .greeting strong { color: var(--rose); }
+
+    h2 { font-size: 1.25rem; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+
+    /* === ESTRELAS INTERATIVAS === */
+    .stars-wrap { margin-bottom: 8px; }
+    .stars { display: flex; justify-content: center; gap: 8px; }
+    .star-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 2.6rem; line-height: 1;
+      filter: grayscale(1) brightness(0.5);
+      transform-origin: center bottom;
+      transition: filter 0.2s, transform 0.2s;
+    }
+    .star-btn:hover,
+    .star-btn.hovered,
+    .star-btn.active {
+      filter: none;
+    }
+    .star-btn.active { animation: starPop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes starPop {
+      0%   { transform: scale(0.8); }
+      60%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+
+    .star-label {
+      font-size: 0.85rem; font-weight: 700;
+      min-height: 22px; margin-top: 10px; margin-bottom: 24px;
+      transition: all 0.2s;
+    }
+    .star-label.l1 { color: #e53e3e; }
+    .star-label.l2 { color: #ed8936; }
+    .star-label.l3 { color: #ecc94b; }
+    .star-label.l4 { color: #68d391; }
+    .star-label.l5 { color: var(--gold); }
+
+    /* Textarea */
+    .textarea-wrap { position: relative; margin-bottom: 20px; }
+    textarea {
+      width: 100%; padding: 14px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-family: inherit; font-size: 0.9rem; color: var(--text);
+      resize: none; transition: border-color 0.2s, background 0.2s;
+    }
+    textarea::placeholder { color: var(--muted); }
+    textarea:focus { outline: none; border-color: var(--rose); background: rgba(196,117,138,0.06); }
+
+    /* Chips de comentário rápido */
+    .quick-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+    .chip {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all 0.2s;
+    }
+    .chip:hover, .chip.active {
+      background: rgba(196,117,138,0.15); border-color: var(--rose); color: var(--text);
+    }
+
+    /* Botão enviar */
+    .btn-submit {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, var(--rose), var(--gold));
+      color: #fff; border: none; border-radius: 14px;
+      font-size: 1rem; font-weight: 800;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 20px rgba(196,117,138,0.35);
+      letter-spacing: 0.3px;
+    }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(196,117,138,0.5); }
+    .btn-submit:active:not(:disabled) { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Erro */
+    .error-msg {
+      font-size: 0.8rem; color: #fc8181; margin-bottom: 14px;
+      background: rgba(252,129,129,0.1); border-radius: 8px; padding: 8px 12px;
+    }
+    .error-msg.hidden { display: none; }
+
+    /* Spinner */
+    .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === TELA DE SUCESSO === */
+    .success-screen { display: none; flex-direction: column; align-items: center; gap: 20px; }
+    .success-screen.show { display: flex; animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .main-form.hidden { display: none; }
+
+    .success-confetti { font-size: 5rem; animation: confettiBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes confettiBounce { from{transform:scale(0) rotate(-20deg)} to{transform:scale(1) rotate(0deg)} }
+
+    .success-stars { font-size: 2rem; letter-spacing: 4px; }
+    .success-title { font-size: 1.4rem; font-weight: 900; color: var(--rose); }
+    .success-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; max-width: 280px; }
+
+    .success-divider {
+      width: 60px; height: 3px;
+      background: linear-gradient(90deg, var(--rose), var(--gold));
+      border-radius: 2px;
+    }
+
+    /* Já avaliou */
+    .already-screen {
+      display: none; flex-direction: column; align-items: center; gap: 16px;
+      color: var(--muted); text-align: center;
+    }
+    .already-screen.show { display: flex; animation: slideUp 0.4s ease both; }
+    .already-screen .icon { font-size: 3rem; }
+  </style>
+</head>
+<body>
+
+<!-- Partículas -->
+<div class="particles" id="particles"></div>
+
+<div class="card">
+
+  <!-- Formulário principal -->
+  <div class="main-form" id="main-form">
+    <div class="logo-wrap">
+      <div class="logo-emoji">✨</div>
+      <div class="brand">LashBrow</div>
+    </div>
+    <div class="subtitle">Studio de Cílios &amp; Sobrancelhas</div>
+
+    <!-- Saudação personalizada (preenchida via JS) -->
+    <div class="greeting" id="greeting"></div>
+
+    <h2>Como foi seu atendimento?</h2>
+    <p class="desc">Sua avaliação nos ajuda a melhorar cada vez mais.<br>Leva menos de 1 minuto! 💕</p>
+
+    <!-- Estrelas -->
+    <div class="stars-wrap">
+      <div class="stars" id="stars-container">
+        <button class="star-btn" data-val="1" title="1 estrela">⭐</button>
+        <button class="star-btn" data-val="2" title="2 estrelas">⭐</button>
+        <button class="star-btn" data-val="3" title="3 estrelas">⭐</button>
+        <button class="star-btn" data-val="4" title="4 estrelas">⭐</button>
+        <button class="star-btn" data-val="5" title="5 estrelas">⭐</button>
+      </div>
+      <div class="star-label" id="star-label" style="color:var(--muted)">Toque em uma estrela para avaliar</div>
+    </div>
+
+    <!-- Chips de comentário rápido -->
+    <div class="quick-chips" id="quick-chips" style="display:none">
+      <span class="chip" onclick="Review.addChip(this, 'Atendimento excelente!')">Atendimento excelente!</span>
+      <span class="chip" onclick="Review.addChip(this, 'Profissional muito atenciosa')">Muito atenciosa</span>
+      <span class="chip" onclick="Review.addChip(this, 'Resultado incrível!')">Resultado incrível!</span>
+      <span class="chip" onclick="Review.addChip(this, 'Super recomendo!')">Super recomendo!</span>
+      <span class="chip" onclick="Review.addChip(this, 'Ambiente aconchegante')">Ambiente aconchegante</span>
+    </div>
+
+    <!-- Comentário -->
+    <div class="textarea-wrap">
+      <textarea id="review-comment" rows="3" placeholder="Conte como foi sua experiência (opcional)..."></textarea>
+    </div>
+
+    <div class="error-msg hidden" id="review-error">Por favor, selecione uma nota antes de enviar.</div>
+
+    <button class="btn-submit" id="btn-submit" onclick="Review.submit()">
+      <span>⭐</span> Enviar Avaliação
+    </button>
+  </div>
+
+  <!-- Tela: já avaliou -->
+  <div class="already-screen" id="already-screen">
+    <div class="icon">✅</div>
+    <div style="font-weight:800;color:var(--text);font-size:1.1rem">Você já avaliou este atendimento</div>
+    <div style="font-size:0.85rem;color:var(--muted)">Obrigada pelo seu feedback! 💕</div>
+  </div>
+
+  <!-- Tela de sucesso -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-confetti">🎉</div>
+    <div class="success-stars" id="success-stars"></div>
+    <div class="success-divider"></div>
+    <div class="success-title">Obrigada pela avaliação!</div>
+    <p class="success-desc">Sua opinião é muito importante para nós. Esperamos te ver em breve! ✨💕</p>
+  </div>
+
+</div>
+
+<script>
+// Gera partículas de fundo
+(function() {
+  const wrap = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      width:${2+Math.random()*4}px;
+      height:${2+Math.random()*4}px;
+      animation-duration:${6+Math.random()*10}s;
+      animation-delay:${Math.random()*8}s;
+      opacity:${0.3+Math.random()*0.5};
+    `;
+    wrap.appendChild(p);
+  }
+})();
+
+const db = firebase.firestore();
+
+const Review = {
+    rating: 0,
+    studioId: null,
+    apptId: null,
+    clientName: null,
+    clientPhone: null,
+
+    async init() {
+        const p = new URLSearchParams(location.search);
+        Review.studioId   = p.get('studio');
+        Review.apptId     = p.get('appt');
+        Review.clientName = p.get('name') ? decodeURIComponent(p.get('name')) : null;
+        Review.clientPhone= p.get('phone') ? decodeURIComponent(p.get('phone')) : null;
+
+        // Saudação personalizada
+        if (Review.clientName) {
+            const greeting = document.getElementById('greeting');
+            greeting.innerHTML = `Olá, <strong>${Review.clientName}</strong>! 😊<br>Seu carinho significa muito pra gente. ✨`;
+            greeting.classList.add('show');
+        }
+
+        // Verificar se já avaliou
+        if (Review.apptId) {
+            try {
+                const existing = await db.collection('reviews')
+                    .where('apptId', '==', Review.apptId)
+                    .limit(1).get();
+                if (!existing.empty) {
+                    document.getElementById('main-form').classList.add('hidden');
+                    document.getElementById('already-screen').classList.add('show');
+                    return;
+                }
+            } catch(e) { /* continua normalmente */ }
+        }
+
+        // Eventos de estrela
+        document.querySelectorAll('.star-btn').forEach(btn => {
+            const val = parseInt(btn.dataset.val);
+
+            btn.addEventListener('mouseenter', () => Review._highlight(val));
+            btn.addEventListener('mouseleave', () => Review._highlight(Review.rating));
+            btn.addEventListener('click', () => Review.setRating(val));
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                Review.setRating(val);
+            }, { passive: false });
+        });
+    },
+
+    _highlight(upTo) {
+        document.querySelectorAll('.star-btn').forEach((btn, i) => {
+            btn.classList.toggle('hovered', i < upTo);
+        });
+    },
+
+    setRating(val) {
+        Review.rating = val;
+        const labels = [
+            '', 'Horrível 😞', 'Ruim 😕', 'Regular 😐', 'Bom 😊', 'Excelente! 🤩'
+        ];
+        const classes = ['', 'l1', 'l2', 'l3', 'l4', 'l5'];
+        const lbl = document.getElementById('star-label');
+        lbl.textContent = labels[val];
+        lbl.className = 'star-label ' + classes[val];
+
+        document.querySelectorAll('.star-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', i < val);
+            btn.classList.remove('hovered');
+        });
+
+        document.getElementById('review-error')?.classList.add('hidden');
+
+        // Mostrar chips se nota >= 4
+        document.getElementById('quick-chips').style.display = val >= 4 ? 'flex' : 'none';
+    },
+
+    addChip(el, text) {
+        el.classList.toggle('active');
+        const textarea = document.getElementById('review-comment');
+        if (el.classList.contains('active')) {
+            textarea.value = (textarea.value ? textarea.value + ' ' : '') + text;
+        } else {
+            textarea.value = textarea.value.replace(text, '').trim();
+        }
+    },
+
+    async submit() {
+        if (Review.rating === 0) {
+            document.getElementById('review-error')?.classList.remove('hidden');
+            // Shake nas estrelas
+            const starsEl = document.getElementById('stars-container');
+            starsEl.style.animation = 'none';
+            starsEl.offsetHeight; // reflow
+            starsEl.style.animation = 'shake 0.4s ease';
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div>';
+
+        try {
+            const payload = {
+                studioId:    Review.studioId,
+                apptId:      Review.apptId,
+                rating:      Review.rating,
+                comment:     document.getElementById('review-comment').value.trim(),
+                createdAt:   firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (Review.clientName)  payload.clientName  = Review.clientName;
+            if (Review.clientPhone) payload.clientPhone = Review.clientPhone;
+
+            await db.collection('reviews').add(payload);
+
+            // Sucesso
+            document.getElementById('main-form').classList.add('hidden');
+            const success = document.getElementById('success-screen');
+            success.classList.add('show');
+            document.getElementById('success-stars').textContent = '⭐'.repeat(Review.rating);
+
+        } catch(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>⭐</span> Tentar Novamente';
+            document.getElementById('review-error').textContent = 'Erro ao enviar. Verifique sua conexão e tente novamente.';
+            document.getElementById('review-error').classList.remove('hidden');
+        }
+    }
+};
+
+// Keyframe shake para quando tentar enviar sem nota
+const style = document.createElement('style');
+style.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}';
+document.head.appendChild(style);
+
+Review.init();
+</script>
+</body>
+</html>
