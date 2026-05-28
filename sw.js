@@ -1,10 +1,10 @@
 // ══════════════════════════════════════════════════════════════════
-// Service Worker — LashBrow (Offline-First)
+// Service Worker — Studio Beauty (Offline-First + Push Notifications)
 // Estratégia: Cache-First para estáticos, Network-First para app
 // Firebase/API requests são ignorados (gerenciados pelo SDK offline)
 // ══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v4'; // Módulo Estoque 2026-05-13
+const CACHE_VERSION = 'v5'; // Push Notifications 2026-05-28
 const CACHE_NAME = `lashbrow-${CACHE_VERSION}`;
 
 // Todos os arquivos necessários para o app funcionar offline
@@ -19,12 +19,14 @@ const STATIC_ASSETS = [
   '/js/referrals.js',
   '/js/subscription.js',
   '/js/offline-indicator.js',
+  '/js/push-notifications.js',
   // Módulos de páginas
   '/pages/dashboard.js',
   '/pages/clients.js',
   '/pages/schedule.js',
   '/pages/ficha-tecnica.js',
-  '/pages/modules.js'
+  '/pages/modules.js',
+  '/pages/notifications-config.js'
 ];
 
 // ── Install: pré-cachear todos os assets estáticos ──
@@ -103,3 +105,72 @@ self.addEventListener('fetch', event => {
   );
 });
 
+// ══════════════════════════════════════════════════════════════════
+// 🔔 PUSH NOTIFICATIONS — Handler no Service Worker
+// ══════════════════════════════════════════════════════════════════
+
+// Receber push do servidor (FCM ou Web Push)
+self.addEventListener('push', event => {
+  let data = { title: 'Studio Beauty', body: 'Nova notificação' };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch(e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: data.tag || 'default',
+    data: data.data || {},
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    actions: data.actions || []
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Studio Beauty', options)
+  );
+});
+
+// Clique na notificação — abrir a página certa
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const action = event.notification.data?.action || event.action || '';
+  let targetUrl = '/app.html';
+
+  // Mapear ação para URL
+  if (action === 'birthday' || action === 'open-birthday') {
+    targetUrl = '/app.html#birthday';
+  } else if (action === 'inventory' || action === 'open-inventory') {
+    targetUrl = '/app.html#inventory';
+  } else if (action === 'schedule' || action === 'open-schedule') {
+    targetUrl = '/app.html#schedule';
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Se já tem uma aba aberta, focar nela e navegar
+      for (const client of clientList) {
+        if (client.url.includes('/app.html') && 'focus' in client) {
+          client.focus();
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            action: action,
+            url: targetUrl
+          });
+          return;
+        }
+      }
+      // Se não tem aba aberta, abrir nova
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

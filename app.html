@@ -24,6 +24,10 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#c9a96e" />
+  
   <!-- CSS -->
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/bolsa-beleza.css" />
@@ -464,6 +468,7 @@
 
 <script src="js/subscription.js"></script>
 <script src="js/offline-indicator.js"></script>
+<script src="js/push-notifications.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
@@ -498,6 +503,14 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
             .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
             .catch(err => console.warn('⚠️ Service Worker falhou:', err));
+    });
+    // Receber mensagens do Service Worker (clique em notificação)
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data?.type === 'NOTIFICATION_CLICK' && event.data.action) {
+            const actionMap = { birthday: 'birthday', inventory: 'inventory', schedule: 'schedule' };
+            const page = actionMap[event.data.action] || event.data.action;
+            if (typeof App !== 'undefined' && App.navigate) App.navigate(page);
+        }
     });
 }
 </script>
