@@ -367,32 +367,75 @@ const Store = {
             .orderBy('date').get();
         const todayAppts = apptSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // Faturamento do mês
-        const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0,0,0,0);
+        // === PERÍODO: últimos 6 meses (para gráfico de evolução + mês anterior) ===
+        const sixMonthsAgo = new Date(today);
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0,0,0,0);
+
+        // Uma ÚNICA query para appointments dos últimos 6 meses (em vez de carregar TODOS)
+        const recentApptSnap = await db.collection('appointments')
+            .where('userId','==',uid).where('date','>=',sixMonthsAgo)
+            .orderBy('date').get();
+        const recentAppts = recentApptSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Mês atual
+        const startMonth = new Date(today); startMonth.setDate(1); startMonth.setHours(0,0,0,0);
+        // Mês anterior
+        const startPrevMonth = new Date(startMonth); startPrevMonth.setMonth(startPrevMonth.getMonth() - 1);
+        const endPrevMonth = new Date(startMonth);
+
+        // Faturas do mês
         const invSnap = await db.collection('invoices')
             .where('userId','==',uid).where('createdAt','>=',startMonth).get();
-        const monthRevenue = invSnap.docs.reduce((sum,d) => sum + (d.data().value || 0), 0);
+        const monthInvRevenue = invSnap.docs.reduce((sum,d) => sum + (d.data().value || 0), 0);
 
-        // Faturamento do mês via appointments também (preço dos agendamentos do mês)
-        const monthApptSnap = await db.collection('appointments')
-            .where('userId','==',uid).where('date','>=',startMonth).get();
-        const monthApptRevenue = monthApptSnap.docs.reduce((sum,d) => sum + parseFloat(d.data().price || 0), 0);
-        const totalMonthRevenue = monthRevenue + monthApptRevenue;
+        // Faturas do mês anterior
+        const prevInvSnap = await db.collection('invoices')
+            .where('userId','==',uid).where('createdAt','>=',startPrevMonth)
+            .where('createdAt','<',endPrevMonth).get();
+        const prevMonthInvRevenue = prevInvSnap.docs.reduce((sum,d) => sum + (d.data().value || 0), 0);
 
-        // Ticket médio do mês
-        const completedThisMonth = monthApptSnap.docs.filter(d => d.data().price > 0).length;
+        // Separar agendamentos por mês atual e anterior
+        const monthAppts = recentAppts.filter(a => {
+            const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            return dt >= startMonth;
+        });
+        const prevMonthAppts = recentAppts.filter(a => {
+            const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            return dt >= startPrevMonth && dt < endPrevMonth;
+        });
+
+        // Faturamento mês atual (invoices + appointments com preço)
+        const monthApptRevenue = monthAppts.reduce((sum,a) => sum + parseFloat(a.price || 0), 0);
+        const totalMonthRevenue = monthInvRevenue + monthApptRevenue;
+
+        // Faturamento mês anterior
+        const prevMonthApptRevenue = prevMonthAppts.reduce((sum,a) => sum + parseFloat(a.price || 0), 0);
+        const totalPrevMonthRevenue = prevMonthInvRevenue + prevMonthApptRevenue;
+
+        // Ticket médio mês atual
+        const completedThisMonth = monthAppts.filter(a => parseFloat(a.price || 0) > 0).length;
         const avgTicket = completedThisMonth > 0 ? totalMonthRevenue / completedThisMonth : 0;
 
-        // Novos clientes este mês
+        // Ticket médio mês anterior
+        const completedPrevMonth = prevMonthAppts.filter(a => parseFloat(a.price || 0) > 0).length;
+        const prevAvgTicket = completedPrevMonth > 0 ? totalPrevMonthRevenue / completedPrevMonth : 0;
+
+        // Novos clientes este mês e mês anterior
         const newClientsMonth = clients.filter(c => {
             if (!c.createdAt) return false;
             const ts = c.createdAt.toDate ? c.createdAt.toDate() : new Date(c.createdAt);
             return ts >= startMonth;
         }).length;
+        const prevNewClientsMonth = clients.filter(c => {
+            if (!c.createdAt) return false;
+            const ts = c.createdAt.toDate ? c.createdAt.toDate() : new Date(c.createdAt);
+            return ts >= startPrevMonth && ts < endPrevMonth;
+        }).length;
 
-        // Faturamento total (para relatórios) — soma de appointments com price
-        const allApptSnap = await db.collection('appointments').where('userId','==',uid).get();
-        const revenue = allApptSnap.docs.reduce((sum,d) => sum + parseFloat(d.data().price || 0), 0);
+        // Atendimentos mês anterior
+        const prevMonthAppointments = prevMonthAppts.length;
 
         // Retoques pendentes nos próximos 7 dias
         const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
@@ -407,17 +450,48 @@ const Store = {
                 return da - db2;
             });
 
-        // Agendamentos últimos 7 dias (para mini gráfico)
+        // === GRÁFICO: últimos 7 dias (do cache de recentAppts, sem query extra) ===
         const last7 = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date(today); d.setDate(d.getDate() - i);
             const d2 = new Date(d); d2.setDate(d2.getDate() + 1);
-            const count = allApptSnap.docs.filter(doc => {
-                const dt = doc.data().date?.toDate ? doc.data().date.toDate() : new Date(doc.data().date);
+            const count = recentAppts.filter(a => {
+                const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
                 return dt >= d && dt < d2;
             }).length;
             last7.push({ label: d.toLocaleDateString('pt-BR', { weekday: 'short' }), count });
         }
+
+        // === GRÁFICO: evolução últimos 6 meses ===
+        const last6Months = [];
+        for (let i = 5; i >= 0; i--) {
+            const mStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const mEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+            const mAppts = recentAppts.filter(a => {
+                const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+                return dt >= mStart && dt < mEnd;
+            });
+            const mRevenue = mAppts.reduce((s, a) => s + parseFloat(a.price || 0), 0);
+            last6Months.push({
+                label: mStart.toLocaleDateString('pt-BR', { month: 'short' }),
+                month: mStart.toLocaleDateString('pt-BR', { month: 'long' }),
+                year: mStart.getFullYear(),
+                appointments: mAppts.length,
+                revenue: mRevenue,
+                clients: clients.filter(c => {
+                    if (!c.createdAt) return false;
+                    const ts = c.createdAt.toDate ? c.createdAt.toDate() : new Date(c.createdAt);
+                    return ts >= mStart && ts < mEnd;
+                }).length
+            });
+        }
+
+        // === META MENSAL (do studioConfig) ===
+        let monthlyGoal = 0;
+        try {
+            const goalDoc = await db.collection('studioConfig').doc(uid).get();
+            if (goalDoc.exists) monthlyGoal = goalDoc.data().monthlyGoal || 0;
+        } catch(e) { /* sem meta configurada */ }
 
         return {
             totalClients: clients.length,
@@ -428,11 +502,21 @@ const Store = {
             todayAppts,
             monthRevenue: totalMonthRevenue,
             avgTicket,
-            revenue,
+            revenue: totalMonthRevenue,
             pendingRetouches: upcomingRetouches.length,
             upcomingRetouches,
             last7Days: last7,
-            clients
+            clients,
+            // NOVOS: comparativo mês anterior
+            prevMonthRevenue: totalPrevMonthRevenue,
+            prevMonthAppointments,
+            prevNewClientsMonth,
+            prevAvgTicket,
+            // NOVOS: evolução 6 meses
+            last6Months,
+            // NOVOS: meta
+            monthlyGoal,
+            monthAppointments: monthAppts.length
         };
     },
 
