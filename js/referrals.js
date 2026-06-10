@@ -34,7 +34,7 @@ const Referrals = {
                 navigator.clipboard.writeText(link).then(() => App.showToast('Link copiado!', 'success'));
             });
             document.getElementById('btn-share-whatsapp')?.addEventListener('click', () => {
-                const msg = encodeURIComponent(`✨ Conheça o Studio Beauty — gestão completa para designers de cílios e sobrancelhas! Cadastre-se pelo meu link: ${link}`);
+                const msg = encodeURIComponent(`💰 Eu uso o Studio Beauty e estou AMANDO! Quer ganhar também?\n\n✨ Indique e Ganhe: você recebe de R$ 20 a R$ 50 por cada profissional que se tornar assinante pela sua indicação!\n\n👇 Cadastre-se pelo meu link exclusivo e comece a usar grátis:\n${link}\n\n🚀 Gestão completa para Designers de Cílios e Sobrancelhas!`);
                 window.open(`https://wa.me/?text=${msg}`, '_blank');
             });
 
@@ -58,7 +58,7 @@ const Referrals = {
             const pending  = items.filter(i => i.status === 'pending').length;
             const paid     = items.filter(i => i.status === 'paid').length;
             const total    = items.length;
-            const earnings = paid * 30;
+            const earnings = items.reduce((sum, i) => sum + (i.status === 'paid' ? (parseFloat(i.bonusAmount) || 30) : 0), 0);
 
             const el = (id) => document.getElementById(id);
             if (el('ref-total'))    el('ref-total').textContent = total;
@@ -86,7 +86,7 @@ const Referrals = {
                     <td>${item.referredEmail || '-'}</td>
                     <td>${date}</td>
                     <td>${statusBadge}</td>
-                    <td>${item.status === 'paid' ? '<b style="color:var(--success)">R$ 30,00</b>' : '-'}</td>
+                    <td>${item.status === 'paid' ? `<b style="color:var(--success)">R$ ${(parseFloat(item.bonusAmount) || 30).toFixed(2).replace('.', ',')}</b>` : '-'}</td>
                 </tr>`;
             }).join('');
 
