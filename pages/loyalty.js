@@ -8,6 +8,7 @@ const Loyalty = {
             Store.getClients(),
             Store.getAllAppointmentsDone()
         ]);
+        console.log('[Fidelidade] Clientes:', clients.length, '| Atendimentos concluídos:', allAppts.length);
 
         // Contar visitas por cliente
         const visitMap = {};
@@ -113,13 +114,13 @@ const Loyalty = {
               <span style="font-size:0.8rem;color:var(--text-muted)">${withVisits.length} clientes ativas</span>
             </div>
             <div class="card-body" style="padding:0" id="loyalty-list">
-              ${withVisits.length === 0
+              ${clients.length === 0
                 ? `<div class="empty-state" style="padding:40px">
                     <span class="material-symbols-outlined empty-state-icon">loyalty</span>
-                    <p class="empty-state-title">Nenhum atendimento registrado ainda</p>
-                    <p class="empty-state-desc">Conclua agendamentos para começar o programa.</p>
+                    <p class="empty-state-title">Nenhuma cliente cadastrada ainda</p>
+                    <p class="empty-state-desc">Cadastre clientes para iniciar o programa de fidelidade.</p>
                   </div>`
-                : withVisits.map((c, i) => Loyalty._renderCard(c, i, config)).join('')
+                : enriched.map((c, i) => Loyalty._renderCard(c, i, config)).join('')
               }
             </div>
           </div>
