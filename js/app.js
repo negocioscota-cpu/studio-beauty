@@ -147,7 +147,7 @@ const App = {
                 <h2 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px">Indique e Ganhe!</h2>
               </div>
               <p style="font-size:1.05rem;line-height:1.7;opacity:0.95;margin-bottom:20px">
-                Convide colegas lashistas para usar o Studio Beauty e <strong>receba R$ 30,00 por cada indicação</strong> que se tornar assinante!
+                Convide colegas lashistas para usar o Studio Beauty e <strong>receba de R$ 20 a R$ 50,00 por cada indicação</strong> que se tornar assinante!
               </p>
               <div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15)">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -165,13 +165,13 @@ const App = {
                   </div>
                   <div style="display:flex;align-items:flex-start;gap:10px">
                     <span style="background:var(--gold);color:#1a1a2e;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">✓</span>
-                    <span><strong>Todo dia 05 do mês seguinte</strong>, você recebe R$ 30,00 via PIX por cada indicação convertida!</span>
+                    <span><strong>Todo dia 05 do mês seguinte</strong>, você recebe de R$ 20 a R$ 50,00 via PIX por cada indicação convertida!</span>
                   </div>
                 </div>
               </div>
               <div style="margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
                 <div style="background:rgba(255,255,255,0.15);padding:10px 20px;border-radius:8px;text-align:center">
-                  <div style="font-size:1.8rem;font-weight:900;color:var(--gold-light)">R$ 30</div>
+                  <div style="font-size:1.5rem;font-weight:900;color:var(--gold-light)">R$ 20 a R$ 50</div>
                   <div style="font-size:0.75rem;opacity:0.8">por indicação</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.15);padding:10px 20px;border-radius:8px;text-align:center">
