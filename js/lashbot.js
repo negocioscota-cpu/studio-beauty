@@ -1509,14 +1509,21 @@ Sempre responda de forma motivadora, empoderando a profissional a dominar as té
     }
 
     function toggle() {
+        // Garantir que o DOM foi criado antes de abrir
+        if (!document.getElementById(CHAT_ID)) {
+            _injectStyles();
+            _createDOM();
+        }
         const panel = document.getElementById(CHAT_ID);
         const fab   = document.getElementById(FAB_ID);
         isOpen = !isOpen;
         panel?.classList.toggle('lb-visible', isOpen);
         fab?.classList.toggle('lb-open',    isOpen);
-        fab.innerHTML = isOpen
-            ? '<span class="material-symbols-outlined" style="font-size:22px;color:#fff">close</span>'
-            : '🤖';
+        if (fab) {
+            fab.innerHTML = isOpen
+                ? '<span class="material-symbols-outlined" style="font-size:22px;color:#fff">close</span>'
+                : '🤖';
+        }
         if (isOpen && history.length === 0) _welcome();
         if (isOpen) setTimeout(() => document.getElementById('lb-input')?.focus(), 300);
     }
