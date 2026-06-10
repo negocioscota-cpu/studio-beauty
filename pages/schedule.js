@@ -2,18 +2,22 @@
 const Schedule = {
     editingId: null,
     currentClients: [],
+    currentCatalog: [],
     currentView: 'day', // 'day', 'week', 'month'
     currentDate: new Date(),
     _dragData: null,
+    _dayAppointments: [],
 
     focusNfeConfig: null,
 
     async render(container) {
-        const [cls, doc] = await Promise.all([
+        const [cls, catalog, doc] = await Promise.all([
             Store.getClients(),
+            Store.getCatalog().catch(() => []),
             firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null)
         ]);
         Schedule.currentClients = cls;
+        Schedule.currentCatalog = catalog;
         Schedule.currentDate = new Date();
         Schedule.focusNfeConfig = doc && doc.exists && doc.data().focusNfeConfig ? doc.data().focusNfeConfig : null;
 
@@ -33,6 +37,16 @@ const Schedule = {
               <span id="schedule-title" style="font-size:1rem;font-weight:700;color:var(--text-primary);min-width:180px"></span>
             </div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <!-- Busca -->
+              <input class="form-control" id="sched-search" placeholder="Buscar cliente..." oninput="Schedule._filterView()" style="width:150px;font-size:0.82rem" />
+              <!-- Filtro de status -->
+              <select class="form-control" id="sched-filter-status" onchange="Schedule._filterView()" style="width:120px;font-size:0.82rem">
+                <option value="">Todos</option>
+                <option value="scheduled">Agendados</option>
+                <option value="confirmed">Confirmados</option>
+                <option value="done">Concluídos</option>
+                <option value="canceled">Cancelados</option>
+              </select>
               <!-- Alternância de visão -->
               <div style="display:flex;border-radius:8px;border:1px solid var(--border);overflow:hidden">
                 <button class="sched-view-btn active" id="view-btn-day" onclick="Schedule.setView('day')" style="padding:6px 14px;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s">Dia</button>
@@ -45,6 +59,21 @@ const Schedule = {
               <button class="btn btn-primary" onclick="Schedule.openModal()">
                 <span class="material-symbols-outlined">event_available</span> Novo Agendamento
               </button>
+            </div>
+          </div>
+
+          <!-- Resumo de receita do dia -->
+          <div id="sched-revenue" style="display:none" class="card" style="padding:0">
+            <div class="card-body" style="padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary)">payments</span>
+                <span style="font-size:0.82rem;color:var(--text-muted)">Receita do dia:</span>
+                <strong id="sched-revenue-total" style="color:var(--primary);font-size:1rem">R$ 0,00</strong>
+              </div>
+              <div style="display:flex;gap:12px;font-size:0.75rem;color:var(--text-muted)">
+                <span id="sched-revenue-done"></span>
+                <span id="sched-revenue-pending"></span>
+              </div>
             </div>
           </div>
 
@@ -81,17 +110,20 @@ const Schedule = {
                 </div>
                 <div class="form-group">
                   <label class="form-label">Procedimento</label>
-                  <select class="form-control" id="appt-procedure">
+                  <select class="form-control" id="appt-procedure" onchange="Schedule._onProcedureChange()">
                     <option value="">-- Selecione --</option>
-                    <option>Extensão de Cílios — Volume Russo</option>
-                    <option>Extensão de Cílios — Clássico</option>
-                    <option>Lifting de Cílios</option>
-                    <option>Manutenção de Extensão</option>
-                    <option>Design de Sobrancelhas</option>
-                    <option>Micropigmentação</option>
-                    <option>Brow Lamination</option>
-                    <option>Henna de Sobrancelhas</option>
-                    <option>Remoção de Extensão</option>
+                    ${Schedule.currentCatalog.length > 0
+                      ? Schedule.currentCatalog.map(s => `<option value="${s.name}" data-price="${s.price || 0}" data-duration="${s.duration || '1 hora'}">${s.name}</option>`).join('')
+                      : `<option>Extensão de Cílios — Volume Russo</option>
+                         <option>Extensão de Cílios — Clássico</option>
+                         <option>Lifting de Cílios</option>
+                         <option>Manutenção de Extensão</option>
+                         <option>Design de Sobrancelhas</option>
+                         <option>Micropigmentação</option>
+                         <option>Brow Lamination</option>
+                         <option>Henna de Sobrancelhas</option>
+                         <option>Remoção de Extensão</option>`
+                    }
                   </select>
                 </div>
                 <div class="form-group">
@@ -238,15 +270,23 @@ const Schedule = {
     async _renderDayView(container) {
         const dateStr = Schedule.currentDate.toISOString().split('T')[0];
         const appts = await Store.getAppointments(dateStr);
-        if (!appts.length) {
+        Schedule._dayAppointments = appts;
+
+        // Atualizar resumo de receita
+        Schedule._updateRevenue(appts);
+
+        // Aplicar filtros de busca e status
+        let filtered = Schedule._applyClientFilter(appts);
+
+        if (!filtered.length) {
             container.innerHTML = `<div class="empty-state">
                 <span class="material-symbols-outlined empty-state-icon">calendar_today</span>
-                <p class="empty-state-title">Nenhum agendamento neste dia</p>
-                <button class="btn btn-primary" onclick="Schedule.openModal()">Agendar agora</button>
+                <p class="empty-state-title">${appts.length > 0 ? 'Nenhum agendamento corresponde aos filtros' : 'Nenhum agendamento neste dia'}</p>
+                ${appts.length === 0 ? '<button class="btn btn-primary" onclick="Schedule.openModal()">Agendar agora</button>' : ''}
             </div>`;
             return;
         }
-        const sorted = appts.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+        const sorted = filtered.sort((a,b) => (a.time||'').localeCompare(b.time||''));
         const loyaltyConfig = await Store.getLoyaltyConfig().catch(() => null);
 
         container.innerHTML = `<div class="appointments-list">${sorted.map(a => Schedule._renderApptCard(a, loyaltyConfig)).join('')}</div>`;
@@ -701,36 +741,21 @@ const Schedule = {
         document.getElementById('recurrence-count-group')?.classList.add('hidden');
 
         if (id) {
-            const appts = await Store.getAppointments();
-            const a = appts.find(x => x.id === id);
-            if (!a) {
-                // Tentar buscar direto do Firestore
-                try {
-                    const doc = await firebase.firestore().collection('appointments').doc(id).get();
-                    if (doc.exists) {
-                        const aData = { id: doc.id, ...doc.data() };
-                        Schedule._fillModalFields(aData);
-                    }
-                } catch(e) {}
-            } else {
+            // Busca eficiente: direto por doc ID
+            let a = null;
+            try {
+                const doc = await firebase.firestore().collection('appointments').doc(id).get();
+                if (doc.exists) a = { id: doc.id, ...doc.data() };
+            } catch(e) {}
+            if (a) {
                 Schedule._fillModalFields(a);
+                if (Schedule.focusNfeConfig && Schedule.focusNfeConfig.enabled) {
+                    Schedule.renderFiscalSection(a);
+                }
             }
         }
-        
-        if (id && Schedule.focusNfeConfig && Schedule.focusNfeConfig.enabled) {
-            const appts = await Store.getAppointments();
-            const a = appts.find(x => x.id === id);
-            if (a) {
-                Schedule.renderFiscalSection(a);
-            } else {
-                try {
-                    const doc = await firebase.firestore().collection('appointments').doc(id).get();
-                    if (doc.exists) {
-                        Schedule.renderFiscalSection({ id: doc.id, ...doc.data() });
-                    }
-                } catch(e){}
-            }
-        } else {
+
+        if (!id || !Schedule.focusNfeConfig?.enabled) {
             document.getElementById('appt-fiscal-section')?.classList.add('hidden');
         }
 
@@ -784,13 +809,20 @@ const Schedule = {
             procedure: document.getElementById('appt-procedure').value,
             duration:  document.getElementById('appt-duration').value,
             value:     parseFloat(document.getElementById('appt-value').value) || 0,
-            price:     parseFloat(document.getElementById('appt-value').value) || 0,
+            price:     parseFloat(document.getElementById('appt-value').value) || 0,  // mantido para compatibilidade
             status:    document.getElementById('appt-status').value,
             notes:     document.getElementById('appt-notes').value,
             recurrenceInterval: recurrenceInterval || null
         };
 
         try {
+            // Validar conflito de horário
+            const conflict = await Schedule._checkConflict(data.date, data.time, data.duration, Schedule.editingId);
+            if (conflict) {
+                const proceed = confirm(`⚠️ Conflito de horário!\n\nJá existe um agendamento para ${conflict.clientName || 'Cliente'} às ${conflict.time} (${conflict.procedure || ''}).\n\nDeseja agendar mesmo assim?`);
+                if (!proceed) return;
+            }
+
             if (Schedule.editingId) {
                 await Store.updateAppointment(Schedule.editingId, data);
             } else {
@@ -858,13 +890,39 @@ const Schedule = {
     },
 
     async exportExcel() {
-        const dateStr = Schedule.currentDate.toISOString().split('T')[0];
-        const appts = await Store.getAppointments(dateStr);
+        let appts;
+        let fileName;
         const clients = Schedule.currentClients;
         const statusMap = { scheduled: 'Agendado', confirmed: 'Confirmado', done: 'Concluído', canceled: 'Cancelado' };
-        const data = appts.map(a => {
+
+        if (Schedule.currentView === 'week') {
+            const start = Schedule._weekStart(Schedule.currentDate);
+            const end = new Date(start); end.setDate(end.getDate() + 7);
+            appts = await Store.getAppointmentsRange(start, end);
+            fileName = `agenda_semana_${start.toISOString().split('T')[0]}`;
+        } else if (Schedule.currentView === 'month') {
+            const d = Schedule.currentDate;
+            const first = new Date(d.getFullYear(), d.getMonth(), 1);
+            const last = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+            appts = await Store.getAppointmentsRange(first, last);
+            fileName = `agenda_mes_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        } else {
+            const dateStr = Schedule.currentDate.toISOString().split('T')[0];
+            appts = await Store.getAppointments(dateStr);
+            fileName = `agenda_${dateStr}`;
+        }
+
+        if (!appts.length) { App.showToast('Nenhum agendamento para exportar.', 'warning'); return; }
+
+        const data = appts.sort((a,b) => {
+            const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            const db2 = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+            return da - db2 || (a.time||'').localeCompare(b.time||'');
+        }).map(a => {
             const client = clients.find(c => c.id === a.clientId);
+            const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
             return {
+                'Data': dt.toLocaleDateString('pt-BR'),
                 'Horário': a.time || '—',
                 'Cliente': client?.name || a.clientName || '—',
                 'Telefone': client?.phone || '',
@@ -876,7 +934,7 @@ const Schedule = {
                 'Observações': a.notes || ''
             };
         });
-        ExcelExport.fromData(data, `agenda_${dateStr}`, 'Agenda');
+        ExcelExport.fromData(data, fileName, 'Agenda');
     },
 
     // ===== GOOGLE CALENDAR SYNC =====
@@ -1244,6 +1302,92 @@ const Schedule = {
             }
         } catch (err) {
             App.showToast('Erro ao consultar status: ' + err.message, 'error');
+        }
+    },
+
+    // ===== AUTO-PREENCHIMENTO DO CATÁLOGO =====
+    _onProcedureChange() {
+        const select = document.getElementById('appt-procedure');
+        if (!select) return;
+        const opt = select.options[select.selectedIndex];
+        if (!opt || !opt.dataset.price) return;
+        const price = parseFloat(opt.dataset.price);
+        const duration = opt.dataset.duration;
+        if (price > 0) document.getElementById('appt-value').value = price;
+        if (duration) document.getElementById('appt-duration').value = duration;
+    },
+
+    // ===== VALIDAÇÃO DE CONFLITO DE HORÁRIO =====
+    async _checkConflict(date, time, duration, excludeId) {
+        if (!time) return null;
+        const dt = date.toDate ? date.toDate() : new Date(date);
+        const dateStr = dt.toISOString().split('T')[0];
+        const appts = await Store.getAppointments(dateStr);
+        const active = appts.filter(a => a.status !== 'canceled' && a.id !== excludeId);
+
+        const durMap = {'30 min':30,'1 hora':60,'1h30':90,'2 horas':120,'2h30':150,'3 horas':180};
+        const toMin = (t) => { const [h,m] = (t||'00:00').split(':').map(Number); return h * 60 + m; };
+
+        const newStart = toMin(time);
+        const newDur = durMap[duration] || 60;
+        const newEnd = newStart + newDur;
+
+        for (const a of active) {
+            const aStart = toMin(a.time);
+            const aDur = durMap[a.duration] || 60;
+            const aEnd = aStart + aDur;
+
+            if (newStart < aEnd && newEnd > aStart) {
+                return a; // Conflito encontrado
+            }
+        }
+        return null;
+    },
+
+    // ===== RESUMO DE RECEITA =====
+    _updateRevenue(appts) {
+        const el = document.getElementById('sched-revenue');
+        if (!el) return;
+        if (!appts || !appts.length) { el.style.display = 'none'; return; }
+
+        el.style.display = '';
+        const total = appts.reduce((s, a) => s + (parseFloat(a.value) || 0), 0);
+        const done = appts.filter(a => a.status === 'done');
+        const pending = appts.filter(a => a.status === 'scheduled' || a.status === 'confirmed');
+        const doneTotal = done.reduce((s, a) => s + (parseFloat(a.value) || 0), 0);
+        const pendingTotal = pending.reduce((s, a) => s + (parseFloat(a.value) || 0), 0);
+
+        const totalEl = document.getElementById('sched-revenue-total');
+        const doneEl = document.getElementById('sched-revenue-done');
+        const pendingEl = document.getElementById('sched-revenue-pending');
+        if (totalEl) totalEl.textContent = App.formatCurrency ? App.formatCurrency(total) : `R$ ${total.toFixed(2)}`;
+        if (doneEl) doneEl.innerHTML = `✅ Concluído: <strong>${App.formatCurrency ? App.formatCurrency(doneTotal) : 'R$ ' + doneTotal.toFixed(2)}</strong>`;
+        if (pendingEl) pendingEl.innerHTML = `⏳ Pendente: <strong>${App.formatCurrency ? App.formatCurrency(pendingTotal) : 'R$ ' + pendingTotal.toFixed(2)}</strong>`;
+    },
+
+    // ===== FILTROS DE BUSCA E STATUS =====
+    _applyClientFilter(appts) {
+        const search = (document.getElementById('sched-search')?.value || '').toLowerCase();
+        const status = document.getElementById('sched-filter-status')?.value || '';
+        let filtered = [...appts];
+        if (search) {
+            filtered = filtered.filter(a => {
+                const name = (Schedule.currentClients.find(c => c.id === a.clientId)?.name || a.clientName || '').toLowerCase();
+                const proc = (a.procedure || '').toLowerCase();
+                return name.includes(search) || proc.includes(search);
+            });
+        }
+        if (status) {
+            filtered = filtered.filter(a => a.status === status);
+        }
+        return filtered;
+    },
+
+    _filterView() {
+        if (Schedule.currentView === 'day') {
+            const container = document.getElementById('schedule-content');
+            if (!container) return;
+            Schedule._renderDayView(container);
         }
     }
 };
