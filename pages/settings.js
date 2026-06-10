@@ -6,7 +6,6 @@ const Settings = {
         container.innerHTML = `<div style="display:flex;justify-content:center;padding:48px"><div class="spinner"></div></div>`;
 
         // Carregar dados em paralelo
-        let loyaltyConfig = { threshold: 10, reward: 'Manutenção grátis' };
         let studioData = {};
         let smsTemplatesData = {};
         let emailTemplatesData = {};
@@ -18,11 +17,7 @@ const Settings = {
         };
 
         try {
-            const [lc, sd] = await Promise.all([
-                Store.getLoyaltyConfig().catch(() => loyaltyConfig),
-                firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null)
-            ]);
-            if (lc) loyaltyConfig = lc;
+            const sd = await firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null);
             if (sd && sd.exists) {
                 studioData = sd.data();
                 if (studioData.asaasPaymentConfig) paymentConfig = { ...paymentConfig, ...studioData.asaasPaymentConfig };
@@ -33,11 +28,11 @@ const Settings = {
             }
         } catch(e) {}
 
-        container.innerHTML = Settings._buildHTML(loyaltyConfig, studioData, paymentConfig, focusNfeConfig, commConfig, smsTemplatesData, emailTemplatesData);
+        container.innerHTML = Settings._buildHTML(studioData, paymentConfig, focusNfeConfig, commConfig, smsTemplatesData, emailTemplatesData);
         Settings._bindEvents();
     },
 
-    _buildHTML(lc, sd, pc, fnc, cc, smsT, emailT) {
+    _buildHTML(sd, pc, fnc, cc, smsT, emailT) {
         const plan = sd.plan || 'solo';
         const planLimits = { solo: 1000, studio: 3000, premium: 10000 };
         const emailLimit = cc?.email?.limit || planLimits[plan] || 1000;
@@ -88,50 +83,6 @@ const Settings = {
               </div>
               <button class="btn btn-primary" onclick="Settings.saveStudio()" id="btn-save-studio">
                 <span class="material-symbols-outlined">save</span> Salvar Dados do Estúdio
-              </button>
-            </div>
-          </div>
-
-          <!-- Programa de Fidelidade -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">💎 Programa de Fidelidade</span>
-            </div>
-            <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
-              <div style="background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.2);border-radius:12px;padding:16px">
-                <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5">
-                  🎁 Configure quantos atendimentos a cliente precisa para ganhar uma recompensa.
-                  Esse progresso aparece no perfil 360° de cada cliente.
-                </p>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Atendimentos para recompensa</label>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-                  <input type="number" class="form-input" id="cfg-loyalty-threshold"
-                    value="${lc.threshold || 10}" min="1" max="50" style="max-width:120px">
-                  <span style="color:var(--text-muted);font-size:0.85rem">atendimentos concluídos</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Recompensa (o que a cliente ganha)</label>
-                <input type="text" class="form-input" id="cfg-loyalty-reward"
-                  value="${lc.reward || ''}" placeholder="Ex: Manutenção grátis, Desconto 20%, Brinde surpresa">
-              </div>
-              <!-- Preview do card de fidelidade -->
-              <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px;border:1px dashed rgba(255,255,255,0.1)">
-                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px">Prévia do cartão de fidelidade:</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <div style="flex:1">
-                    <div style="font-size:0.8rem;color:var(--text-secondary)">Progresso da cliente</div>
-                    <div style="height:8px;background:rgba(255,255,255,0.1);border-radius:99px;margin-top:6px;overflow:hidden">
-                      <div id="loyalty-preview-bar" style="height:100%;width:60%;background:linear-gradient(90deg,var(--gold),#f59e0b);border-radius:99px;transition:width 0.5s"></div>
-                    </div>
-                    <div id="loyalty-preview-text" style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">6 de 10 atendimentos · faltam 4 para "Manutenção grátis"</div>
-                  </div>
-                </div>
-              </div>
-              <button class="btn btn-primary" onclick="Settings.saveLoyalty()" id="btn-save-loyalty">
-                <span class="material-symbols-outlined">save</span> Salvar Fidelidade
               </button>
             </div>
           </div>
@@ -587,22 +538,7 @@ const Settings = {
     },
 
     _bindEvents() {
-        // Atualiza preview do cartão de fidelidade em tempo real
-        const thresholdEl = document.getElementById('cfg-loyalty-threshold');
-        const rewardEl    = document.getElementById('cfg-loyalty-reward');
-        const updatePreview = () => {
-            const t = parseInt(thresholdEl?.value) || 10;
-            const r = rewardEl?.value || 'Recompensa';
-            const example = Math.min(Math.floor(t * 0.6), t - 1);
-            const pct = Math.round(example / t * 100);
-            const barEl  = document.getElementById('loyalty-preview-bar');
-            const textEl = document.getElementById('loyalty-preview-text');
-            if (barEl)  barEl.style.width = pct + '%';
-            if (textEl) textEl.textContent = `${example} de ${t} atendimentos · faltam ${t - example} para "${r}"`;
-        };
-        thresholdEl?.addEventListener('input', updatePreview);
-        rewardEl?.addEventListener('input', updatePreview);
-        updatePreview();
+        // Sem elementos de preview de fidelidade (configurado no módulo Fidelidade)
     },
 
     async saveStudio() {
@@ -618,25 +554,6 @@ const Settings = {
                 updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
             App.showToast('Dados do estúdio salvos! ✅', 'success');
-        } catch(e) {
-            App.showToast('Erro ao salvar: ' + e.message, 'error');
-        }
-        Settings._setBtnLoading(btn, false);
-    },
-
-    async saveLoyalty() {
-        if (Settings._saving) return;
-        const btn = document.getElementById('btn-save-loyalty');
-        const threshold = parseInt(document.getElementById('cfg-loyalty-threshold')?.value) || 10;
-        const reward    = document.getElementById('cfg-loyalty-reward')?.value.trim() || 'Manutenção grátis';
-        if (threshold < 1 || threshold > 50) {
-            App.showToast('Número de atendimentos deve ser entre 1 e 50.', 'error');
-            return;
-        }
-        Settings._setBtnLoading(btn, true);
-        try {
-            await Store.saveLoyaltyConfig({ threshold, reward });
-            App.showToast(`Fidelidade salva! A cada ${threshold} atendimentos → "${reward}" ✅`, 'success');
         } catch(e) {
             App.showToast('Erro ao salvar: ' + e.message, 'error');
         }
