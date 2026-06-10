@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Assinar Termo — LashBrow</title>
+  <title>Assinar Termo — Studio Beauty</title>
   <meta name="robots" content="noindex" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet" />
@@ -135,7 +135,7 @@
   <div class="main-form" id="main-form" style="display:none">
     <div class="brand-wrap">
       <span style="font-size:1.8rem">📝</span>
-      <div class="brand">LashBrow</div>
+      <div class="brand" id="brand-name">Studio Beauty</div>
     </div>
     <div class="subtitle">Termo de Consentimento Digital</div>
 
@@ -233,6 +233,10 @@ const SignPage = {
       }
 
       SignPage.consentData = data;
+      // Atualizar branding com nome do studio se disponível
+      if (data.studioName) {
+        document.getElementById('brand-name').textContent = data.studioName;
+      }
       SignPage._renderInfo(data);
       SignPage._initCanvas();
 
