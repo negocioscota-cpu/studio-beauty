@@ -38,7 +38,7 @@ const Inventory = {
                 </p>
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <a href="https://lashandbeauty.com.br" target="_blank" class="btn"
+                <a href="https://www.lashandbeauty.com.br/" target="_blank" class="btn"
                   style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);backdrop-filter:blur(4px);display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-size:0.82rem;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer">
                   <span class="material-symbols-outlined" style="font-size:18px">storefront</span> Lash & Beauty
                 </a>
