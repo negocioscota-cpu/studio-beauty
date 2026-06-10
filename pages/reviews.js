@@ -1,27 +1,32 @@
 // === PÁGINA DE AVALIAÇÕES NPS ===
 const Reviews = {
+    _allReviews: [],
+    _filteredReviews: [],
+
     async render(container) {
         container.innerHTML = `<div style="display:flex;justify-content:center;padding:48px"><div class="spinner"></div></div>`;
-        let data;
-        try {
-            data = await Store.getAvgRating();
-        } catch(e) {
-            data = { avg: 0, total: 0, recent: [] };
-        }
 
-        // Buscar todas as avaliações (últimas 100)
+        // Buscar todas as avaliações (single query — sem duplicação)
         let all = [];
         try {
             const snap = await firebase.firestore().collection('reviews')
                 .where('studioId', '==', Store._uid())
                 .orderBy('createdAt', 'desc')
-                .limit(100).get();
+                .limit(200).get();
             all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        } catch(e) { all = data.recent || []; }
+        } catch(e) { console.warn('Erro ao carregar avaliações:', e); }
+
+        Reviews._allReviews = all;
+        Reviews._filteredReviews = all;
+
+        // Calcular stats
+        const avg = all.length > 0 ? all.reduce((s, r) => s + (r.rating || 0), 0) / all.length : 0;
+        const data = { avg, total: all.length, recent: all.slice(0, 5) };
 
         container.innerHTML = Reviews._buildHTML(data, all);
         Reviews._renderStars('nps-stars-hero', data.avg);
         Reviews._renderDistribution(all);
+        Reviews._renderChart(all);
     },
 
     _buildHTML(data, all) {
@@ -38,6 +43,9 @@ const Reviews = {
             : data.avg >= 2.5 ? { label: 'Regular', color: '#f59e0b' }
             : data.avg > 0    ? { label: 'Atenção', color: '#ef4444' }
             : { label: '—', color: 'var(--text-muted)' };
+
+        // Gerar link genérico de avaliação (sem apptId)
+        const reviewLink = `${location.origin}/avaliacao.html?studio=${Store._uid()}`;
 
         return `
         <div style="display:flex;flex-direction:column;gap:20px;max-width:900px;margin:0 auto">
@@ -76,6 +84,27 @@ const Reviews = {
             </div>
           </div>
 
+          <!-- Link de Avaliação -->
+          <div class="card" style="border:1px solid rgba(251,191,36,0.3);background:rgba(251,191,36,0.04)">
+            <div class="card-body" style="padding:20px">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <span class="material-symbols-outlined" style="color:#fbbf24;font-size:24px">link</span>
+                <strong style="color:var(--text-primary)">Link de Avaliação</strong>
+                <span style="font-size:0.75rem;color:var(--text-muted)">Envie para suas clientes avaliarem seu atendimento</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <input class="form-control" id="nps-review-link" value="${reviewLink}" readonly
+                  style="flex:1;min-width:200px;font-size:0.82rem;background:var(--bg-tertiary);cursor:text" onclick="this.select()" />
+                <button class="btn btn-sm" onclick="Reviews._copyLink()" style="background:#fbbf24;color:#1a0a1e;border:none;display:inline-flex;align-items:center;gap:4px;font-weight:700">
+                  <span class="material-symbols-outlined" style="font-size:16px">content_copy</span> Copiar
+                </button>
+                <button class="btn btn-sm" onclick="Reviews._shareWhatsApp()" style="background:#25d366;color:white;border:none;display:inline-flex;align-items:center;gap:4px;font-weight:700">
+                  <span class="material-symbols-outlined" style="font-size:16px">share</span> WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- NPS Score Card -->
           <div class="card">
             <div class="card-body" style="padding:24px">
@@ -109,49 +138,96 @@ const Reviews = {
             </div>
           </div>
 
-          <!-- Lista de avaliações -->
+          <!-- Gráfico de Evolução NPS -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title">⭐ Todas as Avaliações</span>
-              <span style="font-size:0.8rem;color:var(--text-muted)">${all.length} no total</span>
+              <span class="card-title">📈 Evolução Mensal</span>
+              <span style="font-size:0.75rem;color:var(--text-muted)">NPS Score e Nota Média por mês</span>
+            </div>
+            <div class="card-body" style="padding:20px">
+              <div id="nps-chart" style="width:100%;overflow-x:auto"></div>
+            </div>
+          </div>
+
+          <!-- Filtros + Lista de avaliações -->
+          <div class="card">
+            <div class="card-header" style="flex-wrap:wrap;gap:10px">
+              <span class="card-title">⭐ Avaliações</span>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select class="form-control" id="nps-filter-period" onchange="Reviews._applyFilters()" style="width:140px;font-size:0.82rem">
+                  <option value="">Todo período</option>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                  <option value="365">Último ano</option>
+                </select>
+                <select class="form-control" id="nps-filter-rating" onchange="Reviews._applyFilters()" style="width:130px;font-size:0.82rem">
+                  <option value="">Todas notas</option>
+                  <option value="5">5★ Excelente</option>
+                  <option value="4">4★ Bom</option>
+                  <option value="3">3★ Regular</option>
+                  <option value="2">2★ Ruim</option>
+                  <option value="1">1★ Horrível</option>
+                </select>
+                <input class="form-control" id="nps-search" placeholder="Buscar comentário..." oninput="Reviews._applyFilters()" style="width:170px;font-size:0.82rem" />
+                <button class="btn btn-sm" onclick="Reviews._exportExcel()" style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2);display:inline-flex;align-items:center;gap:4px">
+                  <span class="material-symbols-outlined" style="font-size:16px">download</span> Excel
+                </button>
+              </div>
             </div>
             <div class="card-body" style="padding:0">
-              ${all.length === 0
-                ? `<div class="empty-state" style="padding:48px">
-                    <span class="material-symbols-outlined empty-state-icon">star_border</span>
-                    <p class="empty-state-title">Nenhuma avaliação ainda</p>
-                    <p class="empty-state-desc">Envie o link de avaliação para suas clientes pela Agenda.</p>
-                  </div>`
-                : `<div class="reviews-list">${all.map(r => Reviews._reviewCard(r)).join('')}</div>`
-              }
+              <div id="nps-count" style="padding:12px 20px;font-size:0.8rem;color:var(--text-muted);border-bottom:1px solid var(--border)">
+                ${all.length} avaliação${all.length !== 1 ? 'ões' : ''} no total
+              </div>
+              <div id="nps-reviews-list">
+                ${all.length === 0
+                  ? `<div class="empty-state" style="padding:48px">
+                      <span class="material-symbols-outlined empty-state-icon">star_border</span>
+                      <p class="empty-state-title">Nenhuma avaliação ainda</p>
+                      <p class="empty-state-desc">Envie o link de avaliação para suas clientes.</p>
+                    </div>`
+                  : `<div class="reviews-list">${all.map(r => Reviews._reviewCard(r)).join('')}</div>`
+                }
+              </div>
             </div>
           </div>
 
         </div>`;
     },
 
+    // === CARD DE AVALIAÇÃO ===
     _reviewCard(r) {
         const dt = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
         const date = dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
         const stars = '★'.repeat(r.rating || 0) + '☆'.repeat(5 - (r.rating || 0));
         const color = r.rating >= 4 ? '#fbbf24' : r.rating >= 3 ? '#f59e0b' : '#ef4444';
+        const isNegative = r.rating <= 2;
+        const name = Reviews._escapeHtml(r.clientName || 'Cliente Anônima');
         return `
-        <div class="review-item" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:flex-start">
-          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;flex-shrink:0">
-            ${(r.clientName || '?').charAt(0).toUpperCase()}
+        <div class="review-item" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:flex-start;${isNegative ? 'background:rgba(239,68,68,0.04);border-left:3px solid #ef4444;' : ''}">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,${isNegative ? '#ef4444,#dc2626' : 'var(--primary),var(--secondary)'});display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;flex-shrink:0">
+            ${name.charAt(0).toUpperCase()}
           </div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <strong style="color:var(--text-primary)">${r.clientName || 'Cliente Anônima'}</strong>
-              ${r.clientPhone ? `<span style="font-size:0.75rem;color:var(--text-muted)">${r.clientPhone}</span>` : ''}
+              <strong style="color:var(--text-primary)">${name}</strong>
+              ${r.clientPhone ? `<span style="font-size:0.75rem;color:var(--text-muted)">${Reviews._escapeHtml(r.clientPhone)}</span>` : ''}
               <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${date}</span>
             </div>
             <div style="color:${color};font-size:1.1rem;margin-top:4px;letter-spacing:2px">${stars}</div>
-            ${r.comment ? `<p style="margin-top:6px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5">"${r.comment}"</p>` : ''}
+            ${r.comment ? `<p style="margin-top:6px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5">"${Reviews._escapeHtml(r.comment)}"</p>` : ''}
           </div>
         </div>`;
     },
 
+    // === SANITIZAÇÃO XSS ===
+    _escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+
+    // === ESTRELAS VISUAIS ===
     _renderStars(id, avg) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -164,10 +240,11 @@ const Reviews = {
         }).join('');
     },
 
+    // === DISTRIBUIÇÃO DE ESTRELAS ===
     _renderDistribution(all) {
         const el = document.getElementById('nps-dist');
         if (!el || !all.length) return;
-        const counts = [0, 0, 0, 0, 0]; // índice 0 = 1 estrela
+        const counts = [0, 0, 0, 0, 0];
         all.forEach(r => { if (r.rating >= 1 && r.rating <= 5) counts[r.rating - 1]++; });
         el.innerHTML = [5,4,3,2,1].map(star => {
             const count = counts[star - 1];
@@ -181,5 +258,149 @@ const Reviews = {
               <span style="font-size:0.72rem;color:var(--text-muted);width:24px;text-align:right">${count}</span>
             </div>`;
         }).join('');
+    },
+
+    // === GRÁFICO TEMPORAL NPS ===
+    _renderChart(all) {
+        const el = document.getElementById('nps-chart');
+        if (!el || all.length === 0) {
+            if (el) el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem">Dados insuficientes para o gráfico.</div>';
+            return;
+        }
+
+        // Agrupar por mês
+        const months = {};
+        all.forEach(r => {
+            const dt = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+            const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+            if (!months[key]) months[key] = [];
+            months[key].push(r);
+        });
+
+        const sortedKeys = Object.keys(months).sort();
+        if (sortedKeys.length < 2) {
+            el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem">É necessário pelo menos 2 meses de dados para o gráfico.</div>';
+            return;
+        }
+
+        const chartData = sortedKeys.map(key => {
+            const items = months[key];
+            const avg = items.reduce((s, r) => s + (r.rating || 0), 0) / items.length;
+            const prom = items.filter(r => r.rating === 5).length;
+            const det = items.filter(r => r.rating >= 1 && r.rating <= 3).length;
+            const nps = Math.round((prom/items.length - det/items.length) * 100);
+            const [y, m] = key.split('-');
+            const label = new Date(y, m - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            return { key, label, avg, nps, count: items.length };
+        });
+
+        const maxNps = Math.max(...chartData.map(d => d.nps), 10);
+        const minNps = Math.min(...chartData.map(d => d.nps), -10);
+        const range = maxNps - minNps || 1;
+        const barWidth = Math.max(40, Math.min(80, Math.floor(600 / chartData.length)));
+        const chartH = 180;
+
+        let barsHtml = chartData.map((d, idx) => {
+            const npsH = Math.round(((d.nps - minNps) / range) * (chartH - 40));
+            const npsColor = d.nps >= 50 ? '#22c55e' : d.nps >= 0 ? '#f59e0b' : '#ef4444';
+            const avgH = Math.round((d.avg / 5) * (chartH - 40));
+            return `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:${barWidth}px">
+              <div style="font-size:0.7rem;font-weight:700;color:${npsColor}">${d.nps}</div>
+              <div style="width:24px;height:${npsH}px;background:${npsColor};border-radius:4px 4px 0 0;transition:height 0.5s"></div>
+              <div style="width:100%;height:1px;background:var(--border)"></div>
+              <div style="font-size:0.68rem;color:var(--text-muted)">${d.label}</div>
+              <div style="font-size:0.68rem;color:#fbbf24;font-weight:600">${d.avg.toFixed(1)}★</div>
+              <div style="font-size:0.65rem;color:var(--text-muted)">${d.count} aval.</div>
+            </div>`;
+        }).join('');
+
+        el.innerHTML = `
+        <div style="display:flex;align-items:flex-end;gap:6px;justify-content:center;min-height:${chartH + 60}px;padding:10px 0">
+          ${barsHtml}
+        </div>
+        <div style="display:flex;justify-content:center;gap:20px;margin-top:8px;font-size:0.72rem;color:var(--text-muted)">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#22c55e;margin-right:4px"></span>NPS Score</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fbbf24;margin-right:4px"></span>Nota Média</span>
+        </div>`;
+    },
+
+    // === FILTROS ===
+    _applyFilters() {
+        const period = document.getElementById('nps-filter-period')?.value;
+        const rating = document.getElementById('nps-filter-rating')?.value;
+        const search = (document.getElementById('nps-search')?.value || '').toLowerCase();
+
+        let filtered = [...Reviews._allReviews];
+
+        // Filtro por período
+        if (period) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - parseInt(period));
+            filtered = filtered.filter(r => {
+                const dt = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+                return dt >= cutoff;
+            });
+        }
+
+        // Filtro por nota
+        if (rating) {
+            filtered = filtered.filter(r => r.rating === parseInt(rating));
+        }
+
+        // Busca por comentário/nome
+        if (search) {
+            filtered = filtered.filter(r =>
+                (r.comment || '').toLowerCase().includes(search) ||
+                (r.clientName || '').toLowerCase().includes(search)
+            );
+        }
+
+        Reviews._filteredReviews = filtered;
+        const list = document.getElementById('nps-reviews-list');
+        const count = document.getElementById('nps-count');
+        if (count) count.textContent = `${filtered.length} avaliação${filtered.length !== 1 ? 'ões' : ''} encontrada${filtered.length !== 1 ? 's' : ''}`;
+        if (list) {
+            list.innerHTML = filtered.length === 0
+                ? `<div style="padding:32px;text-align:center;color:var(--text-muted)">Nenhuma avaliação encontrada para os filtros selecionados.</div>`
+                : `<div class="reviews-list">${filtered.map(r => Reviews._reviewCard(r)).join('')}</div>`;
+        }
+    },
+
+    // === GERADOR DE LINK ===
+    _copyLink() {
+        const input = document.getElementById('nps-review-link');
+        if (!input) return;
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+            App.toast('Link copiado! 📋', 'success');
+        }).catch(() => {
+            document.execCommand('copy');
+            App.toast('Link copiado! 📋', 'success');
+        });
+    },
+
+    _shareWhatsApp() {
+        const link = document.getElementById('nps-review-link')?.value || '';
+        const msg = `⭐ *Avalie nosso atendimento!*\n\nSua opinião é muito importante para nós. Clique no link abaixo para avaliar:\n\n${link}\n\n💕 Obrigada por nos escolher!`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    },
+
+    // === EXPORTAÇÃO EXCEL ===
+    _exportExcel() {
+        const reviews = Reviews._filteredReviews;
+        if (reviews.length === 0) { App.toast('Nenhuma avaliação para exportar.', 'warning'); return; }
+        const data = reviews.map(r => {
+            const dt = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+            return {
+                'Data': dt.toLocaleDateString('pt-BR'),
+                'Cliente': r.clientName || 'Anônima',
+                'Telefone': r.clientPhone || '',
+                'Nota': r.rating || 0,
+                'Estrelas': '★'.repeat(r.rating || 0),
+                'Comentário': r.comment || ''
+            };
+        });
+        ExcelExport.fromData(data, `avaliacoes_nps_${new Date().toISOString().slice(0,10)}`, 'Avaliações NPS');
     }
 };

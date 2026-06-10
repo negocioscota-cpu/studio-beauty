@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Avalie seu Atendimento — LashBrow</title>
+  <title>Avalie seu Atendimento — Studio Beauty</title>
   <meta name="description" content="Deixe sua avaliação sobre o atendimento no studio de cílios e sobrancelhas." />
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -242,7 +242,7 @@
   <div class="main-form" id="main-form">
     <div class="logo-wrap">
       <div class="logo-emoji">✨</div>
-      <div class="brand">LashBrow</div>
+      <div class="brand">Studio Beauty</div>
     </div>
     <div class="subtitle">Studio de Cílios &amp; Sobrancelhas</div>
 
@@ -341,7 +341,7 @@ const Review = {
         // Saudação personalizada
         if (Review.clientName) {
             const greeting = document.getElementById('greeting');
-            greeting.innerHTML = `Olá, <strong>${Review.clientName}</strong>! 😊<br>Seu carinho significa muito pra gente. ✨`;
+            greeting.innerHTML = `Olá, <strong>${Review.clientName.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong>! 😊<br>Seu carinho significa muito pra gente. ✨`;
             greeting.classList.add('show');
         }
 
