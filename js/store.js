@@ -93,22 +93,7 @@ const Store = {
     async updateAppointment(id, data) { await db.collection('appointments').doc(id).update(data); },
     async deleteAppointment(id) { await db.collection('appointments').doc(id).delete(); },
 
-    // === INVENTORY (Insumos de cílios/sobrancelhas) ===
-    async getInventory() {
-        const snap = await db.collection('inventory').where('userId','==',this._uid()).orderBy('name').get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    },
-    async addInventoryItem(data) {
-        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        data.userId = this._uid();
-        const ref = await db.collection('inventory').add(data);
-        return ref.id;
-    },
-    async updateInventoryItem(id, data) {
-        data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-        await db.collection('inventory').doc(id).update(data);
-    },
-    async deleteInventoryItem(id) { await db.collection('inventory').doc(id).delete(); },
+
 
     // Logs de movimentação
     async addMovementLog(entry) {
@@ -264,25 +249,7 @@ const Store = {
     },
     async deleteExpense(id) { await db.collection('expenses').doc(id).delete(); },
 
-    // === CLIENT HISTORY ===
-    async getClientHistory(clientId) {
-        const uid = this._uid();
-        const [fichasSnap, aptsSnap, invsSnap] = await Promise.all([
-            db.collection('clients').doc(clientId).collection('technicalSheets').orderBy('createdAt','desc').limit(20).get().catch(()=>({ docs: [] })),
-            db.collection('appointments').where('userId','==',uid).where('clientId','==',clientId).orderBy('date','desc').limit(20).get().catch(()=>({ docs: [] })),
-            db.collection('invoices').where('userId','==',uid).where('clientId','==',clientId).orderBy('createdAt','desc').limit(20).get().catch(()=>({ docs: [] }))
-        ]);
-        const fichas = fichasSnap.docs.map(d=>({ id:d.id, type:'ficha', ...d.data() }));
-        const apts   = aptsSnap.docs.map(d=>({ id:d.id, type:'appointment', ...d.data() }));
-        const invs   = invsSnap.docs.map(d=>({ id:d.id, type:'invoice', ...d.data() }));
-        const history = [...fichas, ...apts].sort((a,b)=>{
-            const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.date||0);
-            const db2 = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.date||0);
-            return db2 - da;
-        });
-        const totalSpent = invs.filter(i=>i.status==='paid').reduce((s,i)=>s+(i.value||0),0);
-        return { history, totalVisits: apts.length + fichas.length, totalSpent };
-    },
+
 
     // === INVENTORY (Estoque) ===
     async getInventory() {
@@ -295,6 +262,7 @@ const Store = {
         if (data.expiryDate && typeof data.expiryDate === 'string') {
             data.expiryDate = firebase.firestore.Timestamp.fromDate(new Date(data.expiryDate + 'T00:00:00'));
         }
+        if (data.costPrice !== undefined) data.costPrice = parseFloat(data.costPrice) || 0;
         const ref = await db.collection('inventory').add(data);
         return ref.id;
     },
@@ -303,6 +271,7 @@ const Store = {
         if (data.expiryDate && typeof data.expiryDate === 'string') {
             data.expiryDate = firebase.firestore.Timestamp.fromDate(new Date(data.expiryDate + 'T00:00:00'));
         }
+        if (data.costPrice !== undefined) data.costPrice = parseFloat(data.costPrice) || 0;
         await db.collection('inventory').doc(id).update(data);
     },
     async deleteInventoryItem(id) { await db.collection('inventory').doc(id).delete(); },
@@ -615,12 +584,7 @@ const Store = {
         const snap = await db.collection('reviews').where('studioId','==',uid).orderBy('createdAt','desc').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
-    async getAvgRating() {
-        const reviews = await this.getReviews();
-        if (!reviews.length) return { avg: 0, total: 0 };
-        const avg = reviews.reduce((s,r) => s + (r.rating || 0), 0) / reviews.length;
-        return { avg: Math.round(avg * 10) / 10, total: reviews.length };
-    },
+
 
     // === PROGRAMA DE FIDELIDADE ===
     async getLoyaltyConfig() {
@@ -717,30 +681,7 @@ const Store = {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
-    // === ESTOQUE (INVENTÁRIO) ===
-    async getInventory() {
-        const snap = await db.collection('inventory')
-            .where('userId', '==', this._uid())
-            .orderBy('name')
-            .get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    },
-    async addInventoryItem(data) {
-        return db.collection('inventory').add({
-            userId: this._uid(),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            ...data
-        });
-    },
-    async updateInventoryItem(itemId, data) {
-        return db.collection('inventory').doc(itemId).update({
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            ...data
-        });
-    },
-    async deleteInventoryItem(itemId) {
-        return db.collection('inventory').doc(itemId).delete();
-    },
+
     // Registra um log de uso de estoque num atendimento
     async logInventoryUsage(apptId, usedItems) {
         if (!usedItems || usedItems.length === 0) return;

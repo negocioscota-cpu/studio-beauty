@@ -9,6 +9,18 @@ const Inventory = {
         try { items = await Store.getInventory(); } catch(e) { console.warn(e); }
 
         const low = items.filter(i => i.qty <= i.minQty);
+        // Alertas de validade
+        const now = new Date();
+        const soon30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const expiring = items.filter(i => {
+            if (!i.expiryDate) return false;
+            const d = i.expiryDate.toDate ? i.expiryDate.toDate() : new Date(i.expiryDate);
+            return d <= soon30;
+        });
+        const expired = expiring.filter(i => {
+            const d = i.expiryDate.toDate ? i.expiryDate.toDate() : new Date(i.expiryDate);
+            return d <= now;
+        });
 
         container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:20px">
@@ -21,6 +33,8 @@ const Inventory = {
                 <p style="opacity:0.85;margin-top:4px;font-size:0.88rem">
                   ${items.length} produto${items.length !== 1 ? 's' : ''} cadastrado${items.length !== 1 ? 's' : ''}
                   ${low.length > 0 ? ` · <strong style="color:#ffd166">⚠️ ${low.length} abaixo do mínimo</strong>` : ''}
+                  ${expired.length > 0 ? ` · <strong style="color:#ff6b6b">🚫 ${expired.length} vencido${expired.length !== 1 ? 's' : ''}</strong>` : ''}
+                  ${(expiring.length - expired.length) > 0 ? ` · <strong style="color:#ffa94d">⏰ ${expiring.length - expired.length} vencendo em breve</strong>` : ''}
                 </p>
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -39,10 +53,12 @@ const Inventory = {
             </div>
           </div>
 
-          <!-- Abas de Produtos / Inventários -->
+          <!-- Abas -->
           <div style="display:flex;border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px">
-            <button id="tab-products" onclick="Inventory.switchTab('products')" style="flex:1;padding:10px 20px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--primary);color:#fff">📋 Produtos</button>
-            <button id="tab-audits" onclick="Inventory.switchTab('audits')" style="flex:1;padding:10px 20px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--bg-secondary);color:var(--text-primary);border-left:1px solid var(--border)">🗃️ Inventário (Balanço)</button>
+            <button id="tab-products" onclick="Inventory.switchTab('products')" style="flex:1;padding:10px 16px;font-size:0.82rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--primary);color:#fff">📋 Produtos</button>
+            <button id="tab-movements" onclick="Inventory.switchTab('movements')" style="flex:1;padding:10px 16px;font-size:0.82rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--bg-secondary);color:var(--text-primary);border-left:1px solid var(--border)">📊 Movimentações</button>
+            <button id="tab-shopping" onclick="Inventory.switchTab('shopping')" style="flex:1;padding:10px 16px;font-size:0.82rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--bg-secondary);color:var(--text-primary);border-left:1px solid var(--border)">🛒 Compras</button>
+            <button id="tab-audits" onclick="Inventory.switchTab('audits')" style="flex:1;padding:10px 16px;font-size:0.82rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--bg-secondary);color:var(--text-primary);border-left:1px solid var(--border)">🗃️ Balanço</button>
           </div>
 
           <div id="products-tab-content" style="display:flex;flex-direction:column;gap:20px">
@@ -64,28 +80,56 @@ const Inventory = {
                 </div>
               </div>` : ''}
 
+              <!-- Alerta de validade -->
+              ${expiring.length > 0 ? `
+              <div class="card" style="border:1px solid rgba(255,107,107,0.4);background:rgba(255,107,107,0.06);padding:20px;border-radius:12px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                  <span class="material-symbols-outlined" style="color:#ff6b6b;font-size:24px">event_busy</span>
+                  <strong style="color:var(--text-primary)">Produtos com validade próxima ou vencidos</strong>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  ${expiring.map(i => {
+                    const d = i.expiryDate.toDate ? i.expiryDate.toDate() : new Date(i.expiryDate);
+                    const isExpired = d <= now;
+                    return `<div style="padding:6px 14px;border-radius:20px;background:${isExpired ? 'rgba(255,107,107,0.15)' : 'rgba(255,169,77,0.15)'};border:1px solid ${isExpired ? 'rgba(255,107,107,0.3)' : 'rgba(255,169,77,0.3)'};font-size:0.82rem;display:flex;align-items:center;gap:6px">
+                      <span style="font-weight:700;color:${isExpired ? '#ff6b6b' : '#ffa94d'}">${isExpired ? '🚫' : '⏰'}</span>
+                      <span style="color:var(--text-secondary)">${i.name}</span>
+                      <span style="color:var(--text-muted);font-size:0.75rem">${d.toLocaleDateString('pt-BR')}</span>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>` : ''}
+
               <!-- Lista de produtos -->
               <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="flex-wrap:wrap;gap:10px">
                   <span class="card-title">📋 Produtos</span>
-                  <input class="form-control" id="inv-search" placeholder="Buscar produto..."
-                    style="width:220px;font-size:0.85rem" oninput="Inventory.filterTable(this.value)" />
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <select class="form-control" id="inv-filter-cat" onchange="Inventory.filterTable()" style="width:180px;font-size:0.82rem">
+                      <option value="">Todas categorias</option>
+                      <option>Henna</option><option>Extensão de Cílios</option><option>Lifting</option>
+                      <option>Brow Lamination</option><option>Higiene</option><option>Descartável</option><option>Outro</option>
+                    </select>
+                    <input class="form-control" id="inv-search" placeholder="Buscar produto..."
+                      style="width:180px;font-size:0.82rem" oninput="Inventory.filterTable()" />
+                  </div>
                 </div>
                 <div class="table-wrapper">
                   <table id="inv-table">
                     <thead>
                       <tr>
                         <th>Produto</th>
-                        <th style="text-align:center">Qtd Atual</th>
-                        <th style="text-align:center">Qtd Mínima</th>
-                        <th>Unidade</th>
+                        <th style="text-align:center">Qtd</th>
+                        <th style="text-align:center">Mín</th>
+                        <th>Custo</th>
+                        <th>Validade</th>
                         <th>Status</th>
                         <th style="text-align:center">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
                       ${items.length === 0
-                        ? `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">
+                        ? `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">
                             <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px;opacity:0.4">inventory_2</span>
                             Nenhum produto cadastrado ainda.</td></tr>`
                         : items.map(i => Inventory._row(i)).join('')}
@@ -95,6 +139,8 @@ const Inventory = {
               </div>
           </div>
 
+          <div id="movements-tab-content" style="display:none;flex-direction:column;gap:20px"></div>
+          <div id="shopping-tab-content" style="display:none;flex-direction:column;gap:20px"></div>
           <div id="audits-tab-content" style="display:none;flex-direction:column;gap:20px"></div>
 
         </div>
@@ -146,6 +192,18 @@ const Inventory = {
                     <option>Outro</option>
                   </select>
                 </div>
+                <div class="form-group">
+                  <label class="form-label">💰 Preço de Custo (R$)</label>
+                  <input class="form-control" type="number" id="inv-cost" step="0.01" min="0" placeholder="0,00" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">📅 Data de Validade</label>
+                  <input class="form-control" type="date" id="inv-expiry" />
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">🏭 Fornecedor</label>
+                  <input class="form-control" type="text" id="inv-supplier" placeholder="Nome do fornecedor" />
+                </div>
               </div>
               <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
                 <button type="button" class="btn btn-ghost" onclick="Inventory.closeModal()">Cancelar</button>
@@ -185,19 +243,30 @@ const Inventory = {
         const isLow = i.qty <= i.minQty;
         const pct = i.minQty > 0 ? Math.min(100, Math.round(i.qty / i.minQty * 100)) : 100;
         const barColor = isLow ? '#ff6b6b' : pct < 150 ? '#ffc107' : '#28a745';
-        return `<tr data-name="${(i.name || '').toLowerCase()}" ${isLow ? 'style="background:rgba(255,107,107,0.04)"' : ''}>
+        // Validade
+        let expiryHtml = '<span style="color:var(--text-muted);font-size:0.8rem">—</span>';
+        if (i.expiryDate) {
+            const d = i.expiryDate.toDate ? i.expiryDate.toDate() : new Date(i.expiryDate);
+            const now = new Date();
+            const isExpired = d <= now;
+            const soon = d <= new Date(now.getTime() + 30*24*60*60*1000);
+            const color = isExpired ? '#ff6b6b' : soon ? '#ffa94d' : 'var(--text-secondary)';
+            expiryHtml = `<span style="color:${color};font-size:0.8rem;font-weight:${isExpired||soon?700:400}">${d.toLocaleDateString('pt-BR')}</span>`;
+        }
+        return `<tr data-name="${(i.name || '').toLowerCase()}" data-category="${i.category || ''}" ${isLow ? 'style="background:rgba(255,107,107,0.04)"' : ''}>
           <td>
             <div style="font-weight:600;color:var(--text-primary)">${i.name}</div>
-            ${i.category ? `<div style="font-size:0.75rem;color:var(--text-muted)">${i.category}</div>` : ''}
+            <div style="font-size:0.72rem;color:var(--text-muted)">${i.category || ''} ${i.supplier ? '· ' + i.supplier : ''}</div>
           </td>
           <td style="text-align:center">
-            <div style="font-size:1.1rem;font-weight:700;color:${isLow ? '#ff6b6b' : 'var(--text-primary)'}">${i.qty}</div>
+            <div style="font-size:1.1rem;font-weight:700;color:${isLow ? '#ff6b6b' : 'var(--text-primary)'}">${i.qty} <span style="font-size:0.7rem;font-weight:400;color:var(--text-muted)">${i.unit || 'unid'}</span></div>
             <div style="height:4px;border-radius:4px;background:var(--border);margin-top:4px;width:60px;margin-left:auto;margin-right:auto">
               <div style="height:100%;border-radius:4px;background:${barColor};width:${Math.min(pct,100)}%;transition:width 0.4s"></div>
             </div>
           </td>
           <td style="text-align:center;color:var(--text-secondary)">${i.minQty}</td>
-          <td style="color:var(--text-muted)">${i.unit || 'unid'}</td>
+          <td style="font-size:0.82rem;color:var(--text-secondary)">${i.costPrice ? 'R$ ' + Number(i.costPrice).toFixed(2) : '—'}</td>
+          <td>${expiryHtml}</td>
           <td>
             ${isLow
               ? `<span class="badge badge-orange">⚠️ Baixo</span>`
@@ -211,7 +280,7 @@ const Inventory = {
               <button class="btn btn-ghost btn-sm" onclick="Inventory.openModal('${i.id}')" title="Editar produto">
                 <span class="material-symbols-outlined" style="font-size:16px">tune</span>
               </button>
-              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="Inventory.delete('${i.id}','${(i.name||'').replace(/'/g,"\\'")}'" title="Excluir">
+              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="Inventory.delete('${i.id}','${(i.name||'').replace(/'/g,"\\'")}')" title="Excluir">
                 <span class="material-symbols-outlined" style="font-size:16px">delete</span>
               </button>
             </div>
@@ -219,11 +288,13 @@ const Inventory = {
         </tr>`;
     },
 
-    filterTable(q) {
-        const rows = document.querySelectorAll('#inv-table tbody tr');
-        rows.forEach(r => {
-            const name = r.dataset.name || '';
-            r.style.display = name.includes(q.toLowerCase()) ? '' : 'none';
+    filterTable() {
+        const q = (document.getElementById('inv-search')?.value || '').toLowerCase();
+        const cat = document.getElementById('inv-filter-cat')?.value || '';
+        document.querySelectorAll('#inv-table tbody tr[data-name]').forEach(r => {
+            const nameMatch = r.dataset.name.includes(q);
+            const catMatch = !cat || r.dataset.category === cat;
+            r.style.display = (nameMatch && catMatch) ? '' : 'none';
         });
     },
 
@@ -244,6 +315,11 @@ const Inventory = {
                     document.getElementById('inv-min-qty').value  = item.minQty ?? 0;
                     document.getElementById('inv-unit').value     = item.unit || 'unid';
                     document.getElementById('inv-category').value = item.category || '';
+                    document.getElementById('inv-cost').value     = item.costPrice || '';
+                    document.getElementById('inv-expiry').value   = item.expiryDate
+                        ? (item.expiryDate.toDate ? item.expiryDate.toDate().toISOString().split('T')[0] : item.expiryDate)
+                        : '';
+                    document.getElementById('inv-supplier').value = item.supplier || '';
                 }
             } catch(e) { console.warn(e); }
         }
@@ -263,11 +339,14 @@ const Inventory = {
         btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px"></div>';
 
         const data = {
-            name:     document.getElementById('inv-name').value.trim(),
-            qty:      parseFloat(document.getElementById('inv-qty').value) || 0,
-            minQty:   parseFloat(document.getElementById('inv-min-qty').value) || 0,
-            unit:     document.getElementById('inv-unit').value,
-            category: document.getElementById('inv-category').value
+            name:      document.getElementById('inv-name').value.trim(),
+            qty:       parseFloat(document.getElementById('inv-qty').value) || 0,
+            minQty:    parseFloat(document.getElementById('inv-min-qty').value) || 0,
+            unit:      document.getElementById('inv-unit').value,
+            category:  document.getElementById('inv-category').value,
+            costPrice: parseFloat(document.getElementById('inv-cost').value) || 0,
+            expiryDate: document.getElementById('inv-expiry').value || null,
+            supplier:  document.getElementById('inv-supplier').value.trim() || ''
         };
 
         try {
@@ -404,34 +483,195 @@ const Inventory = {
             'Qtd Atual': i.qty ?? 0,
             'Qtd Mínima': i.minQty ?? 0,
             'Unidade': i.unit || 'unid',
+            'Preço Custo': i.costPrice ? `R$ ${Number(i.costPrice).toFixed(2)}` : '',
+            'Fornecedor': i.supplier || '',
+            'Validade': i.expiryDate ? (i.expiryDate.toDate ? i.expiryDate.toDate().toLocaleDateString('pt-BR') : i.expiryDate) : '',
             'Status': i.qty <= i.minQty ? '⚠ Baixo' : '✓ OK'
         }));
         ExcelExport.fromData(data, `estoque_${new Date().toISOString().slice(0,10)}`, 'Estoque');
     },
 
     switchTab(tab) {
-        const tabProd = document.getElementById('tab-products');
-        const tabAud = document.getElementById('tab-audits');
-        const prodCont = document.getElementById('products-tab-content');
-        const audCont = document.getElementById('audits-tab-content');
-        if (!tabProd || !tabAud || !prodCont || !audCont) return;
+        const tabs = ['products','movements','shopping','audits'];
+        tabs.forEach(t => {
+            const btn = document.getElementById('tab-' + t);
+            const cont = document.getElementById(t + '-tab-content');
+            if (!btn || !cont) return;
+            if (t === tab) {
+                btn.style.background = 'var(--primary)'; btn.style.color = '#fff';
+                cont.style.display = 'flex';
+            } else {
+                btn.style.background = 'var(--bg-secondary)'; btn.style.color = 'var(--text-primary)';
+                cont.style.display = 'none';
+            }
+        });
+        if (tab === 'audits') Inventory.loadAuditsTab();
+        if (tab === 'movements') Inventory.loadMovementsTab();
+        if (tab === 'shopping') Inventory.loadShoppingTab();
+    },
 
-        if (tab === 'products') {
-            tabProd.style.background = 'var(--primary)';
-            tabProd.style.color = '#fff';
-            tabAud.style.background = 'var(--bg-secondary)';
-            tabAud.style.color = 'var(--text-primary)';
-            prodCont.style.display = 'flex';
-            audCont.style.display = 'none';
-        } else {
-            tabAud.style.background = 'var(--primary)';
-            tabAud.style.color = '#fff';
-            tabProd.style.background = 'var(--bg-secondary)';
-            tabProd.style.color = 'var(--text-primary)';
-            prodCont.style.display = 'none';
-            audCont.style.display = 'flex';
-            Inventory.loadAuditsTab();
+    // === ABA MOVIMENTAÇÕES ===
+    async loadMovementsTab() {
+        const container = document.getElementById('movements-tab-content');
+        if (!container) return;
+        container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:120px"><div class="spinner"></div></div>`;
+        try {
+            const logs = await Store.getMovementLogs();
+            let html = `
+            <div class="card">
+                <div class="card-header"><span class="card-title">📊 Histórico de Movimentações</span></div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr>
+                            <th>Data/Hora</th>
+                            <th>Produto</th>
+                            <th style="text-align:center">Tipo</th>
+                            <th style="text-align:center">Qtd</th>
+                            <th>Descrição</th>
+                            <th>Responsável</th>
+                        </tr></thead>
+                        <tbody>`;
+            if (logs.length === 0) {
+                html += `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhuma movimentação registrada ainda.</td></tr>`;
+            } else {
+                logs.forEach(l => {
+                    const ts = l.timestamp?.toDate ? l.timestamp.toDate() : (l.createdAt?.toDate ? l.createdAt.toDate() : new Date());
+                    const isIn = l.type === 'in';
+                    html += `<tr>
+                        <td style="font-size:0.82rem;white-space:nowrap">${ts.toLocaleDateString('pt-BR')} ${ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
+                        <td style="font-weight:600">${l.itemName || (l.usedItems ? l.usedItems.map(u=>u.name).join(', ') : '—')}</td>
+                        <td style="text-align:center">${isIn
+                            ? '<span style="color:#28a745;font-weight:700">↑ Entrada</span>'
+                            : '<span style="color:#ff6b6b;font-weight:700">↓ Saída</span>'}</td>
+                        <td style="text-align:center;font-weight:700">${l.qty || (l.usedItems ? l.usedItems.reduce((s,u)=>s+(u.qty||0),0) : '—')}</td>
+                        <td style="font-size:0.82rem;color:var(--text-secondary)">${l.description || (l.apptId ? 'Baixa por atendimento' : '—')}</td>
+                        <td style="font-size:0.82rem;color:var(--text-muted)">${l.user || '—'}</td>
+                    </tr>`;
+                });
+            }
+            html += `</tbody></table></div></div>`;
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text-muted)">Erro ao carregar movimentações.</div>`;
         }
+    },
+
+    // === ABA LISTA DE COMPRAS ===
+    async loadShoppingTab() {
+        const container = document.getElementById('shopping-tab-content');
+        if (!container) return;
+        container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:120px"><div class="spinner"></div></div>`;
+        try {
+            const shopItems = await Store.getShoppingList();
+            const invItems = await Store.getInventory();
+            const lowItems = invItems.filter(i => i.qty <= i.minQty);
+            const pending = shopItems.filter(s => !s.checked).length;
+
+            let html = `
+            <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                    <span class="card-title">🛒 Lista de Compras ${pending > 0 ? `<span style="background:var(--primary);color:#fff;border-radius:20px;padding:2px 10px;font-size:0.75rem;margin-left:8px">${pending} pendente${pending!==1?'s':''}</span>` : ''}</span>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        ${lowItems.length > 0 ? `<button class="btn btn-sm" onclick="Inventory._generateFromLow()" style="background:rgba(255,193,7,0.15);color:#e0a800;border:1px solid rgba(255,193,7,0.3);display:inline-flex;align-items:center;gap:4px">
+                            <span class="material-symbols-outlined" style="font-size:16px">auto_fix</span> Gerar dos itens baixos (${lowItems.length})
+                        </button>` : ''}
+                        <button class="btn btn-sm" onclick="Inventory._shareShoppingList()" style="background:rgba(37,211,102,0.15);color:#25d366;border:1px solid rgba(37,211,102,0.3);display:inline-flex;align-items:center;gap:4px">
+                            <span class="material-symbols-outlined" style="font-size:16px">share</span> WhatsApp
+                        </button>
+                        <button class="btn btn-sm" onclick="Inventory._clearChecked()" style="background:rgba(255,107,107,0.1);color:#ff6b6b;border:1px solid rgba(255,107,107,0.2);display:inline-flex;align-items:center;gap:4px">
+                            <span class="material-symbols-outlined" style="font-size:16px">cleaning_services</span> Limpar comprados
+                        </button>
+                    </div>
+                </div>
+                <!-- Add manual -->
+                <div style="display:flex;gap:8px;padding:16px;border-bottom:1px solid var(--border)">
+                    <input class="form-control" id="shop-new-name" placeholder="Nome do item..." style="flex:1;font-size:0.85rem" />
+                    <input class="form-control" id="shop-new-qty" type="number" min="1" value="1" style="width:70px;font-size:0.85rem" />
+                    <button class="btn btn-primary btn-sm" onclick="Inventory._addShoppingItem()" style="display:inline-flex;align-items:center;gap:4px">
+                        <span class="material-symbols-outlined" style="font-size:16px">add</span> Adicionar
+                    </button>
+                </div>
+                <div id="shopping-list" style="padding:12px">`;
+
+            if (shopItems.length === 0) {
+                html += `<div style="text-align:center;padding:32px;color:var(--text-muted)">
+                    <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px;opacity:0.4">shopping_cart</span>
+                    Lista vazia. Adicione itens ou gere automaticamente dos produtos abaixo do mínimo.
+                </div>`;
+            } else {
+                shopItems.forEach(s => {
+                    html += `<div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-bottom:1px solid var(--border);${s.checked ? 'opacity:0.5;' : ''}">
+                        <input type="checkbox" ${s.checked ? 'checked' : ''} onchange="Inventory._toggleShopItem('${s.id}',this.checked)" style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer" />
+                        <div style="flex:1;${s.checked ? 'text-decoration:line-through;' : ''}">
+                            <span style="font-weight:600;color:var(--text-primary)">${s.name}</span>
+                            ${s.qty ? `<span style="color:var(--text-muted);font-size:0.82rem"> · ${s.qty} ${s.unit || 'unid'}</span>` : ''}
+                        </div>
+                        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="Inventory._deleteShopItem('${s.id}')">
+                            <span class="material-symbols-outlined" style="font-size:16px">close</span>
+                        </button>
+                    </div>`;
+                });
+            }
+            html += `</div></div>`;
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text-muted)">Erro ao carregar lista de compras.</div>`;
+        }
+    },
+
+    async _addShoppingItem() {
+        const name = document.getElementById('shop-new-name')?.value.trim();
+        const qty = parseFloat(document.getElementById('shop-new-qty')?.value) || 1;
+        if (!name) { App.toast('Digite o nome do item.', 'warning'); return; }
+        await Store.addShoppingItem({ name, qty, unit: 'unid' });
+        App.toast('Item adicionado à lista!', 'success');
+        Inventory.loadShoppingTab();
+    },
+
+    async _toggleShopItem(id, checked) {
+        await Store.toggleShoppingItem(id, checked);
+    },
+
+    async _deleteShopItem(id) {
+        await Store.deleteShoppingItem(id);
+        Inventory.loadShoppingTab();
+    },
+
+    async _generateFromLow() {
+        const items = await Store.getInventory();
+        const low = items.filter(i => i.qty <= i.minQty);
+        const existing = await Store.getShoppingList();
+        const existingNames = existing.map(s => s.name.toLowerCase());
+        let added = 0;
+        for (const i of low) {
+            if (!existingNames.includes(i.name.toLowerCase())) {
+                const needQty = Math.max(1, (i.minQty * 2) - i.qty);
+                await Store.addShoppingItem({ name: i.name, qty: Math.ceil(needQty), unit: i.unit || 'unid' });
+                added++;
+            }
+        }
+        App.toast(`${added} item(ns) adicionado(s) à lista!`, 'success');
+        Inventory.loadShoppingTab();
+    },
+
+    async _clearChecked() {
+        const items = await Store.getShoppingList();
+        const checked = items.filter(s => s.checked);
+        for (const s of checked) await Store.deleteShoppingItem(s.id);
+        App.toast(`${checked.length} item(ns) removido(s).`, 'info');
+        Inventory.loadShoppingTab();
+    },
+
+    async _shareShoppingList() {
+        const items = await Store.getShoppingList();
+        const pending = items.filter(s => !s.checked);
+        if (pending.length === 0) { App.toast('Lista vazia!', 'warning'); return; }
+        let msg = '🛒 *Lista de Compras — Estoque*\n\n';
+        pending.forEach((s, idx) => {
+            msg += `${idx+1}. ${s.name} — ${s.qty || 1} ${s.unit || 'unid'}\n`;
+        });
+        msg += `\n📅 ${new Date().toLocaleDateString('pt-BR')}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     },
 
     async loadAuditsTab() {
