@@ -9,7 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/firebase-config.js"></script>
+  <script>
+    // Firebase config inline para evitar problemas de cache/escopo
+    firebase.initializeApp({
+      apiKey: "AIzaSyDu_7cRKPc2rLcukZTsb58yMN-g0IlvIYc",
+      authDomain: "lashbrow-app.firebaseapp.com",
+      projectId: "lashbrow-app",
+      storageBucket: "lashbrow-app.firebasestorage.app",
+      messagingSenderId: "516369013329",
+      appId: "1:516369013329:web:0fd76e28780b2c98703670"
+    });
+    var db = firebase.firestore();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -194,7 +205,7 @@
 </div>
 
 <script>
-// db já definido em firebase-config.js
+// Firebase db definido inline no head
 
 const SignPage = {
   consentId: null,
