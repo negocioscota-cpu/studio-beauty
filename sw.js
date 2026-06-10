@@ -4,14 +4,16 @@
 // Firebase/API requests são ignorados (gerenciados pelo SDK offline)
 // ══════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v5'; // Push Notifications 2026-05-28
-const CACHE_NAME = `lashbrow-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v6'; // Push D-0 + Booking + Icons 2026-06-10
+const CACHE_NAME = `studio-beauty-${CACHE_VERSION}`;
 
 // Todos os arquivos necessários para o app funcionar offline
 const STATIC_ASSETS = [
   '/',
   '/app.html',
   '/css/main.css',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/js/firebase-config.js',
   '/js/auth.js',
   '/js/app.js',
@@ -26,7 +28,14 @@ const STATIC_ASSETS = [
   '/pages/schedule.js',
   '/pages/ficha-tecnica.js',
   '/pages/modules.js',
-  '/pages/notifications-config.js'
+  '/pages/notifications-config.js',
+  '/pages/reminders.js',
+  '/pages/loyalty.js',
+  '/pages/reviews.js',
+  '/pages/inventory.js',
+  '/pages/bio-link.js',
+  '/pages/reports.js',
+  '/pages/settings.js'
 ];
 
 // ── Install: pré-cachear todos os assets estáticos ──
@@ -43,7 +52,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k.startsWith('lashbrow-') && k !== CACHE_NAME)
+        keys.filter(k => (k.startsWith('studio-beauty-') || k.startsWith('lashbrow-')) && k !== CACHE_NAME)
             .map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())

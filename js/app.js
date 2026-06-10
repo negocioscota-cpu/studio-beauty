@@ -49,7 +49,7 @@ const App = {
             reviews:      '⭐ Avaliações NPS',
             'business-hours': '🕐 Horário de Funcionamento',
             'booking-online': '📅 Agenda Online',
-            'notifications-config': '🔔 Notificações e Lembretes',
+            'notifications-config': '🔔 Notificações Push',
             'bio-link':   '🔗 Link da Bio',
             tutorial:     '📖 Guia de Uso',
             settings:     '⚙️ Configurações',

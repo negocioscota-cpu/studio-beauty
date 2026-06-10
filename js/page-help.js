@@ -166,11 +166,13 @@ const PageHelp = {
             ]
         },
         'notifications-config': {
-            icon: '🔔', color: '#c4756a', title: 'Notificações e Lembretes',
+            icon: '🔔', color: '#c4756a', title: 'Notificações Push',
             tips: [
-                { title: 'Lembrete de confirmação', text: 'Ative para enviar WhatsApp automático 24h antes do agendamento pedindo confirmação da cliente.' },
-                { title: 'Lembrete de retoque', text: 'O sistema notifica você quando uma cliente está próxima da data de retoque cadastrada na ficha.' },
+                { title: 'Ativar notificações', text: 'Clique em <b>Ativar</b> para permitir que o sistema envie alertas no seu dispositivo — mesmo com o app minimizado.' },
                 { title: 'Aniversariantes', text: 'Ative para receber lembretes diários das clientes aniversariantes — nunca perca uma data.' },
+                { title: 'Lembrete D-1 e D-0', text: 'Receba alertas na véspera e na manhã do dia com os agendamentos confirmados.' },
+                { title: 'Novos agendamentos', text: 'Receba push instantâneo quando uma cliente agendar online.' },
+                { title: 'Testar', text: 'Use o botão <b>Enviar Teste</b> para verificar se as notificações estão funcionando corretamente.' },
             ]
         },
         'bio-link': {
@@ -194,7 +196,7 @@ const PageHelp = {
             tips: [
                 { title: 'Compartilhe seu link', text: 'Envie o link exclusivo de indicação pelo WhatsApp para colegas lashistas.' },
                 { title: 'Acompanhar indicações', text: 'O painel mostra quantas indicações estão pendentes e quantas foram convertidas em assinantes.' },
-                { title: 'Como é o pagamento', text: 'R$ 30,00 por indicação convertida. Pagamento via PIX todo dia 05 do mês seguinte.' },
+                { title: 'Como é o pagamento', text: 'De R$ 20 a R$ 50,00 por indicação convertida. Pagamento via PIX todo dia 05 do mês seguinte.' },
             ]
         },
         settings: {

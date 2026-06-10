@@ -110,6 +110,16 @@ const PushNotifications = {
         if (prefs.pushReminder !== false) {
             await PushNotifications._checkTomorrowReminders();
         }
+
+        // ☀️ Lembrete D-0 — manhã do dia
+        if (prefs.pushD0 !== false) {
+            await PushNotifications._checkTodayReminders();
+        }
+
+        // 📅 Novos agendamentos online
+        if (prefs.pushBooking !== false) {
+            await PushNotifications._checkNewBookings();
+        }
     },
 
     // ===== 🎂 ANIVERSARIANTES DO DIA =====
@@ -202,6 +212,88 @@ const PushNotifications = {
             }
         } catch(e) {
             console.warn('[Push] Erro ao verificar lembretes D-1:', e);
+        }
+    },
+
+    // ===== ☀️ LEMBRETE D-0 (HOJE) =====
+    async _checkTodayReminders() {
+        try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const d0Key = `push_d0_${todayStr}`;
+            if (localStorage.getItem(d0Key)) return;
+
+            // Só enviar pela manhã (entre 7h e 10h)
+            const hour = new Date().getHours();
+            if (hour < 7 || hour > 10) return;
+
+            const appts = await Store.getAppointments(todayStr);
+            const active = appts.filter(a => a.status !== 'canceled');
+
+            if (active.length > 0) {
+                const sorted = active.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+                const firstName = (sorted[0].clientName || 'Cliente').split(' ')[0];
+
+                PushNotifications._send({
+                    title: `☀️ ${active.length} agendamento${active.length > 1 ? 's' : ''} hoje!`,
+                    body: active.length === 1
+                        ? `${firstName} às ${sorted[0].time || '--:--'} — ${sorted[0].procedure || 'Atendimento'}`
+                        : `Primeiro: ${firstName} às ${sorted[0].time || '--:--'}. Bom dia de trabalho! 💕`,
+                    icon: '/icons/icon-192.png',
+                    tag: 'd0-' + todayStr,
+                    data: { action: 'schedule' }
+                });
+
+                localStorage.setItem(d0Key, 'true');
+            }
+        } catch(e) {
+            console.warn('[Push] Erro ao verificar lembretes D-0:', e);
+        }
+    },
+
+    // ===== 📅 NOVOS AGENDAMENTOS ONLINE =====
+    async _checkNewBookings() {
+        try {
+            const uid = firebase.auth().currentUser?.uid;
+            if (!uid) return;
+
+            const lastBookingCheck = localStorage.getItem('push_last_booking_check') || '2000-01-01';
+            const cutoff = new Date(lastBookingCheck);
+
+            // Buscar agendamentos criados após a última verificação
+            const snap = await db.collection('appointments')
+                .where('userId', '==', uid)
+                .where('source', '==', 'online')
+                .where('createdAt', '>', cutoff)
+                .orderBy('createdAt', 'desc')
+                .limit(5)
+                .get();
+
+            if (!snap.empty) {
+                const newBookings = snap.docs.map(d => d.data());
+                const clientName = (newBookings[0].clientName || 'Cliente').split(' ')[0];
+
+                if (newBookings.length === 1) {
+                    PushNotifications._send({
+                        title: '📅 Novo agendamento online!',
+                        body: `${clientName} agendou ${newBookings[0].procedure || 'um atendimento'} para ${newBookings[0].date || 'em breve'}`,
+                        icon: '/icons/icon-192.png',
+                        tag: 'booking-' + Date.now(),
+                        data: { action: 'schedule' }
+                    });
+                } else {
+                    PushNotifications._send({
+                        title: `📅 ${newBookings.length} novos agendamentos online!`,
+                        body: `${clientName} e mais ${newBookings.length - 1} agendaram. Confira sua agenda!`,
+                        icon: '/icons/icon-192.png',
+                        tag: 'booking-' + Date.now(),
+                        data: { action: 'schedule' }
+                    });
+                }
+            }
+
+            localStorage.setItem('push_last_booking_check', new Date().toISOString());
+        } catch(e) {
+            console.warn('[Push] Erro ao verificar novos bookings:', e);
         }
     },
 
