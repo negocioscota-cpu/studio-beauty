@@ -244,8 +244,8 @@ const SignPage = {
       document.getElementById('main-form').style.display = 'block';
       document.getElementById('main-form').style.animation = 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both';
     } catch(e) {
-      console.error(e);
-      document.getElementById('error-desc').textContent = 'Erro ao carregar. Tente novamente.';
+      console.error('SignPage error:', e);
+      document.getElementById('error-desc').textContent = 'Erro: ' + (e.message || e.code || JSON.stringify(e));
       SignPage._showScreen('error-screen');
     }
   },
