@@ -4,7 +4,7 @@
 // ============================================================
 var LashBot = (() => {
 
-    const API_KEY   = 'AQ.Ab8RN6KE2tD7cV_cPAdXfpoxcYtTP6zI2O8t3-G7AxNY9hm-Ww';
+    const API_KEY   = 'AIzaSyBxiK7u5lu6VwXVzSubzIJlxkePo0psqwE';
     const API_URL   = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
     const CHAT_ID   = 'lashbot-panel';
     const FAB_ID    = 'lashbot-fab';
