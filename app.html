@@ -386,7 +386,7 @@
     <div class="sidebar-footer">
 
       <!-- Consultora IA -->
-      <button id="btn-consultora-ia" onclick="LashBot.toggle();document.getElementById('sidebar').classList.remove('sidebar-open')"
+      <button id="btn-consultora-ia" onclick="try{LashBot.toggle()}catch(e){console.error('LashBot erro:',e)};document.getElementById('sidebar').classList.remove('sidebar-open')"
          style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
                 background:linear-gradient(135deg,#1a0a10,#3d1530);border:1px solid rgba(196,117,138,0.35);
                 margin:0 8px 6px;transition:all .2s;cursor:pointer;width:calc(100% - 16px);"
@@ -485,7 +485,7 @@
 <script src="pages/cost-calc.js"></script>
 <script src="js/page-help.js"></script>
 <script src="js/invites.js"></script>
-<script src="js/lashbot.js?v=2"></script>
+<script src="js/lashbot.js?v=3"></script>
 <script src="js/app.js"></script>
 
 <script src="js/subscription.js"></script>
