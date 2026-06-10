@@ -395,7 +395,7 @@ const Consent = {
             </div>
 
             <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding-top:8px;border-top:1px solid var(--border)">
-                Documento gerado digitalmente pelo sistema LashBrow.
+                Documento gerado digitalmente pelo sistema Studio Beauty.
             </div>
         </div>`;
 

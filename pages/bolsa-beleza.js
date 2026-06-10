@@ -1,623 +1,631 @@
-// ==========================================
-// Bolsa da Beleza — Gestão de Ativos do Studio
-// ==========================================
+// ============================================================
+// BOLSA DA BELEZA — Módulo SPA para Studio Beauty
+// Adaptado do app standalone para funcionar dentro do SPA
+// ============================================================
 const BolsaBeleza = {
-    currentSection: 0,
-    sections: ['intro', 'ativos', 'minhaCarteira', 'plano14dias', 'ferramentas', 'insight'],
+  services: [],
+  selectedDayIndex: null,
+  editingServiceId: null,
+  _container: null,
+  _saveTimeout: null,
 
-    async render(container) {
-        container.innerHTML = this._renderShell();
-        this.init();
-    },
+  // ── Constantes ──────────────────────────────────────────
 
-    _renderShell() {
-        return `
-        <div class="bolsa-odonto-page" style="max-width:960px;margin:0 auto;padding-bottom:48px">
-            <div class="bolsa-hero">
-                <div class="bolsa-hero-content">
-                    <span class="bolsa-hero-icon">💼</span>
-                    <h1 class="bolsa-hero-title">A Bolsa da Beleza</h1>
-                    <p class="bolsa-hero-subtitle">Gestão Estratégica de Ativos do seu Studio</p>
-                    <div class="bolsa-hero-badges">
-                        <span class="bolsa-badge bolsa-badge-gold">✦ Estratégia</span>
-                        <span class="bolsa-badge bolsa-badge-rose">✦ Gestão</span>
-                        <span class="bolsa-badge bolsa-badge-gold">✦ Marketing</span>
-                        <span class="bolsa-badge bolsa-badge-rose">✦ Vendas</span>
-                    </div>
-                </div>
-            </div>
-            <div class="bolsa-tabs-wrapper">
-                <button data-section="0" class="bolsa-tab-btn active"><span class="tab-icon">💡</span>Introdução</button>
-                <button data-section="1" class="bolsa-tab-btn"><span class="tab-icon">📊</span>5 Ativos</button>
-                <button data-section="2" class="bolsa-tab-btn"><span class="tab-icon">💰</span>Minha Carteira</button>
-                <button data-section="3" class="bolsa-tab-btn"><span class="tab-icon">🚀</span>Plano 14 Dias</button>
-                <button data-section="4" class="bolsa-tab-btn"><span class="tab-icon">🔧</span>Ferramentas</button>
-                <button data-section="5" class="bolsa-tab-btn"><span class="tab-icon">💎</span>Insight de Ouro</button>
-            </div>
-            <div id="bolsa-content" style="transition:opacity 0.25s,transform 0.25s">
-                ${this.renderIntro()}
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)">
-                <button id="bolsa-prev" class="btn btn-ghost" style="display:flex;align-items:center;gap:6px" disabled>
-                    <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span>Anterior
-                </button>
-                <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600" id="bolsa-counter">1 / 6</span>
-                <button id="bolsa-next" class="btn btn-primary" style="display:flex;align-items:center;gap:6px">
-                    Próximo<span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
-                </button>
-            </div>
-        </div>`;
-    },
+  IDEAL_RANGES: {
+    'Âncora':    { min: 40, max: 50, color: '#7c3aed' },
+    'Premium':   { min: 25, max: 30, color: '#f97316' },
+    'Bem-Estar': { min: 10, max: 15, color: '#3b82f6' },
+    'Ocasional': { min: 0,  max: 15, color: '#6b7280' },
+    'Exótico':   { min: 0,  max: 5,  color: '#ec4899' }
+  },
 
-    renderIntro() {
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-card">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box bolsa-icon-box-gold">⚠️</div>
-                    <h2 class="bolsa-section-title">O Fim da Ilusão da Agenda Cheia</h2>
-                </div>
-                <div class="bolsa-prose">
-                    <p>Existe uma <strong>mentira confortável</strong> que a maioria das profissionais ainda acredita: <em>"Se minha agenda está cheia, meu studio está indo bem."</em></p>
-                    <div class="bolsa-alert bolsa-alert-danger">
-                        <p class="bolsa-alert-title">🚨 A Verdade Inconveniente</p>
-                        <p>Agenda lotada não é sinônimo de lucro. É sinônimo de <strong>trabalho</strong>. E trabalho sem estratégia é apenas <strong>exaustão remunerada — mal remunerada</strong>.</p>
-                    </div>
-                    <p>Você pode ter 8 clientes por dia e ainda fechar o mês no vermelho. <strong>Quando sua agenda é preenchida por serviços de baixa margem</strong>, você está basicamente <strong>alugando sua cadeira por centavos</strong>.</p>
-                    <p>Imagine: <strong>5 clientes por dia, 4 dias por semana</strong>, distribuídas entre extensões volume russo, brow lamination e combos recorrentes. O faturamento? <strong>3 a 5 vezes maior</strong>. O desgaste? Uma fração.</p>
-                    <div class="bolsa-highlight-box">
-                        <p class="bolsa-highlight-title">📈 O Conceito: Bolsa da Beleza</p>
-                        <p>Na Bolsa de Valores, <strong>nenhum investidor coloca tudo em um único ativo</strong>. <strong>Seu studio segue a mesma lógica.</strong> Cada serviço é um "ativo" no seu portfólio. O segredo está no <strong>equilíbrio entre eles</strong>.</p>
-                    </div>
-                    <div class="bolsa-compare-grid">
-                        <div class="bolsa-compare-card bolsa-compare-bad">
-                            <p class="bolsa-compare-label">✗ Mentalidade Antiga</p>
-                            <ul>
-                                <li>• "Preciso lotar minha agenda"</li>
-                                <li>• "Qualquer cliente é boa cliente"</li>
-                                <li>• "Desconto pelo menos traz alguém"</li>
-                                <li>• "Marketing é postar qualquer coisa"</li>
-                            </ul>
-                        </div>
-                        <div class="bolsa-compare-card bolsa-compare-good">
-                            <p class="bolsa-compare-label">✓ Mentalidade Investidora</p>
-                            <ul>
-                                <li>• "Preciso otimizar minha agenda"</li>
-                                <li>• "Cada horário tem custo de oportunidade"</li>
-                                <li>• "Desconto corrói meu ativo: o preço"</li>
-                                <li>• "Marketing é isca para o serviço certo"</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <p>A partir de agora, <strong>sua cadeira é um ativo financeiro</strong>. Cada cliente precisa gerar retorno proporcional ao investimento de tempo, energia e material. Se não gera — está <strong>desvalorizando sua carteira</strong>.</p>
-                    <p style="text-align:center;color:var(--text-muted);font-size:0.75rem;letter-spacing:0.1em;font-weight:600;padding:16px 0">— PRÓXIMO: AS 5 CATEGORIAS DE ATIVOS —</p>
-                </div>
-            </div>
-        </div>`;
-    },
-    renderAtivos() {
-        const ativos = [
-            { icon: '🌿', nome: 'Renda Fixa — Manutenções & Retoques', desc: 'Serviços recorrentes e previsíveis. Margens menores, mas fluxo de caixa <strong>constante e previsível</strong>.', ex: 'Manutenção fio a fio, retoque de henna, remoção de cílios, manutenção volume brasileiro.', peso: '20-30%', risco: 'Baixo', retorno: 'Estável', tip: 'É a base da agenda. Garante que as contas fixas sejam pagas. Se passar de 40%, você está subsidiando sua agenda com trabalho barato.' },
-            { icon: '✨', nome: 'Ações de Crescimento — Extensões Premium', desc: 'Serviços de alto valor. <strong>Alto retorno por hora trabalhada</strong>.', ex: 'Volume Russo, Mega Volume, Extensão Sirena, Extensão com Fios de Seda Premium.', peso: '25-35%', risco: 'Moderado', retorno: 'Alto', tip: 'É aqui que o lucro real mora. Cada slot de volume russo perdido para manutenção simples é dinheiro saindo do seu bolso.' },
-            { icon: '🏆', nome: 'Fundos Premium — Procedimentos de Alto Valor', desc: 'Ticket altíssimo e alta percepção de valor. <strong>Alta margem, efeito uau</strong>.', ex: 'Brow Lamination, Lash Lifting com Tintura, Design HD com Henna, Combo Olhar Completo.', peso: '20-25%', risco: 'Moderado-Alto', retorno: 'Muito Alto', tip: 'São seus geradores de autoridade. Cada resultado postado é propaganda gratuita que atrai clientes premium.' },
-            { icon: '💎', nome: 'Dividendos — Programas de Fidelidade & Recorrência', desc: 'Renda passiva e previsível. <strong>Receita garantida antes do mês começar</strong>.', ex: 'Pacote Mensal 2 Manutenções, Assinatura Olhar VIP, Combo Trimestral Cílios + Sobrancelha.', peso: '10-20%', risco: 'Muito Baixo', retorno: 'Previsível', tip: 'Se 15 clientes pagam R$150/mês, você começa todo mês com R$2.250 garantidos — antes de qualquer encaixe.' },
-            { icon: '🎓', nome: 'Venture Capital — Cursos & Workshops', desc: 'Monetização do seu conhecimento. <strong>Escala sem trocar hora por dinheiro</strong>.', ex: 'Workshop "Cílios Perfeitos em Casa", Curso Online de Design, Mentoria para Profissionais.', peso: '5-10%', risco: 'Alto', retorno: 'Exponencial', tip: 'O ativo mais escalável. Um curso gravado pode gerar renda por anos. Exige autoridade construída nos outros 4 ativos primeiro.' }
-        ];
+  STRATEGIES: [
+    { id:'A', title:'Priorizar o ativo mais eficiente dentro da classe', description:'Se vai fazer, faz o que te paga mais rápido.', trigger:()=>true },
+    { id:'B', title:'Aumentar o valor do ativo e controlar custos/desperdícios', description:'Melhorar a Hora R$100 sem aumentar carga de trabalho.', trigger:(d)=>d.some(x=>x.avgHora100>90) },
+    { id:'C', title:'Aumentar o volume do ativo desbalanceado', description:'Caminho mais cansativo, mas direto.', trigger:(d)=>d.some(x=>x.status==='critical'&&x.percentReal<x.idealMin) },
+    { id:'D', title:'Criar combos para deslocar o fluxo', description:'Ex: Se Premium está baixo, cria combo "Alongamento + Lash Lifting" → puxa a carteira pra cima.', trigger:(d)=>{const p=d.find(x=>x.type==='Premium');return p&&p.percentReal<p.idealMin;} },
+    { id:'E', title:'Reduzir vagas dos ativos que estão pesando muito', description:'Se Âncora está em 70%, limite 2 horários por dia. Rebalanceamento por escassez.', trigger:(d)=>d.some(x=>x.percentReal>x.idealMax+10) },
+    { id:'F', title:'Mudar a comunicação (marketing seletivo por ativo)', description:'Se Premium está baixo: só poste premium, só fale premium, só mostre premium. A agenda imita o feed.', trigger:(d)=>d.some(x=>x.status!=='ok') },
+    { id:'G', title:'Aumentar gatilhos de recompra (manutenção)', description:'Lembrete automático, agendamento antecipado, bônus pela próxima sessão.', trigger:()=>true },
+    { id:'H', title:'Desaceleração estratégica', description:'Deixar de promover propositalmente o ativo que está sobrando.', trigger:(d)=>d.some(x=>x.percentReal>x.idealMax) },
+    { id:'I', title:'Reposicionar um ativo dentro de outra classe', description:'Ex: Lash Lifting pode sair de "âncora" e virar "premium leve".', trigger:(d)=>d.some(x=>x.status==='critical') },
+    { id:'J', title:'Criar novos ativos dentro da classe defasada', description:'Se Bem-estar está fraco: cria nova massagem curta, terapia capilar express.', trigger:(d)=>d.some(x=>x.percentReal<x.idealMin&&x.count===0) },
+    { id:'K', title:'Descontinuar (ou hibernar) o ativo que está descontrolando', description:'O mais poderoso — e o mais negado emocionalmente.', trigger:(d)=>d.some(x=>x.percentReal>x.idealMax+15) }
+  ],
 
-        const cards = ativos.map((a, i) => `
-            <div class="bolsa-ativo-card">
-                <div class="bolsa-ativo-header">
-                    <span class="bolsa-ativo-icon">${a.icon}</span>
-                    <div>
-                        <p class="bolsa-ativo-num">ATIVO ${i + 1}</p>
-                        <h3 class="bolsa-ativo-title">${a.nome}</h3>
-                    </div>
-                </div>
-                <p class="bolsa-ativo-desc">${a.desc}</p>
-                <div class="bolsa-ativo-exemplos">
-                    <p class="bolsa-ativo-exemplos-label">EXEMPLOS NO SEU STUDIO</p>
-                    <p>${a.ex}</p>
-                </div>
-                <div class="bolsa-ativo-stats">
-                    <div class="bolsa-stat"><p class="bolsa-stat-label">PESO IDEAL</p><p class="bolsa-stat-val">${a.peso}</p></div>
-                    <div class="bolsa-stat"><p class="bolsa-stat-label">RISCO</p><p class="bolsa-stat-val">${a.risco}</p></div>
-                    <div class="bolsa-stat"><p class="bolsa-stat-label">RETORNO</p><p class="bolsa-stat-val">${a.retorno}</p></div>
-                </div>
-                <div class="bolsa-ativo-tip">💡 ${a.tip}</div>
-            </div>
-        `).join('');
+  PLAN_14_DAYS: [
+    { day:1, title:'ANÚNCIO E EDUCAÇÃO', week:1, scripts:{ instagram_stories:'Explicar o que é o {SERVICO} → 3 stories curtos. Enquete: "Você já fez?" / "Tem vontade?"', instagram_feed:'Carrossel: "O que é / Para quem / Benefícios / Resultados / Duração" sobre {SERVICO}.', whatsapp:'Oi, linda! Esta semana estou dando atenção especial ao {SERVICO}. Se quiser entender se ele é ideal pra você, posso te mandar um diagnóstico gratuito. Quer?' } },
+    { day:2, title:'PROVA SOCIAL + BASTIDOR', week:1, scripts:{ instagram_stories:'Antes e depois do {SERVICO}. Vídeo rápido preparando o material. Print de cliente elogiando.', instagram_feed:'Reels: "Transformação em 5 segundos" mostrando resultado do {SERVICO}.', whatsapp:'Esse foi o resultado de {SERVICO} de hoje. Quer um igual? Te explico se serve pra você.' } },
+    { day:3, title:'CAIXINHA DE PERGUNTAS', week:1, scripts:{ instagram_stories:'Caixinha: "Pergunte tudo sobre o {SERVICO}!" Responder 5 a 10 perguntas ao longo do dia.', instagram_feed:'Enquete: "Você já sabia disso?" com curiosidade sobre {SERVICO}.', whatsapp:'Recebi várias dúvidas sobre o {SERVICO} hoje. Quer que eu te envie um áudio explicando rapidinho como funciona?' } },
+    { day:4, title:'BASTIDOR PROFISSIONAL', week:1, scripts:{ instagram_stories:'Stories mostrando: Higienização, Ferramentas, Explicação técnica simplificada do {SERVICO}.', instagram_feed:'Carrossel: "5 motivos para fazer o {SERVICO}".', whatsapp:'Olha o capricho que o {SERVICO} exige. É por isso que o resultado dura tanto. (Enviar vídeo de 15s do bastidor)' } },
+    { day:5, title:'REELS "COMO FUNCIONA"', week:1, scripts:{ instagram_stories:'Enquete: "Você já sabia disso?" com fato sobre {SERVICO}.', instagram_feed:'Reels com legenda clara: "Como funciona o {SERVICO} em 20 segundos".', whatsapp:'Mandei um vídeo explicando como o {SERVICO} funciona. Quer que eu te envie?' } },
+    { day:6, title:'COMUNICAÇÃO DE VALOR', week:1, scripts:{ instagram_stories:'Depoimentos reais (prints + vídeos) sobre {SERVICO}.', instagram_feed:'Carrossel: "5 motivos para fazer o {SERVICO}".', whatsapp:'Olha o que as meninas falam depois de fazer {SERVICO}! (enviar prints de elogios)' } },
+    { day:7, title:'MINI LISTA DE ESPERA', week:1, scripts:{ instagram_stories:'"Vou abrir 3 horários exclusivos para o {SERVICO} na próxima semana. Quer que eu te coloque na lista?"', instagram_feed:'Post sobre exclusividade e lista de espera do {SERVICO}.', whatsapp:'Estou abrindo uma lista de espera só para o {SERVICO} esta semana. Quer que eu coloque seu nome?' } },
+    { day:8, title:'STORYTELLING', week:2, scripts:{ instagram_stories:'Conte a história de uma cliente que transformou o olhar/pele/sobrancelha com o {SERVICO}.', instagram_feed:'Post de storytelling: transformação real com {SERVICO}.', whatsapp:'Você já pensou em fazer {SERVICO}? Ele resolve exatamente [dor da cliente]. Se quiser ver como ficaria no seu caso, te mando sugestão.' } },
+    { day:9, title:'COMPARATIVO', week:2, scripts:{ instagram_stories:'Enquete: "Qual combina mais com você?" comparando {SERVICO} com outro serviço.', instagram_feed:'Carrossel no feed: "{SERVICO} vs Y — qual é ideal pra você?"', whatsapp:'No seu rosto, eu recomendaria {SERVICO} por causa de [motivo técnico]. Quer ver um comparativo?' } },
+    { day:10, title:'DEMONSTRAÇÃO AO VIVO', week:2, scripts:{ instagram_stories:'Gravar um atendimento real de {SERVICO} em 5 a 8 stories.', instagram_feed:'Reels: "Processo acelerado" do {SERVICO}.', whatsapp:'Olha como fica lindo o {SERVICO}! Fiz agora e lembrei de você.' } },
+    { day:11, title:'PROVA SOCIAL PESADA', week:2, scripts:{ instagram_stories:'35-50 segundos de depoimentos em sequência sobre {SERVICO}.', instagram_feed:'Carrossel: Antes e depois com legendas curtas do {SERVICO}.', whatsapp:'Olha os resultados de {SERVICO} de hoje. Se quiser agendar, tenho X horários.' } },
+    { day:12, title:'DIAGNÓSTICO PERSONALIZADO', week:2, scripts:{ instagram_stories:'Caixinha: "Quer que eu avalie sua sobrancelha/pele/cílios e te diga qual serviço é ideal?"', instagram_feed:'Post educativo sobre como saber se {SERVICO} é ideal para você.', whatsapp:'Me manda uma foto no ângulo certo que eu analiso pra você se {SERVICO} é o ideal.' } },
+    { day:13, title:'OFERTA DE VALOR (sem desconto)', week:2, scripts:{ instagram_stories:'Agende o {SERVICO} e ganhe um mini diagnóstico.', instagram_feed:'Post sobre o valor agregado do {SERVICO}, sem desconto.', whatsapp:'Hoje estou oferecendo um mimo especial para quem fizer {SERVICO}. Quer saber qual?' } },
+    { day:14, title:'ENCERRAMENTO E CHAMADO ELEGANTE', week:2, scripts:{ instagram_stories:'Agradecimento + mostrar como o {SERVICO} cresceu na semana.', instagram_feed:'Carrossel: Resultados da campanha de {SERVICO}.', whatsapp:'Fechando a semana de foco no {SERVICO}. Última chamada para os horários desta semana. Quer aproveitar?' } }
+  ],
 
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-card" style="margin-bottom:20px">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box" style="background:var(--primary-light)">📊</div>
-                    <h2 class="bolsa-section-title">Os 5 Ativos do Seu Studio</h2>
-                </div>
-                <p class="bolsa-prose">Assim como na bolsa de valores, seu studio possui <strong>5 categorias de ativos</strong>. O segredo não é apostar tudo em uma — é encontrar o <strong>equilíbrio perfeito</strong> entre risco, retorno e previsibilidade.</p>
-            </div>
-            <div class="bolsa-ativos-grid">${cards}</div>
-            <p style="text-align:center;color:var(--text-muted);font-size:0.75rem;letter-spacing:0.1em;font-weight:600;padding:24px 0">— PRÓXIMO: MONTE SUA CARTEIRA —</p>
-        </div>`;
-    },
+  // ── Helpers ─────────────────────────────────────────────
 
-    renderMinhaCarteira() {
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-dark-panel" style="margin-bottom:20px">
-                <div class="bolsa-section-header" style="margin-bottom:20px">
-                    <div class="bolsa-icon-box" style="background:rgba(255,255,255,0.15)">⚡</div>
-                    <div>
-                        <h2 style="color:#fff;font-size:1.2rem;font-weight:800;margin:0">Motor Hora Cem 💰</h2>
-                        <p style="color:rgba(255,255,255,0.6);font-size:0.78rem;margin:0">Calcule quanto vale <strong>cada hora</strong> da sua cadeira</p>
-                    </div>
-                </div>
-                <div class="bolsa-calc-grid-3">
-                    <div>
-                        <label class="bolsa-input-label">Custo Fixo Mensal (R$)</label>
-                        <input type="number" id="hc-custo-fixo" class="bolsa-input-dark" placeholder="3.500" value="3500">
-                    </div>
-                    <div>
-                        <label class="bolsa-input-label">Dias de Trabalho / Mês</label>
-                        <input type="number" id="hc-dias" class="bolsa-input-dark" placeholder="22" value="22">
-                    </div>
-                    <div>
-                        <label class="bolsa-input-label">Horas de Atendimento / Dia</label>
-                        <input type="number" id="hc-horas" class="bolsa-input-dark" placeholder="8" value="8">
-                    </div>
-                </div>
-                <div class="bolsa-calc-grid-2" style="margin-top:12px">
-                    <div>
-                        <label class="bolsa-input-label">Meta de Lucro Mensal (R$)</label>
-                        <input type="number" id="hc-meta-lucro" class="bolsa-input-dark" placeholder="8.000" value="8000">
-                    </div>
-                    <div>
-                        <label class="bolsa-input-label">Custo Variável por Atend. (R$)</label>
-                        <input type="number" id="hc-custo-var" class="bolsa-input-dark" placeholder="25" value="25">
-                        <p style="color:rgba(255,255,255,0.4);font-size:0.68rem;margin-top:4px">Cola, fios, pigmentos, consumíveis</p>
-                    </div>
-                </div>
-                <button onclick="BolsaBeleza.calcularHoraCem()" class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;gap:8px;display:flex;align-items:center">
-                    <span class="material-symbols-outlined">calculate</span>Calcular Meu Hora Cem
-                </button>
-                <div id="hc-resultado" class="bolsa-hc-resultado" style="display:none">
-                    <div class="bolsa-hc-stats">
-                        <div class="bolsa-hc-stat"><p class="bolsa-hc-stat-label">CUSTO/HORA</p><p class="bolsa-hc-stat-val" style="color:#f87171" id="hc-custo-hora">R$ 0</p></div>
-                        <div class="bolsa-hc-stat"><p class="bolsa-hc-stat-label">HORA CEM</p><p class="bolsa-hc-stat-val" style="color:#34d399" id="hc-hora-cem">R$ 0</p></div>
-                        <div class="bolsa-hc-stat"><p class="bolsa-hc-stat-label">META/DIA</p><p class="bolsa-hc-stat-val" style="color:var(--gold)" id="hc-meta-dia">R$ 0</p></div>
-                        <div class="bolsa-hc-stat"><p class="bolsa-hc-stat-label">TICKET MÍN.</p><p class="bolsa-hc-stat-val" style="color:#60a5fa" id="hc-ticket-min">R$ 0</p></div>
-                    </div>
-                    <div class="bolsa-hc-insight"><p id="hc-insight"></p></div>
-                </div>
-            </div>
+  _currency(v) { return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); },
+  _fmtMinutes(m) { if(!m||m<=0) return '0min'; const h=Math.floor(m/60),min=Math.round(m%60); return h>0?`${h}h ${min}min`:`${min}min`; },
+  _assetSlug(type) { const m={'Âncora':'ancora','Premium':'premium','Bem-Estar':'bem-estar','Ocasional':'ocasional','Exótico':'exotico'}; return m[type]||'ancora'; },
 
-            <div class="bolsa-card" style="margin-bottom:20px">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box" style="background:var(--primary-light)">📋</div>
-                    <h3 class="bolsa-section-title" style="font-size:1rem">Meus Serviços — Composição da Carteira</h3>
-                </div>
-                <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:16px">Cadastre seus serviços e veja como sua carteira está distribuída entre os 5 ativos.</p>
-                <div id="servicos-lista" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
-                <button onclick="BolsaBeleza.adicionarServico()" class="bolsa-btn-add">
-                    <span class="material-symbols-outlined">add_circle</span>Adicionar Serviço
-                </button>
-            </div>
+  _calcFields(s) {
+    const profit=(s.price||0)-(s.cost||0), time=s.time||1;
+    const efficiency=(profit/time)*60;
+    const hora100=profit>0?(100/profit)*time:Infinity;
+    const totalRevenue=(s.price||0)*(s.qty||0);
+    const totalProfit=profit*(s.qty||0);
+    let efficiencyCategory,efficiencyColor;
+    if(time<=60){efficiencyCategory='alta';efficiencyColor='#22c55e';}
+    else if(time<=75){efficiencyCategory='moderada';efficiencyColor='#eab308';}
+    else if(time<=90){efficiencyCategory='baixa';efficiencyColor='#f97316';}
+    else{efficiencyCategory='ineficiente';efficiencyColor='#ef4444';}
+    return {profit,efficiency,hora100,totalRevenue,totalProfit,efficiencyCategory,efficiencyColor};
+  },
 
-            <div class="bolsa-card">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box bolsa-icon-box-gold">🍩</div>
-                    <h3 class="bolsa-section-title" style="font-size:1rem">Alocação da Carteira</h3>
-                </div>
-                <div class="bolsa-aloc-grid" id="alocacao-grid">
-                    <div class="bolsa-aloc-item" style="--aloc-color:#10b981"><p class="bolsa-aloc-cat">RENDA FIXA</p><p class="bolsa-aloc-pct" id="aloc-0">0%</p><p class="bolsa-aloc-ideal">Ideal: 20-30%</p></div>
-                    <div class="bolsa-aloc-item" style="--aloc-color:#a855f7"><p class="bolsa-aloc-cat">CRESCIMENTO</p><p class="bolsa-aloc-pct" id="aloc-1">0%</p><p class="bolsa-aloc-ideal">Ideal: 25-35%</p></div>
-                    <div class="bolsa-aloc-item" style="--aloc-color:var(--gold)"><p class="bolsa-aloc-cat">PREMIUM</p><p class="bolsa-aloc-pct" id="aloc-2">0%</p><p class="bolsa-aloc-ideal">Ideal: 20-25%</p></div>
-                    <div class="bolsa-aloc-item" style="--aloc-color:#38bdf8"><p class="bolsa-aloc-cat">DIVIDENDOS</p><p class="bolsa-aloc-pct" id="aloc-3">0%</p><p class="bolsa-aloc-ideal">Ideal: 10-20%</p></div>
-                    <div class="bolsa-aloc-item" style="--aloc-color:var(--primary)"><p class="bolsa-aloc-cat">VENTURE</p><p class="bolsa-aloc-pct" id="aloc-4">0%</p><p class="bolsa-aloc-ideal">Ideal: 5-10%</p></div>
-                </div>
-                <div class="bolsa-aloc-bar" id="alocacao-bar">
-                    <div style="background:#10b981;height:100%;transition:width 0.5s;width:0%" id="bar-0"></div>
-                    <div style="background:#a855f7;height:100%;transition:width 0.5s;width:0%" id="bar-1"></div>
-                    <div style="background:var(--gold);height:100%;transition:width 0.5s;width:0%" id="bar-2"></div>
-                    <div style="background:#38bdf8;height:100%;transition:width 0.5s;width:0%" id="bar-3"></div>
-                    <div style="background:var(--primary);height:100%;transition:width 0.5s;width:0%" id="bar-4"></div>
-                </div>
-                <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:8px" id="alocacao-total">Faturamento total: R$ 0</p>
-            </div>
-        </div>`;
-    },
-    renderPlano14Dias() {
-        const dias = [
-            { dia: 1, titulo: 'Audite Sua Agenda', desc: 'Revise os últimos 30 dias. Quantos atendimentos foram de manutenção barata? Quantos de extensão premium? Anote a proporção real.', cat: 'Diagnóstico' },
-            { dia: 2, titulo: 'Calcule Seu Hora Cem', desc: 'Use o motor na aba anterior. Descubra o custo real de cada hora e quanto precisa cobrar para lucrar de verdade.', cat: 'Financeiro' },
-            { dia: 3, titulo: 'Catalogue Seus Serviços', desc: 'Liste todos os serviços com preço, tempo médio e custo de material. Classifique cada um nos 5 ativos.', cat: 'Estratégia' },
-            { dia: 4, titulo: 'Elimine os Vilões', desc: 'Identifique serviços que dão prejuízo (ticket < custo/hora). Reajuste o preço ou retire do portfólio.', cat: 'Financeiro' },
-            { dia: 5, titulo: 'Crie Seu Combo Premium', desc: 'Monte um combo "Olhar Completo" (cílios + sobrancelha + tintura). Preço premium com alta percepção de valor.', cat: 'Produto' },
-            { dia: 6, titulo: 'Lance o Pacote de Fidelidade', desc: 'Crie um pacote mensal com 2 manutenções incluídas. Ofereça às 10 melhores clientes. Meta: 5 adesões.', cat: 'Recorrência' },
-            { dia: 7, titulo: 'Faça 5 Stories de Bastidores', desc: 'Mostre seu material premium, antes/depois, seu setup. Não venda — gere desejo e autoridade.', cat: 'Marketing' },
-            { dia: 8, titulo: 'Reajuste 3 Preços', desc: 'Escolha 3 serviços abaixo do seu Hora Cem e aumente em 15-25%. Comunique valor, não custo.', cat: 'Financeiro' },
-            { dia: 9, titulo: 'Crie Sua Lista VIP', desc: 'Identifique as 20 clientes que mais gastam. Ofereça agendamento prioritário e um mimo exclusivo.', cat: 'Fidelização' },
-            { dia: 10, titulo: 'Grave Um Reels Tutorial', desc: 'Ensine algo simples (cuidados pós-extensão). Posicione-se como especialista. Marketing de autoridade.', cat: 'Marketing' },
-            { dia: 11, titulo: 'Prospecte 3 Parcerias', desc: 'Busque salões, dermatologistas, espaços de estética para indicação mútua. Construa sua rede.', cat: 'Parcerias' },
-            { dia: 12, titulo: 'Implemente Upsell Automático', desc: 'Para cada manutenção, sugira um upgrade. Treine o pitch: "Por +R$X incluo a tintura dos cílios."', cat: 'Vendas' },
-            { dia: 13, titulo: 'Analise Sua Nova Alocação', desc: 'Volte à aba "Minha Carteira" e atualize os números. Compare com o dia 1. A proporção melhorou?', cat: 'Análise' },
-            { dia: 14, titulo: 'Defina Metas do Mês', desc: 'Com base nos dados, defina: faturamento-alvo, ticket médio ideal, número mínimo de procedimentos premium por semana.', cat: 'Planejamento' }
-        ];
+  _$(sel) { return this._container ? this._container.querySelector(sel) : document.querySelector(sel); },
+  _$$(sel) { return this._container ? this._container.querySelectorAll(sel) : document.querySelectorAll(sel); },
 
-        const catColors = { 'Diagnóstico':'#a855f7','Financeiro':'#10b981','Estratégia':'#f59e0b','Produto':'#38bdf8','Recorrência':'#6366f1','Marketing':'#ec4899','Fidelização':'#f97316','Vendas':'#ef4444','Parcerias':'#14b8a6','Análise':'#3b82f6','Planejamento':'#8b5cf6' };
+  // ── Ponto de Entrada ────────────────────────────────────
 
-        const items = dias.map(d => `
-            <div class="bolsa-dia-card">
-                <div class="bolsa-dia-num">${d.dia}</div>
-                <div style="flex:1">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                        <h4 style="font-weight:700;font-size:0.88rem;margin:0">${d.titulo}</h4>
-                        <span style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;background:${catColors[d.cat]}22;color:${catColors[d.cat]}">${d.cat}</span>
-                    </div>
-                    <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.5;margin:0">${d.desc}</p>
-                </div>
-                <label style="flex-shrink:0;cursor:pointer">
-                    <input type="checkbox" class="plano14-check" data-dia="${d.dia}" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary)">
-                </label>
-            </div>`).join('');
+  async render(container) {
+    this._container = container;
+    this.services = [];
+    this.selectedDayIndex = null;
+    this.editingServiceId = null;
+    container.innerHTML = this._buildHTML();
+    this._initNavigation();
+    this._initServiceModal();
+    this._initCalculator();
+    await this._loadFirestore();
+    this._renderServicesTable();
+    this._renderDashboard();
+    this._renderDiagnosis();
+    this._populateServiceSelect();
 
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-card" style="margin-bottom:20px">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box bolsa-icon-box-gold">🚀</div>
-                    <h2 class="bolsa-section-title">Plano de Tração: 14 Dias Para Rebalancear</h2>
-                </div>
-                <p class="bolsa-prose">Um protocolo <strong>dia a dia</strong> para otimizar sua carteira. Cada ação é pequena, mas o efeito acumulado transforma seu faturamento.</p>
-                <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
-                    <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:8px;overflow:hidden">
-                        <div style="height:100%;background:var(--primary);border-radius:8px;transition:width 0.4s;width:0%" id="plano14-progress"></div>
-                    </div>
-                    <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted)" id="plano14-counter">0/14</span>
-                </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:10px">${items}</div>
-        </div>`;
-    },
+    window.__BB = {
+      openModal: (id) => this._openModal(id),
+      deleteService: (id) => this._deleteService(id),
+      selectDay: (idx,sid) => this._selectDay(idx,sid),
+      copyScript: (t) => this._copyScript(t)
+    };
+  },
 
-    renderFerramentas() {
-        const ferramentas = [
-            { icon: '💲', titulo: 'Calculadora de Margem', desc: 'Para cada serviço, calcule: (Preço - Custo Material - Custo Hora) = Margem Líquida. Se a margem for menor que 40%, revise.', acao: 'Fórmula: (Preço - Material - (Custo Fixo/Hora × Tempo)) ÷ Preço × 100 = Margem %' },
-            { icon: '↕️', titulo: 'Matriz de Rebalanceamento', desc: 'Monte uma tabela com todos os serviços. Classifique por: Frequência, Ticket, Margem, Tempo. Elimine os que pontuam baixo em tudo.', acao: 'Regra: Se um serviço pontua abaixo de 2/4 critérios, ele está desbalanceando sua carteira.' },
-            { icon: '📣', titulo: 'Script de Upsell', desc: 'Para cada serviço básico, tenha um upgrade pronto: "Que tal incluir a tintura por apenas +R$X?"', acao: 'Template: "[Nome], como você já está fazendo [serviço], fica perfeito complementar com [upgrade]. É um investimento de apenas +R$[valor]."' },
-            { icon: '📅', titulo: 'Régua de Agendamento', desc: 'Defina slots premium no horário nobre (10h-15h) para extensões/combos. Manutenções ficam nos extremos.', acao: 'Slots 10h, 11h, 13h, 14h = Premium. Slots 8h, 9h, 16h, 17h = Manutenções e retoques.' }
-        ];
+  // ── HTML Completo ───────────────────────────────────────
 
-        const cards = ferramentas.map(f => `
-            <div class="bolsa-card">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box" style="background:var(--primary-light);font-size:1.2rem">${f.icon}</div>
-                    <h3 style="font-weight:700;font-size:0.95rem;margin:0">${f.titulo}</h3>
-                </div>
-                <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.6">${f.desc}</p>
-                <div style="background:var(--bg-secondary);border-radius:10px;padding:12px;border-left:3px solid var(--primary)">
-                    <p style="font-size:0.75rem;color:var(--text-secondary);font-family:monospace;line-height:1.6">${f.acao}</p>
-                </div>
-            </div>`).join('');
+  _buildHTML() {
+    return `
+    <div class="bb-page">
+      <!-- Nav Tabs -->
+      <div class="bb-nav-tabs">
+        <button class="bb-nav-tab active" data-bb-section="bb-dashboard"><span class="bb-tab-icon">🏠</span><span class="bb-tab-label">Dashboard</span></button>
+        <button class="bb-nav-tab" data-bb-section="bb-criterios"><span class="bb-tab-icon">📐</span><span class="bb-tab-label">Critérios</span></button>
+        <button class="bb-nav-tab" data-bb-section="bb-servicos"><span class="bb-tab-icon">📋</span><span class="bb-tab-label">Serviços</span></button>
+        <button class="bb-nav-tab" data-bb-section="bb-diagnostico"><span class="bb-tab-icon">📊</span><span class="bb-tab-label">Diagnóstico</span></button>
+        <button class="bb-nav-tab" data-bb-section="bb-plano14"><span class="bb-tab-icon">🚀</span><span class="bb-tab-label">Plano 14 Dias</span></button>
+      </div>
 
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-card" style="margin-bottom:20px">
-                <div class="bolsa-section-header">
-                    <div class="bolsa-icon-box" style="background:var(--primary-light)">🔧</div>
-                    <h2 class="bolsa-section-title">Ferramentas de Rebalanceamento</h2>
-                </div>
-                <p class="bolsa-prose">Ferramentas práticas para otimizar sua carteira de serviços e maximizar cada hora da sua cadeira.</p>
-            </div>
-            <div class="bolsa-ativos-grid">${cards}</div>
-        </div>`;
-    },
+      <!-- SEÇÃO 1: DASHBOARD -->
+      <section id="bb-dashboard" class="bb-section active">
+        <h2>Dashboard — Visão Geral</h2>
+        <div class="bb-dashboard-cards">
+          <div class="bb-stat-card" id="bb-stat-total"><span class="bb-stat-icon">📋</span><div class="bb-stat-info"><p class="bb-stat-label">Total de Serviços</p><p class="bb-stat-value">0</p></div></div>
+          <div class="bb-stat-card" id="bb-stat-fat"><span class="bb-stat-icon">💰</span><div class="bb-stat-info"><p class="bb-stat-label">Faturamento (3 meses)</p><p class="bb-stat-value">R$ 0,00</p></div></div>
+          <div class="bb-stat-card" id="bb-stat-melhor"><span class="bb-stat-icon">⭐</span><div class="bb-stat-info"><p class="bb-stat-label">Serviço Mais Eficiente</p><p class="bb-stat-value">—</p></div></div>
+          <div class="bb-stat-card" id="bb-stat-alertas"><span class="bb-stat-icon">⚠️</span><div class="bb-stat-info"><p class="bb-stat-label">Alertas de Desvio</p><p class="bb-stat-value">0</p></div></div>
+        </div>
+        <div class="bb-chart-container"><h3>Composição da Carteira</h3><canvas id="bb-dashboard-pie" width="300" height="300"></canvas><div class="bb-pie-chart-legend" id="bb-dashboard-legend"></div></div>
+        <div class="bb-top-services"><h3>Top 3 por Eficiência/Hora</h3><div id="bb-top-list"></div></div>
+      </section>
 
-    renderInsight() {
-        return `
-        <div class="bolsa-section">
-            <div class="bolsa-insight-panel">
-                <div style="text-align:center;margin-bottom:28px">
-                    <span style="font-size:3rem">💎</span>
-                    <h2 style="font-size:1.6rem;font-weight:900;color:var(--gold);margin:12px 0 8px">O Insight de Ouro</h2>
-                    <div style="width:48px;height:3px;background:var(--gold);border-radius:4px;margin:0 auto"></div>
-                </div>
-                <blockquote class="bolsa-quote">
-                    "Você não precisa de mais clientes.<br>
-                    Você precisa das <span style="color:var(--gold);text-decoration:underline wavy">clientes certas</span>,<br>
-                    nos <span style="color:var(--gold);text-decoration:underline wavy">serviços certos</span>,<br>
-                    no <span style="color:var(--gold);text-decoration:underline wavy">preço certo</span>."
-                </blockquote>
-                <div class="bolsa-insight-body">
-                    <p>A maioria das profissionais tenta resolver problemas de faturamento com <strong>mais trabalho</strong>. Mais horários, mais clientes, mais cansaço. Isso é a esteira — você corre muito e não sai do lugar.</p>
-                    <p>A <strong>Bolsa da Beleza</strong> é o oposto. É olhar para sua agenda como um investidor olha para sua carteira: quais ativos estão performando? Quais estão queimando capital? Onde realocar para maximizar retorno?</p>
-                    <p><strong>Quando você domina essa mentalidade, <span style="color:var(--primary)">trabalha menos, ganha mais, e constrói um studio que funciona como uma máquina de lucro previsível</span>.</strong></p>
-                </div>
-                <div class="bolsa-insight-stats">
-                    <div class="bolsa-insight-stat"><p style="font-size:1.8rem;font-weight:900;color:#f87171">-30%</p><p style="font-size:0.65rem;font-weight:700;color:var(--text-muted)">MENOS HORAS</p></div>
-                    <div class="bolsa-insight-stat"><p style="font-size:1.8rem;font-weight:900;color:#34d399">+80%</p><p style="font-size:0.65rem;font-weight:700;color:var(--text-muted)">MAIS LUCRO</p></div>
-                    <div class="bolsa-insight-stat"><p style="font-size:1.8rem;font-weight:900;color:var(--primary)">∞</p><p style="font-size:0.65rem;font-weight:700;color:var(--text-muted)">QUALIDADE DE VIDA</p></div>
-                </div>
-            </div>
+      <!-- SEÇÃO 2: CRITÉRIOS -->
+      <section id="bb-criterios" class="bb-section">
+        <h2>Critérios de Avaliação</h2>
+        <p>Antes de classificar seus serviços, entenda os 3 critérios que definem a saúde do seu portfólio.</p>
+        <div class="bb-criteria-section">
+          <div class="bb-criteria-header"><h3>⏱️ Critério 1 — TEMPO</h3><p>Tempo gasto por atendimento (execução + preparo + limpeza)</p></div>
+          <div class="bb-efficiency-grid">
+            <div class="bb-efficiency-card alta"><span class="bb-efficiency-badge">🟢</span><h4>Alta Eficiência</h4><p class="bb-efficiency-range">Até 60 min</p><p class="bb-efficiency-desc">Lucro rápido e previsível.</p></div>
+            <div class="bb-efficiency-card moderada"><span class="bb-efficiency-badge">🟡</span><h4>Moderada</h4><p class="bb-efficiency-range">61–75 min</p><p class="bb-efficiency-desc">Lucro razoável, pode melhorar.</p></div>
+            <div class="bb-efficiency-card baixa"><span class="bb-efficiency-badge">🟠</span><h4>Baixa</h4><p class="bb-efficiency-range">76–90 min</p><p class="bb-efficiency-desc">Consome tempo, paga devagar.</p></div>
+            <div class="bb-efficiency-card ineficiente"><span class="bb-efficiency-badge">🔴</span><h4>Ineficiente</h4><p class="bb-efficiency-range">+90 min</p><p class="bb-efficiency-desc">Tempo demais pra pouco retorno.</p></div>
+          </div>
+        </div>
+        <div class="bb-criteria-section">
+          <div class="bb-criteria-header"><h3>🎯 Critério 2 — RISCO</h3><p>A estabilidade da procura.</p></div>
+          <table class="bb-criteria-table"><thead><tr><th>Nota</th><th>Descrição</th><th>Interpretação</th></tr></thead><tbody>
+            <tr><td>1</td><td>Procura constante o ano todo</td><td>Serviço essencial</td></tr>
+            <tr><td>2</td><td>Pequenas variações sazonais</td><td>Vende bem quase sempre</td></tr>
+            <tr><td>3</td><td>Oscila com clima ou moda</td><td>Meses fortes e fracos</td></tr>
+            <tr><td>4</td><td>Depende de tendência/evento</td><td>Alta demanda sazonal</td></tr>
+            <tr><td>5</td><td>Serviço modista ou instável</td><td>Popular por pouco tempo</td></tr>
+          </tbody></table>
+        </div>
+        <div class="bb-criteria-section">
+          <div class="bb-criteria-header"><h3>💧 Critério 3 — LIQUIDEZ</h3><p>Velocidade da venda.</p></div>
+          <table class="bb-criteria-table"><thead><tr><th>Nota</th><th>Descrição</th><th>Interpretação</th></tr></thead><tbody>
+            <tr><td>1</td><td>A cliente pede sozinha</td><td>Alta demanda espontânea</td></tr>
+            <tr><td>2</td><td>Vende com leve divulgação</td><td>Bastam fotos e agendamentos</td></tr>
+            <tr><td>3</td><td>Requer esforço de marketing moderado</td><td>Precisa explicar valor</td></tr>
+            <tr><td>4</td><td>Vende bem só com oferta ou desconto</td><td>Alta concorrência</td></tr>
+            <tr><td>5</td><td>Quase não vende</td><td>Serviço muito nichado</td></tr>
+          </tbody></table>
+          <p class="bb-highlight-text">"A Hora R$ 100 mostra quanto tempo seu trabalho precisa para gerar R$ 100 de lucro."</p>
+        </div>
+        <div class="bb-calculator-box">
+          <h3>🧮 Calculadora — Hora R$100</h3>
+          <div class="bb-calc-inputs">
+            <div class="bb-calc-input"><label for="bb-calc-price">Preço do Serviço (R$)</label><input type="number" id="bb-calc-price" placeholder="150,00" step="0.01" min="0"></div>
+            <div class="bb-calc-input"><label for="bb-calc-cost">Custo Direto (R$)</label><input type="number" id="bb-calc-cost" placeholder="30,00" step="0.01" min="0"></div>
+            <div class="bb-calc-input"><label for="bb-calc-time">Tempo Total (min)</label><input type="number" id="bb-calc-time" placeholder="60" min="1"></div>
+          </div>
+          <button class="bb-btn-primary" id="bb-btn-calc">Calcular</button>
+          <div class="bb-calc-result" id="bb-calc-result"></div>
+        </div>
+      </section>
 
-            <!-- Card de Download do eBook -->
-            <div style="margin-top:24px;background:linear-gradient(135deg,#1a0a10 0%,#2d0f1e 50%,#3d1530 100%);border-radius:20px;padding:28px 24px;position:relative;overflow:hidden;border:1px solid rgba(196,117,138,0.25);">
-                <div style="position:absolute;right:-16px;top:-16px;font-size:100px;opacity:0.07;transform:rotate(-10deg);line-height:1;">📖</div>
-                <div style="position:relative;z-index:1;">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--primary),#a0506a);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;box-shadow:0 4px 16px rgba(196,117,138,0.4);">📘</div>
-                        <div>
-                            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(196,117,138,0.7);font-weight:700;margin-bottom:2px;">Material Exclusivo</div>
-                            <h3 style="color:#fff;font-size:1.05rem;font-weight:800;margin:0;line-height:1.2;">eBook Bolsa da Beleza</h3>
-                        </div>
-                    </div>
-                    <p style="color:rgba(255,255,255,0.7);font-size:0.85rem;line-height:1.65;margin-bottom:20px;">
-                        Aprofunde ainda mais seu conhecimento em gestão estratégica para studios. O eBook completo com planilhas, modelos e estratégias para transformar seu studio em um negócio lucrativo.
-                    </p>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-                        <a href="https://drive.google.com/file/d/1u7rgf6rOdh8Rpr2t6HdYnJ2s_fpwFtYg/view?usp=sharing"
-                           target="_blank" rel="noopener"
-                           style="display:inline-flex;align-items:center;gap:10px;padding:13px 22px;background:linear-gradient(135deg,var(--primary),#a0506a);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:0.9rem;box-shadow:0 4px 16px rgba(196,117,138,0.45);transition:all 0.2s;"
-                           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(196,117,138,0.6)';"
-                           onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 16px rgba(196,117,138,0.45)';">
-                            <span class="material-symbols-outlined" style="font-size:20px;">download</span>
-                            Baixar eBook Gratuito
-                        </a>
-                        <span style="font-size:0.75rem;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:4px;">
-                            <span class="material-symbols-outlined" style="font-size:14px;">lock_open</span>
-                            Acesso gratuito · PDF
-                        </span>
-                    </div>
-                </div>
-            </div>
+      <!-- SEÇÃO 3: SERVIÇOS -->
+      <section id="bb-servicos" class="bb-section">
+        <div class="bb-services-header"><h2>Cadastro de Serviços</h2><button class="bb-btn-primary" id="bb-btn-add-service">+ Novo Serviço</button></div>
+        <div class="bb-services-table-container">
+          <table class="bb-services-table" id="bb-services-table">
+            <thead><tr><th>Procedimento</th><th>Tipo</th><th>Tempo</th><th>Valor</th><th>Custo</th><th>Lucro</th><th>R$/Hora</th><th>Hora R$100</th><th>Atend. 3m</th><th>Ações</th></tr></thead>
+            <tbody id="bb-services-tbody"></tbody>
+          </table>
+          <div class="bb-empty-state" id="bb-empty-services"><p>Nenhum serviço cadastrado. Clique em "<strong>+ Novo Serviço</strong>" para começar.</p></div>
+        </div>
+      </section>
 
-        </div>`;
-    },
-    // ══════════════════════════════════════════
-    // NAVEGAÇÃO E EVENTOS
-    // ══════════════════════════════════════════
-    init() {
-        this.currentSection = 0;
-        this.bindNavigation();
-    },
+      <!-- SEÇÃO 4: DIAGNÓSTICO -->
+      <section id="bb-diagnostico" class="bb-section">
+        <h2>Diagnóstico de Carteira</h2>
+        <div class="bb-diagnosis-grid">
+          <div class="bb-diagnosis-col"><h3>Carteira Real</h3><canvas id="bb-diagnosis-pie" width="350" height="350"></canvas><div class="bb-pie-chart-legend" id="bb-diagnosis-legend"></div></div>
+          <div class="bb-diagnosis-col">
+            <h3>Real vs Ideal</h3>
+            <table class="bb-comparison-table" id="bb-comparison-table">
+              <thead><tr><th>Tipo de Ativo</th><th>% Real</th><th>% Ideal</th><th>Faturamento</th><th>Faturamento Ideal</th><th>Status</th></tr></thead>
+              <tbody id="bb-comparison-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bb-alerts-container" id="bb-alerts-container"><h3>⚠️ Alertas de Desvio</h3><div id="bb-alerts-list"></div></div>
+        <h3>🔧 Estratégias de Rebalanceamento</h3>
+        <p>Baseado no seu diagnóstico, estas são as estratégias recomendadas:</p>
+        <div class="bb-strategies-grid" id="bb-strategies-grid"></div>
+      </section>
 
-    bindNavigation() {
-        document.querySelectorAll('.bolsa-tab-btn').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.dataset.section);
-                this.navigateTo(idx);
-            });
-        });
-        const prev = document.getElementById('bolsa-prev');
-        const next = document.getElementById('bolsa-next');
-        if (prev) prev.addEventListener('click', () => this.navigateTo(this.currentSection - 1));
-        if (next) next.addEventListener('click', () => this.navigateTo(this.currentSection + 1));
-    },
+      <!-- SEÇÃO 5: PLANO 14 DIAS -->
+      <section id="bb-plano14" class="bb-section">
+        <h2>Plano Tático de 14 Dias</h2>
+        <p>Escolha um serviço que precisa de tração e siga o calendário diário.</p>
+        <div class="bb-plan-selector">
+          <label for="bb-plan-service-select">Selecione o Ativo-Alvo:</label>
+          <select id="bb-plan-service-select"><option value="">— Selecione um serviço —</option></select>
+        </div>
+        <div class="bb-service-summary-card bb-hidden" id="bb-plan-summary"></div>
+        <h3>📅 Calendário Tático</h3>
+        <p class="bb-week-label">SEMANA 1 — A SEMANA DA CONEXÃO</p>
+        <div class="bb-calendar-grid" id="bb-week1-grid"></div>
+        <p class="bb-week-label">SEMANA 2 — A SEMANA DA DECISÃO</p>
+        <div class="bb-calendar-grid" id="bb-week2-grid"></div>
+        <div class="bb-hidden" id="bb-scripts-container"><h3 id="bb-scripts-day-title"></h3><div id="bb-scripts-list"></div></div>
+      </section>
 
-    navigateTo(idx) {
-        if (idx < 0 || idx >= this.sections.length) return;
-        this.currentSection = idx;
-        const contentEl = document.getElementById('bolsa-content');
-        if (!contentEl) return;
+      <!-- MODAL -->
+      <div class="bb-modal-overlay" id="bb-service-modal">
+        <div class="bb-modal">
+          <div class="bb-modal-header"><h3 id="bb-modal-title">Novo Serviço</h3><button class="bb-modal-close" id="bb-modal-close">&times;</button></div>
+          <div class="bb-modal-body">
+            <form id="bb-service-form">
+              <div class="bb-form-group"><label for="bb-input-name">Procedimento</label><input type="text" id="bb-input-name" placeholder="Ex: Design de Sobrancelhas" required></div>
+              <div class="bb-form-row">
+                <div class="bb-form-group"><label for="bb-input-time">Tempo Total (min)</label><input type="number" id="bb-input-time" placeholder="60" min="1" required></div>
+                <div class="bb-form-group"><label for="bb-input-price">Valor Cobrado (R$)</label><input type="number" id="bb-input-price" placeholder="150" step="0.01" min="0" required></div>
+              </div>
+              <div class="bb-form-row">
+                <div class="bb-form-group"><label for="bb-input-qty">Nº Atendimentos (3 meses)</label><input type="number" id="bb-input-qty" placeholder="45" min="0" required></div>
+                <div class="bb-form-group"><label for="bb-input-cost">Custo Insumos (R$)</label><input type="number" id="bb-input-cost" placeholder="30" step="0.01" min="0" required></div>
+              </div>
+              <div class="bb-form-row">
+                <div class="bb-form-group"><label for="bb-input-risk">Risco</label><select id="bb-input-risk" required><option value="">— Selecione —</option><option value="1">1 — Constante</option><option value="2">2 — Variação leve</option><option value="3">3 — Oscila</option><option value="4">4 — Tendência</option><option value="5">5 — Instável</option></select></div>
+                <div class="bb-form-group"><label for="bb-input-liquidity">Liquidez</label><select id="bb-input-liquidity" required><option value="">— Selecione —</option><option value="1">1 — Pede sozinha</option><option value="2">2 — Leve divulgação</option><option value="3">3 — Marketing moderado</option><option value="4">4 — Só com oferta</option><option value="5">5 — Quase não vende</option></select></div>
+              </div>
+              <div class="bb-form-group"><label for="bb-input-asset-type">Tipo de Ativo</label><select id="bb-input-asset-type" required><option value="">— Selecione —</option><option value="Âncora">Âncora</option><option value="Premium">Premium</option><option value="Bem-Estar">Bem-Estar</option><option value="Ocasional">Ocasional</option><option value="Exótico">Exótico</option></select></div>
+              <div class="bb-form-actions"><button type="button" class="bb-btn-secondary" id="bb-btn-cancel-modal">Cancelar</button><button type="submit" class="bb-btn-primary">Salvar</button></div>
+              <input type="hidden" id="bb-edit-id" value="">
+            </form>
+          </div>
+        </div>
+      </div>
 
-        contentEl.style.opacity = '0';
-        contentEl.style.transform = 'translateY(10px)';
+      <!-- TOAST -->
+      <div class="bb-copy-feedback" id="bb-copy-toast">✅ Script copiado!</div>
+    </div>`;
+  },
 
-        setTimeout(() => {
-            switch (idx) {
-                case 0: contentEl.innerHTML = this.renderIntro(); break;
-                case 1: contentEl.innerHTML = this.renderAtivos(); break;
-                case 2:
-                    contentEl.innerHTML = this.renderMinhaCarteira();
-                    this.atualizarAlocacao();
-                    this._carregarDadosFirestore();
-                    break;
-                case 3:
-                    contentEl.innerHTML = this.renderPlano14Dias();
-                    this._carregarDadosFirestore().then(() => this._bindPlano14());
-                    break;
-                case 4: contentEl.innerHTML = this.renderFerramentas(); break;
-                case 5: contentEl.innerHTML = this.renderInsight(); break;
-            }
-            contentEl.style.opacity = '1';
-            contentEl.style.transform = 'translateY(0)';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 200);
+  // ── Navegação ───────────────────────────────────────────
 
-        // Atualizar tabs
-        document.querySelectorAll('.bolsa-tab-btn').forEach((tab, i) => {
-            tab.classList.toggle('active', i === idx);
-        });
-
-        // Atualizar prev/next
-        const prev = document.getElementById('bolsa-prev');
-        const next = document.getElementById('bolsa-next');
-        if (prev) prev.disabled = idx === 0;
-        if (next) {
-            if (idx === this.sections.length - 1) {
-                next.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">check</span>Concluído';
-                next.disabled = true;
-            } else {
-                next.innerHTML = 'Próximo<span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>';
-                next.disabled = false;
-            }
+  _initNavigation() {
+    this._$$('.bb-nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.bbSection;
+        this._$$('.bb-nav-tab').forEach(t => t.classList.remove('active'));
+        this._$$('.bb-section').forEach(s => { s.classList.remove('active'); s.classList.remove('bb-fade-in'); });
+        tab.classList.add('active');
+        const sec = this._$(`#${target}`);
+        if (sec) { sec.classList.add('active'); sec.classList.add('bb-fade-in'); }
+        switch(target) {
+          case 'bb-dashboard': this._renderDashboard(); break;
+          case 'bb-servicos': this._renderServicesTable(); break;
+          case 'bb-diagnostico': this._renderDiagnosis(); break;
+          case 'bb-plano14': this._populateServiceSelect(); break;
         }
+      });
+    });
+  },
 
-        const counter = document.getElementById('bolsa-counter');
-        if (counter) counter.textContent = `${idx + 1} / ${this.sections.length}`;
-    },
+  // ── CRUD Serviços ───────────────────────────────────────
 
-    // ══════════════════════════════════════════
-    // HORA CEM — MOTOR DE CÁLCULO
-    // ══════════════════════════════════════════
-    calcularHoraCem() {
-        const custoFixo = parseFloat(document.getElementById('hc-custo-fixo')?.value) || 0;
-        const dias = parseFloat(document.getElementById('hc-dias')?.value) || 22;
-        const horas = parseFloat(document.getElementById('hc-horas')?.value) || 8;
-        const metaLucro = parseFloat(document.getElementById('hc-meta-lucro')?.value) || 0;
-        const custoVar = parseFloat(document.getElementById('hc-custo-var')?.value) || 0;
+  _initServiceModal() {
+    const btnAdd = this._$('#bb-btn-add-service');
+    const form = this._$('#bb-service-form');
+    const modal = this._$('#bb-service-modal');
+    const btnClose = this._$('#bb-modal-close');
+    const btnCancel = this._$('#bb-btn-cancel-modal');
+    if (btnAdd) btnAdd.addEventListener('click', () => this._openModal());
+    if (form) form.addEventListener('submit', (e) => this._handleFormSubmit(e));
+    if (btnClose) btnClose.addEventListener('click', () => this._closeModal());
+    if (btnCancel) btnCancel.addEventListener('click', () => this._closeModal());
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) this._closeModal(); });
+  },
 
-        const totalHoras = dias * horas;
-        const custoHora = totalHoras > 0 ? custoFixo / totalHoras : 0;
-        const metaDia = dias > 0 ? (custoFixo + metaLucro) / dias : 0;
-        const horaCem = custoHora + custoVar + (metaLucro / totalHoras);
-        const ticketMin = custoHora + custoVar;
-
-        document.getElementById('hc-custo-hora').textContent = `R$ ${custoHora.toFixed(0)}`;
-        document.getElementById('hc-hora-cem').textContent = `R$ ${horaCem.toFixed(0)}`;
-        document.getElementById('hc-meta-dia').textContent = `R$ ${metaDia.toFixed(0)}`;
-        document.getElementById('hc-ticket-min').textContent = `R$ ${ticketMin.toFixed(0)}`;
-
-        const insight = `Para atingir sua meta de R$ ${metaLucro.toLocaleString('pt-BR')} de lucro, cada hora na cadeira precisa gerar pelo menos <strong>R$ ${horaCem.toFixed(0)}</strong>. Qualquer serviço que cobre menos que <strong>R$ ${ticketMin.toFixed(0)}/hora</strong> está gerando prejuízo real.`;
-        document.getElementById('hc-insight').innerHTML = insight;
-        document.getElementById('hc-resultado').style.display = 'block';
-
-        this._salvarFirestore('horaCem', { custoFixo, dias, horas, metaLucro, custoVar, custoHora, horaCem, metaDia, ticketMin });
-    },
-
-    // ══════════════════════════════════════════
-    // SERVIÇOS — GESTÃO DA CARTEIRA
-    // ══════════════════════════════════════════
-    servicos: [],
-
-    adicionarServico() {
-        const id = Date.now();
-        this.servicos.push({ id, nome: '', preco: 0, tempo: 1, custo: 0, categoria: 0 });
-        this._renderServicos();
-    },
-
-    removerServico(id) {
-        this.servicos = this.servicos.filter(s => s.id !== id);
-        this._renderServicos();
-        this.atualizarAlocacao();
-        this._salvarFirestore('servicos', this.servicos);
-    },
-
-    _renderServicos() {
-        const container = document.getElementById('servicos-lista');
-        if (!container) return;
-        const catNomes = ['Renda Fixa', 'Crescimento', 'Premium', 'Dividendos', 'Venture Capital'];
-        container.innerHTML = this.servicos.map(s => `
-            <div style="background:var(--bg-secondary);border-radius:12px;padding:14px;border:1px solid var(--border)">
-                <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
-                    <div>
-                        <label style="font-size:0.65rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">SERVIÇO</label>
-                        <input type="text" value="${s.nome}" onchange="BolsaBeleza._updateServico(${s.id}, 'nome', this.value)"
-                            class="form-input" style="font-size:0.84rem" placeholder="Ex: Volume Russo">
-                    </div>
-                    <div>
-                        <label style="font-size:0.65rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">PREÇO (R$)</label>
-                        <input type="number" value="${s.preco}" onchange="BolsaBeleza._updateServico(${s.id}, 'preco', this.value)"
-                            class="form-input" style="font-size:0.84rem" placeholder="250">
-                    </div>
-                    <div>
-                        <label style="font-size:0.65rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">TEMPO (H)</label>
-                        <input type="number" step="0.5" value="${s.tempo}" onchange="BolsaBeleza._updateServico(${s.id}, 'tempo', this.value)"
-                            class="form-input" style="font-size:0.84rem" placeholder="2">
-                    </div>
-                    <div>
-                        <label style="font-size:0.65rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">ATIVO</label>
-                        <select onchange="BolsaBeleza._updateServico(${s.id}, 'categoria', this.value)" class="form-input" style="font-size:0.84rem">
-                            ${catNomes.map((n, i) => `<option value="${i}" ${s.categoria == i ? 'selected' : ''}>${n}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div style="display:flex;align-items:flex-end">
-                        <button onclick="BolsaBeleza.removerServico(${s.id})" style="padding:8px;border-radius:8px;border:none;background:none;color:#f87171;cursor:pointer;font-size:1.1rem">🗑</button>
-                    </div>
-                </div>
-            </div>`).join('');
-    },
-
-    _updateServico(id, campo, valor) {
-        const s = this.servicos.find(s => s.id === id);
-        if (!s) return;
-        s[campo] = campo === 'nome' ? valor : parseFloat(valor) || 0;
-        this.atualizarAlocacao();
-        this._salvarFirestore('servicos', this.servicos);
-    },
-
-    atualizarAlocacao() {
-        const totais = [0, 0, 0, 0, 0];
-        this.servicos.forEach(s => { totais[s.categoria] = (totais[s.categoria] || 0) + s.preco; });
-        const total = totais.reduce((a, b) => a + b, 0);
-        totais.forEach((t, i) => {
-            const pct = total > 0 ? Math.round(t / total * 100) : 0;
-            const el = document.getElementById(`aloc-${i}`);
-            const bar = document.getElementById(`bar-${i}`);
-            if (el) el.textContent = `${pct}%`;
-            if (bar) bar.style.width = `${pct}%`;
-        });
-        const totalEl = document.getElementById('alocacao-total');
-        if (totalEl) totalEl.textContent = `Faturamento total: R$ ${total.toLocaleString('pt-BR')}`;
-    },
-
-    // ══════════════════════════════════════════
-    // PLANO 14 DIAS — CHECKBOXES
-    // ══════════════════════════════════════════
-    _bindPlano14() {
-        document.querySelectorAll('.plano14-check').forEach(cb => {
-            const dia = parseInt(cb.dataset.dia);
-            const saved = this._dados?.plano14 || {};
-            if (saved[dia]) cb.checked = true;
-            cb.addEventListener('change', () => {
-                if (!this._dados) this._dados = {};
-                if (!this._dados.plano14) this._dados.plano14 = {};
-                this._dados.plano14[dia] = cb.checked;
-                this._atualizarProgressoPlano14();
-                this._salvarFirestore('plano14', this._dados.plano14);
-            });
-        });
-        this._atualizarProgressoPlano14();
-    },
-
-    _atualizarProgressoPlano14() {
-        const checks = document.querySelectorAll('.plano14-check');
-        const done = [...checks].filter(c => c.checked).length;
-        const prog = document.getElementById('plano14-progress');
-        const counter = document.getElementById('plano14-counter');
-        if (prog) prog.style.width = `${(done / 14) * 100}%`;
-        if (counter) counter.textContent = `${done}/14`;
-    },
-
-    // ══════════════════════════════════════════
-    // FIRESTORE — PERSISTÊNCIA
-    // ══════════════════════════════════════════
-    _dados: null,
-
-    async _carregarDadosFirestore() {
-        try {
-            const uid = firebase.auth().currentUser?.uid;
-            if (!uid) return;
-            const snap = await firebase.firestore()
-                .collection('studios').doc(uid)
-                .collection('bolsa_beleza').doc('dados').get();
-            if (snap.exists) {
-                this._dados = snap.data();
-                if (this._dados.servicos) {
-                    this.servicos = this._dados.servicos;
-                    this._renderServicos();
-                    this.atualizarAlocacao();
-                }
-                if (this._dados.horaCem) {
-                    const d = this._dados.horaCem;
-                    ['custo-fixo','dias','horas','meta-lucro','custo-var'].forEach(id => {
-                        const el = document.getElementById(`hc-${id}`);
-                        const key = id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).replace('hc-','');
-                        if (el && d[key] !== undefined) el.value = d[key];
-                    });
-                }
-            }
-        } catch(e) { console.warn('Firestore load:', e); }
-    },
-
-    async _salvarFirestore(chave, valor) {
-        try {
-            const uid = firebase.auth().currentUser?.uid;
-            if (!uid) return;
-            await firebase.firestore()
-                .collection('studios').doc(uid)
-                .collection('bolsa_beleza').doc('dados')
-                .set({ [chave]: valor }, { merge: true });
-        } catch(e) { console.warn('Firestore save:', e); }
+  _openModal(serviceId = null) {
+    const modal = this._$('#bb-service-modal');
+    const title = this._$('#bb-modal-title');
+    const form = this._$('#bb-service-form');
+    if (!modal || !form) return;
+    form.reset();
+    this._$('#bb-edit-id').value = '';
+    if (serviceId) {
+      const s = this.services.find(sv => sv.id === serviceId);
+      if (!s) return;
+      this.editingServiceId = serviceId;
+      title.textContent = 'Editar Serviço';
+      this._$('#bb-input-name').value = s.name;
+      this._$('#bb-input-time').value = s.time;
+      this._$('#bb-input-price').value = s.price;
+      this._$('#bb-input-qty').value = s.qty;
+      this._$('#bb-input-cost').value = s.cost;
+      this._$('#bb-input-risk').value = s.risk;
+      this._$('#bb-input-liquidity').value = s.liquidity;
+      this._$('#bb-input-asset-type').value = s.assetType;
+      this._$('#bb-edit-id').value = s.id;
+    } else {
+      this.editingServiceId = null;
+      title.textContent = 'Novo Serviço';
     }
+    modal.classList.add('active');
+    setTimeout(() => modal.style.opacity = '1', 10);
+  },
+
+  _closeModal() {
+    const modal = this._$('#bb-service-modal');
+    if (!modal) return;
+    modal.style.opacity = '0';
+    setTimeout(() => { modal.classList.remove('active'); this.editingServiceId = null; }, 300);
+  },
+
+  _handleFormSubmit(e) {
+    e.preventDefault();
+    const data = {
+      name: this._$('#bb-input-name').value.trim(),
+      time: parseFloat(this._$('#bb-input-time').value) || 0,
+      price: parseFloat(this._$('#bb-input-price').value) || 0,
+      qty: parseInt(this._$('#bb-input-qty').value, 10) || 0,
+      cost: parseFloat(this._$('#bb-input-cost').value) || 0,
+      risk: parseInt(this._$('#bb-input-risk').value, 10) || 1,
+      liquidity: parseInt(this._$('#bb-input-liquidity').value, 10) || 1,
+      assetType: this._$('#bb-input-asset-type').value || 'Âncora'
+    };
+    if (!data.name) return;
+    const editId = this._$('#bb-edit-id').value;
+    if (editId) {
+      const idx = this.services.findIndex(s => s.id === parseInt(editId, 10));
+      if (idx !== -1) this.services[idx] = { ...this.services[idx], ...data };
+    } else {
+      data.id = Date.now();
+      this.services.push(data);
+    }
+    this._saveFirestore();
+    this._closeModal();
+    this._renderServicesTable();
+    this._renderDashboard();
+    this._renderDiagnosis();
+    this._populateServiceSelect();
+  },
+
+  _deleteService(id) {
+    if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
+    this.services = this.services.filter(s => s.id !== id);
+    this._saveFirestore();
+    this._renderServicesTable();
+    this._renderDashboard();
+    this._renderDiagnosis();
+    this._populateServiceSelect();
+  },
+
+  _renderServicesTable() {
+    const tbody = this._$('#bb-services-tbody');
+    const empty = this._$('#bb-empty-services');
+    if (!tbody) return;
+    if (this.services.length === 0) { tbody.innerHTML = ''; if (empty) empty.style.display = 'flex'; return; }
+    if (empty) empty.style.display = 'none';
+    const sorted = [...this.services].map(s => ({ ...s, ...this._calcFields(s) }));
+    sorted.sort((a, b) => b.efficiency - a.efficiency);
+    const mid = Math.floor(sorted.length / 2);
+    const medianEff = sorted.length % 2 === 0 ? (sorted[mid-1].efficiency + sorted[mid].efficiency)/2 : sorted[mid].efficiency;
+    let ceilingInserted = false, rows = '';
+    sorted.forEach(s => {
+      if (!ceilingInserted && s.efficiency < medianEff) {
+        rows += `<tr class="bb-ceiling-line"><td colspan="10"><div class="bb-ceiling-label">⚡ Teto de Faturamento — Mediana: ${this._currency(medianEff)}/h</div></td></tr>`;
+        ceilingInserted = true;
+      }
+      rows += `<tr class="bb-fade-in-row"><td><span class="bb-service-name">${s.name}</span></td><td><span class="bb-badge ${this._assetSlug(s.assetType)}">${s.assetType}</span></td><td>${this._fmtMinutes(s.time)}</td><td>${this._currency(s.price)}</td><td>${this._currency(s.cost)}</td><td>${this._currency(s.profit)}</td><td><span class="bb-efficiency-dot" style="background:${s.efficiencyColor}"></span>${this._currency(s.efficiency)}/h</td><td>${this._fmtMinutes(s.hora100===Infinity?0:s.hora100)}</td><td>${s.qty}x</td><td class="bb-actions-cell"><button class="bb-btn-icon" onclick="window.__BB.openModal(${s.id})" title="Editar">✏️</button><button class="bb-btn-icon" onclick="window.__BB.deleteService(${s.id})" title="Excluir">🗑️</button></td></tr>`;
+    });
+    if (!ceilingInserted && sorted.length > 0) {
+      rows += `<tr class="bb-ceiling-line"><td colspan="10"><div class="bb-ceiling-label">⚡ Teto de Faturamento — Mediana: ${this._currency(medianEff)}/h</div></td></tr>`;
+    }
+    tbody.innerHTML = rows;
+    setTimeout(() => { this._$$('.bb-fade-in-row').forEach((row, i) => { setTimeout(() => row.classList.add('visible'), i * 60); }); }, 50);
+  },
+
+  // ── Calculadora ─────────────────────────────────────────
+
+  _initCalculator() {
+    const btn = this._$('#bb-btn-calc');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const price = parseFloat(this._$('#bb-calc-price').value) || 0;
+      const cost = parseFloat(this._$('#bb-calc-cost').value) || 0;
+      const time = parseFloat(this._$('#bb-calc-time').value) || 1;
+      const result = this._$('#bb-calc-result');
+      if (!result) return;
+      const profit = price - cost;
+      const effPerHour = (profit / time) * 60;
+      const hora100 = profit > 0 ? (100 / profit) * time : 0;
+      let category, catColor;
+      if (time <= 60) { category = 'Alta eficiência'; catColor = '#22c55e'; }
+      else if (time <= 75) { category = 'Eficiência moderada'; catColor = '#eab308'; }
+      else if (time <= 90) { category = 'Baixa eficiência'; catColor = '#f97316'; }
+      else { category = 'Ineficiente'; catColor = '#ef4444'; }
+      result.innerHTML = `<div class="bb-calc-result-grid"><div class="bb-calc-result-item"><span class="bb-calc-label">Lucro por atendimento</span><span class="bb-calc-value">${this._currency(profit)}</span></div><div class="bb-calc-result-item"><span class="bb-calc-label">Eficiência (R$/hora)</span><span class="bb-calc-value">${this._currency(effPerHour)}/h</span></div><div class="bb-calc-result-item"><span class="bb-calc-label">Hora R$100</span><span class="bb-calc-value">${profit > 0 ? this._fmtMinutes(hora100) : '∞'}</span></div><div class="bb-calc-result-item"><span class="bb-calc-label">Classificação</span><span class="bb-calc-value" style="color:${catColor}">${category}</span></div></div>`;
+      result.classList.add('active');
+    });
+  },
+
+  // ── Gráfico Pizza ───────────────────────────────────────
+
+  _drawPieChart(canvasId, legendId, data) {
+    const canvas = this._$(`#${canvasId}`);
+    const legend = this._$(`#${legendId}`);
+    if (!canvas || !legend) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const size = Math.min(canvas.parentElement.offsetWidth, 300);
+    canvas.width = size * dpr; canvas.height = size * dpr;
+    canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
+    ctx.scale(dpr, dpr); ctx.clearRect(0, 0, size, size);
+    const total = data.reduce((s, d) => s + d.value, 0);
+    if (total === 0 || data.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(size/2, size/2, size/2.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '14px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Sem dados', size/2, size/2);
+      legend.innerHTML = '<p style="color:rgba(255,255,255,0.4)">Cadastre serviços para visualizar</p>'; return;
+    }
+    const cx=size/2, cy=size/2, radius=size/2.5; let startAngle=-Math.PI/2;
+    data.forEach(item => {
+      const sliceAngle = (item.value/total)*Math.PI*2, endAngle = startAngle + sliceAngle;
+      ctx.save(); ctx.shadowColor='rgba(0,0,0,0.4)'; ctx.shadowBlur=12; ctx.shadowOffsetX=2; ctx.shadowOffsetY=2;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,startAngle,endAngle); ctx.closePath(); ctx.fillStyle=item.color; ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,startAngle,endAngle); ctx.closePath(); ctx.strokeStyle='rgba(13,13,26,0.6)'; ctx.lineWidth=2; ctx.stroke();
+      const pct=((item.value/total)*100).toFixed(0);
+      if(pct>=5){const midAngle=startAngle+sliceAngle/2,labelR=radius*0.65,lx=cx+Math.cos(midAngle)*labelR,ly=cy+Math.sin(midAngle)*labelR;ctx.fillStyle='#fff';ctx.font='bold 12px Inter, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.save();ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=4;ctx.fillText(`${pct}%`,lx,ly);ctx.restore();}
+      startAngle = endAngle;
+    });
+    ctx.beginPath(); ctx.arc(cx,cy,radius*0.35,0,Math.PI*2); ctx.fillStyle='#0d0d1a'; ctx.fill();
+    legend.innerHTML = data.map(item => { const pct=((item.value/total)*100).toFixed(1); return `<div class="bb-legend-item"><span class="bb-legend-dot" style="background:${item.color}"></span><span class="bb-legend-label">${item.label}</span><span class="bb-legend-value">${pct}%</span></div>`; }).join('');
+  },
+
+  // ── Diagnóstico ─────────────────────────────────────────
+
+  _buildDiagnosisData() {
+    if (this.services.length === 0) return [];
+    const totalQty = this.services.reduce((s, sv) => s + (sv.qty||0), 0);
+    const totalRevenue = this.services.reduce((s, sv) => s + (sv.price||0)*(sv.qty||0), 0);
+    return Object.keys(this.IDEAL_RANGES).map(type => {
+      const grouped = this.services.filter(s => s.assetType === type);
+      const count = grouped.length, qty = grouped.reduce((s,sv)=>s+(sv.qty||0),0), revenue = grouped.reduce((s,sv)=>s+(sv.price||0)*(sv.qty||0),0);
+      const percentReal = totalQty > 0 ? (qty/totalQty)*100 : 0;
+      const idealMin = this.IDEAL_RANGES[type].min, idealMax = this.IDEAL_RANGES[type].max, idealMid = (idealMin+idealMax)/2;
+      const idealRevenue = (idealMid/100)*totalRevenue;
+      const hora100s = grouped.map(s=>{const c=this._calcFields(s);return c.hora100===Infinity?999:c.hora100;});
+      const avgHora100 = hora100s.length>0?hora100s.reduce((a,b)=>a+b,0)/hora100s.length:0;
+      let status;
+      if(percentReal>=idealMin&&percentReal<=idealMax){status='ok';}else{const distMin=percentReal<idealMin?idealMin-percentReal:0;const distMax=percentReal>idealMax?percentReal-idealMax:0;status=Math.max(distMin,distMax)>=5?'critical':'warning';}
+      return {type,count,qty,revenue,percentReal,idealMin,idealMax,idealMid,idealRevenue,avgHora100,status,color:this.IDEAL_RANGES[type].color};
+    });
+  },
+
+  _renderDiagnosis() {
+    const diagData = this._buildDiagnosisData();
+    const compTbody = this._$('#bb-comparison-tbody');
+    if (compTbody) {
+      if (diagData.length === 0) { compTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);padding:2rem;">Cadastre serviços para ver o diagnóstico</td></tr>'; }
+      else { compTbody.innerHTML = diagData.map(d => { const sb=d.status==='ok'?'<span class="bb-status-badge ok">✅ OK</span>':d.status==='warning'?'<span class="bb-status-badge warning">⚠️ Atenção</span>':'<span class="bb-status-badge critical">🔴 Crítico</span>'; return `<tr><td><span class="bb-badge ${this._assetSlug(d.type)}">${d.type}</span></td><td>${d.percentReal.toFixed(1)}%</td><td>${d.idealMin}%–${d.idealMax}%</td><td>${this._currency(d.revenue)}</td><td>${this._currency(d.idealRevenue)}</td><td>${sb}</td></tr>`; }).join(''); }
+    }
+    if(diagData.length>0){const pd=diagData.filter(d=>d.percentReal>0).map(d=>({label:d.type,value:d.percentReal,color:d.color}));this._drawPieChart('bb-diagnosis-pie','bb-diagnosis-legend',pd);}else{this._drawPieChart('bb-diagnosis-pie','bb-diagnosis-legend',[]);}
+    const alertsList = this._$('#bb-alerts-list');
+    if (alertsList) {
+      const alerts = diagData.filter(d => d.status !== 'ok');
+      if(alerts.length===0){alertsList.innerHTML='<div class="bb-alert-card ok"><span class="bb-alert-icon">✅</span><div class="bb-alert-text"><strong>Carteira equilibrada!</strong><p>Todos os tipos de ativo estão dentro das faixas ideais.</p></div></div>';}
+      else{alertsList.innerHTML=alerts.map(d=>{const icon=d.status==='critical'?'🔴':'⚠️';const diff=d.percentReal<d.idealMin?(d.idealMin-d.percentReal).toFixed(1):(d.percentReal-d.idealMax).toFixed(1);const dir=d.percentReal<d.idealMin?'abaixo':'acima';return`<div class="bb-alert-card ${d.status}"><span class="bb-alert-icon">${icon}</span><div class="bb-alert-text"><strong>${d.type} está em ${d.percentReal.toFixed(1)}%</strong><p>Ideal: ${d.idealMin}%–${d.idealMax}%. Desvio de ${diff} pontos ${dir} do range.</p></div></div>`;}).join('');}
+    }
+    this._renderStrategies(diagData);
+  },
+
+  _renderStrategies(diagData) {
+    const grid = this._$('#bb-strategies-grid');
+    if (!grid) return;
+    grid.innerHTML = this.STRATEGIES.map(st => {
+      const isRec = diagData.length > 0 && st.trigger(diagData);
+      return `<div class="bb-strategy-card ${isRec?'recommended':''}"><div class="bb-strategy-header"><span class="bb-strategy-id">${st.id}</span>${isRec?'<span class="bb-strategy-badge">Recomendada</span>':''}</div><h4 class="bb-strategy-title">${st.title}</h4><p class="bb-strategy-desc">${st.description}</p></div>`;
+    }).join('');
+  },
+
+  // ── Plano 14 Dias ───────────────────────────────────────
+
+  _populateServiceSelect() {
+    const select = this._$('#bb-plan-service-select');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">— Selecione um serviço —</option>';
+    this.services.forEach(s => { const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name; select.appendChild(opt); });
+    if (currentVal && this.services.find(s => s.id === parseInt(currentVal, 10))) select.value = currentVal;
+    if (!select._bbListenerAttached) {
+      select.addEventListener('change', () => { const id = parseInt(select.value, 10); if (id) this._renderPlan14(id); else this._clearPlan(); });
+      select._bbListenerAttached = true;
+    }
+    if (select.value) this._renderPlan14(parseInt(select.value, 10));
+  },
+
+  _clearPlan() {
+    const summary = this._$('#bb-plan-summary');
+    const w1 = this._$('#bb-week1-grid'); const w2 = this._$('#bb-week2-grid');
+    const sc = this._$('#bb-scripts-container');
+    if(summary)summary.classList.add('bb-hidden');if(w1)w1.innerHTML='';if(w2)w2.innerHTML='';if(sc)sc.classList.add('bb-hidden');
+    this.selectedDayIndex = null;
+  },
+
+  _renderPlan14(serviceId) {
+    const service = this.services.find(s => s.id === serviceId);
+    if (!service) return;
+    const c = this._calcFields(service);
+    const summary = this._$('#bb-plan-summary');
+    if (summary) {
+      summary.classList.remove('bb-hidden');
+      summary.innerHTML = `<div class="bb-summary-item"><span class="bb-summary-label">Serviço</span><span class="bb-summary-value">${service.name}</span></div><div class="bb-summary-item"><span class="bb-summary-label">Tipo</span><span class="bb-summary-value"><span class="bb-badge ${this._assetSlug(service.assetType)}">${service.assetType}</span></span></div><div class="bb-summary-item"><span class="bb-summary-label">Eficiência</span><span class="bb-summary-value">${this._currency(c.efficiency)}/h</span></div><div class="bb-summary-item"><span class="bb-summary-label">Hora R$100</span><span class="bb-summary-value">${c.hora100===Infinity?'∞':this._fmtMinutes(c.hora100)}</span></div>`;
+    }
+    const renderDayCards = (days, container) => {
+      if (!container) return;
+      container.innerHTML = days.map(d => `<div class="bb-day-card ${this.selectedDayIndex===d.day-1?'active':''}" onclick="window.__BB.selectDay(${d.day-1},${serviceId})"><div class="bb-day-number">Dia ${d.day}</div><div class="bb-day-title">${d.title}</div></div>`).join('');
+    };
+    renderDayCards(this.PLAN_14_DAYS.filter(d=>d.week===1), this._$('#bb-week1-grid'));
+    renderDayCards(this.PLAN_14_DAYS.filter(d=>d.week===2), this._$('#bb-week2-grid'));
+    if (this.selectedDayIndex !== null) this._showScripts(this.selectedDayIndex, service.name);
+  },
+
+  _selectDay(dayIndex, serviceId) {
+    this.selectedDayIndex = dayIndex;
+    const service = this.services.find(s => s.id === serviceId);
+    if (!service) return;
+    const allCards = [...this._$$('.bb-day-card')];
+    allCards.forEach(card => card.classList.remove('active'));
+    if (allCards[dayIndex]) allCards[dayIndex].classList.add('active');
+    this._showScripts(dayIndex, service.name);
+  },
+
+  _showScripts(dayIndex, serviceName) {
+    const container = this._$('#bb-scripts-container');
+    const dayTitle = this._$('#bb-scripts-day-title');
+    const list = this._$('#bb-scripts-list');
+    if (!container || !list) return;
+    const dayData = this.PLAN_14_DAYS[dayIndex];
+    if (!dayData) return;
+    container.classList.remove('bb-hidden');
+    if (dayTitle) dayTitle.textContent = `Dia ${dayData.day} — ${dayData.title}`;
+    const channelLabels = { instagram_stories:'📱 Instagram Stories', instagram_feed:'📸 Instagram Feed', whatsapp:'💬 WhatsApp' };
+    const channelIcons = { instagram_stories:'stories', instagram_feed:'feed', whatsapp:'whatsapp' };
+    list.innerHTML = Object.entries(dayData.scripts).map(([channel, script]) => {
+      const finalScript = script.replace(/\{SERVICO\}/g, serviceName);
+      return `<div class="bb-script-card ${channelIcons[channel]}"><div class="bb-script-header"><span class="bb-script-channel">${channelLabels[channel]}</span><button class="bb-btn-copy" data-bb-script="${finalScript.replace(/"/g,'&quot;')}">📋 Copiar</button></div><p class="bb-script-text">${finalScript}</p></div>`;
+    }).join('');
+    list.querySelectorAll('.bb-btn-copy').forEach(btn => {
+      btn.addEventListener('click', () => { this._copyScript(btn.dataset.bbScript); });
+    });
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  async _copyScript(text) {
+    try { await navigator.clipboard.writeText(text); } catch(e) {
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    }
+    const toast = this._$('#bb-copy-toast');
+    if (toast) { toast.classList.add('active'); setTimeout(() => toast.classList.remove('active'), 2000); }
+  },
+
+  // ── Dashboard ───────────────────────────────────────────
+
+  _renderDashboard() {
+    const setVal = (id, val) => { const el = this._$(id); if (el) { const v = el.querySelector('.bb-stat-value'); if (v) v.textContent = val; } };
+    setVal('#bb-stat-total', this.services.length);
+    const totalFat = this.services.reduce((s, sv) => s + (sv.price||0)*(sv.qty||0), 0);
+    setVal('#bb-stat-fat', this._currency(totalFat));
+    if (this.services.length === 0) { setVal('#bb-stat-melhor', '—'); } else {
+      const best = this.services.reduce((top, sv) => { const eff=this._calcFields(sv).efficiency; return eff>(top?this._calcFields(top).efficiency:-1)?sv:top; }, null);
+      setVal('#bb-stat-melhor', best ? best.name : '—');
+    }
+    const diag = this._buildDiagnosisData();
+    setVal('#bb-stat-alertas', diag.filter(d => d.status === 'critical').length);
+    if (this.services.length > 0) {
+      const typeGroups = {}; this.services.forEach(s => { if(!typeGroups[s.assetType]) typeGroups[s.assetType]=0; typeGroups[s.assetType]+= s.qty||0; });
+      const pieData = Object.entries(typeGroups).filter(([,v])=>v>0).map(([type,qty])=>({label:type,value:qty,color:this.IDEAL_RANGES[type]?.color||'#6b7280'}));
+      this._drawPieChart('bb-dashboard-pie','bb-dashboard-legend',pieData);
+    } else { this._drawPieChart('bb-dashboard-pie','bb-dashboard-legend',[]); }
+    const topList = this._$('#bb-top-list');
+    if (topList) {
+      if(this.services.length===0){topList.innerHTML='<p style="color:rgba(255,255,255,0.4);text-align:center;">Nenhum serviço cadastrado</p>';}
+      else{const sorted=[...this.services].map(s=>({...s,...this._calcFields(s)})).sort((a,b)=>b.efficiency-a.efficiency).slice(0,3);
+        const medals=['🥇','🥈','🥉'];
+        topList.innerHTML=sorted.map((s,i)=>`<div class="bb-top-service-item"><span class="bb-top-medal">${medals[i]}</span><div class="bb-top-info"><span class="bb-top-name">${s.name}</span><span class="bb-top-detail">${this._currency(s.efficiency)}/h · Hora R$100: ${s.hora100===Infinity?'∞':this._fmtMinutes(s.hora100)}</span></div><span class="bb-badge ${this._assetSlug(s.assetType)}">${s.assetType}</span></div>`).join('');
+      }
+    }
+  },
+
+  // ── Persistência Firestore ──────────────────────────────
+
+  async _loadFirestore() {
+    try {
+      const uid = firebase.auth().currentUser?.uid;
+      if (!uid) { this.services = JSON.parse(localStorage.getItem('bolsa_services') || '[]'); return; }
+      const snap = await firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados').get();
+      if (snap.exists) {
+        const d = snap.data();
+        if (d.services) this.services = d.services;
+      }
+    } catch(e) {
+      console.warn('BolsaBeleza: Firestore load fallback to localStorage', e);
+      this.services = JSON.parse(localStorage.getItem('bolsa_services') || '[]');
+    }
+  },
+
+  _saveFirestore() {
+    clearTimeout(this._saveTimeout);
+    this._saveTimeout = setTimeout(async () => {
+      try {
+        const uid = firebase.auth().currentUser?.uid;
+        if (!uid) { localStorage.setItem('bolsa_services', JSON.stringify(this.services)); return; }
+        await firebase.firestore().collection('studios').doc(uid).collection('bolsa_beleza').doc('dados').set({ services: this.services }, { merge: true });
+      } catch(e) {
+        console.warn('BolsaBeleza: Firestore save fallback', e);
+        localStorage.setItem('bolsa_services', JSON.stringify(this.services));
+      }
+    }, 1000);
+  }
 };

@@ -16,6 +16,8 @@ const Booking = {
     calYear:  null,
     calMonth: null,
     bookedSlots: {},   // { 'YYYY-MM-DD': ['09:00', '10:30', ...] }
+    paymentEnabled: false,
+    cancellationPolicy: '',
 
     // ─── Inicialização ────────────────────────────────────────
     async init() {
@@ -41,6 +43,7 @@ const Booking = {
             Booking.renderHeader();
             await Booking.loadServices();
             await Booking.loadBookedSlots();
+            await Booking.loadPaymentConfig();
             Booking.renderServiceGrid();
 
             const now = new Date();
@@ -327,6 +330,20 @@ const Booking = {
     },
 
     // ─── Confirmação ─────────────────────────────────────────
+    // ─── Carregar config de pagamento ───────────────────────
+    async loadPaymentConfig() {
+        try {
+            const configDoc = await db.collection('studioConfig').doc(Booking.studioUid).get();
+            if (configDoc.exists) {
+                const cfg = configDoc.data()?.asaasPaymentConfig || {};
+                Booking.paymentEnabled = cfg.enabled === true && !!cfg.apiKey;
+                Booking.cancellationPolicy = cfg.cancellationPolicy || '';
+            }
+        } catch(e) {
+            console.warn('loadPaymentConfig:', e);
+        }
+    },
+
     async confirm() {
         const name  = document.getElementById('bk-client-name')?.value.trim();
         const phone = document.getElementById('bk-client-phone')?.value.trim();
@@ -341,7 +358,12 @@ const Booking = {
         btn.textContent = 'Salvando...';
 
         try {
-            await db.collection('studios').doc(Booking.studioUid)
+            // Captura origem (Instagram, Facebook, Google, direto)
+            const urlParams = new URLSearchParams(window.location.search);
+            const utmSource = urlParams.get('utm_source') || '';
+            const source = utmSource ? `booking_${utmSource}` : 'booking_minisite';
+
+            const bookingRef = await db.collection('studios').doc(Booking.studioUid)
                 .collection('bookings').add({
                     clientName:  name,
                     clientPhone: phone,
@@ -353,19 +375,20 @@ const Booking = {
                     dateTs:   Booking.selectedDate,
                     time:     Booking.selectedTime,
                     status:   'pending',
-                    source:   'booking_minisite',
+                    source:   source,
+                    paymentStatus: 'none',
                     createdAt: new Date().toISOString()
                 });
 
-            // Esconde steps, mostra sucesso
-            document.querySelectorAll('.booking-card, .step-indicator').forEach(el => el.style.display = 'none');
-            const success = document.getElementById('bk-success');
-            success.classList.add('show');
+            const bookingId = bookingRef.id;
+            const svcPrice = Booking.selectedService?.price || 0;
 
-            const dateLabel = new Date(Booking.selectedDate + 'T12:00:00')
-                .toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
-            document.getElementById('bk-success-detail').textContent =
-                `${Booking.selectedService?.name} — ${dateLabel} às ${Booking.selectedTime}`;
+            // Se pagamento está habilitado E o serviço tem preço, mostrar opção
+            if (Booking.paymentEnabled && svcPrice > 0) {
+                Booking.showPaymentChoice(bookingId, name, phone, svcPrice);
+            } else {
+                Booking.showSuccess();
+            }
 
         } catch(err) {
             console.error('confirm error:', err);
@@ -373,6 +396,87 @@ const Booking = {
             btn.disabled = false;
             btn.textContent = 'Confirmar Agendamento ✨';
         }
+    },
+
+    // ─── Tela de escolha de pagamento ────────────────────────
+    showPaymentChoice(bookingId, clientName, clientPhone, amount) {
+        document.querySelectorAll('.booking-card, .step-indicator').forEach(el => el.style.display = 'none');
+
+        const dateLabel = new Date(Booking.selectedDate + 'T12:00:00')
+            .toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+
+        const paymentCard = document.getElementById('bk-payment-choice');
+        if (!paymentCard) return Booking.showSuccess(); // fallback se o HTML não existir
+
+        document.getElementById('bk-pay-service').textContent = Booking.selectedService?.name || '';
+        document.getElementById('bk-pay-date').textContent = `${dateLabel} às ${Booking.selectedTime}`;
+        document.getElementById('bk-pay-amount').textContent = `R$ ${Number(amount).toFixed(2).replace('.', ',')}`;
+
+        const policyEl = document.getElementById('bk-pay-policy');
+        if (Booking.cancellationPolicy) {
+            policyEl.textContent = Booking.cancellationPolicy;
+            policyEl.style.display = 'block';
+        } else {
+            policyEl.style.display = 'none';
+        }
+
+        // Salvar dados para uso nos botões
+        paymentCard._data = { bookingId, clientName, clientPhone, amount };
+        paymentCard.style.display = 'block';
+    },
+
+    async payNow() {
+        const paymentCard = document.getElementById('bk-payment-choice');
+        const { bookingId, clientName, clientPhone, amount } = paymentCard._data;
+
+        const btn = document.getElementById('btn-pay-now');
+        btn.disabled = true;
+        btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px"><span class="bk-spin"></span> Gerando link...</span>';
+
+        try {
+            const FUNC_URL = 'https://us-central1-lashbrow-app.cloudfunctions.net/createBookingPayment';
+            const resp = await fetch(FUNC_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studioUid: Booking.studioUid,
+                    bookingId,
+                    amount,
+                    clientName,
+                    clientPhone,
+                    description: `${Booking.selectedService?.name || 'Agendamento'} — ${Booking.selectedDate} ${Booking.selectedTime}`
+                })
+            });
+
+            const data = await resp.json();
+            if (data.invoiceUrl) {
+                window.location.href = data.invoiceUrl;
+            } else {
+                throw new Error(data.error || 'Link de pagamento não gerado');
+            }
+        } catch(err) {
+            console.error('payNow error:', err);
+            Booking.toast('Erro ao gerar pagamento. Seu agendamento foi salvo! ⚠️');
+            btn.disabled = false;
+            btn.textContent = '💳 Pagar agora';
+            // Após 2s, mostrar sucesso sem pagamento
+            setTimeout(() => Booking.showSuccess(), 2000);
+        }
+    },
+
+    skipPayment() {
+        Booking.showSuccess();
+    },
+
+    showSuccess() {
+        document.querySelectorAll('.booking-card, .step-indicator, #bk-payment-choice').forEach(el => el.style.display = 'none');
+        const success = document.getElementById('bk-success');
+        success.classList.add('show');
+
+        const dateLabel = new Date(Booking.selectedDate + 'T12:00:00')
+            .toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+        document.getElementById('bk-success-detail').textContent =
+            `${Booking.selectedService?.name} — ${dateLabel} às ${Booking.selectedTime}`;
     },
 
     // ─── Utilitários ─────────────────────────────────────────

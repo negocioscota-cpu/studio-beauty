@@ -4,9 +4,22 @@ const FichaTecnica = {
     currentClients: [],
     currentType: 'cilios',  // 'cilios' | 'lashlifting' | 'sobrancelhas' | 'labios' | 'facial'
 
+    // === Paginação ===
+    _pageSize: 30,
+    _lastDoc: null,
+    _hasMore: false,
+    _currentFichas: [],
+
     async render(container) {
         FichaTecnica.currentClients = await Store.getClients();
-        const fichas = await Store.getFichasTecnicas();
+        // Paginação: carrega primeira página
+        FichaTecnica._lastDoc = null;
+        FichaTecnica._hasMore = false;
+        const result = await Store.getFichasTecnicasPaginated(FichaTecnica._pageSize);
+        const fichas = result.fichas;
+        FichaTecnica._currentFichas = fichas;
+        FichaTecnica._lastDoc = result.lastVisible;
+        FichaTecnica._hasMore = result.hasMore;
 
         container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:20px">
@@ -32,6 +45,9 @@ const FichaTecnica = {
               <button class="btn btn-primary" onclick="FichaTecnica.openModal(null,'facial')" style="background:#2E9E6E;border-color:#2E9E6E">
                 <span class="material-symbols-outlined">add</span> Ficha Facial
               </button>
+              <button class="btn btn-primary" onclick="FichaTecnica.openModal(null,'manicure')" style="background:#ec4899;border-color:#ec4899">
+                <span class="material-symbols-outlined">add</span> Ficha de Manicure
+              </button>
             </div>
           </div>
 
@@ -47,6 +63,9 @@ const FichaTecnica = {
                 : fichas.map(f => FichaTecnica.cardHtml(f)).join('')
             }
           </div>
+
+          <!-- Paginação Fichas -->
+          <div id="fichas-pagination" style="display:flex;justify-content:center;padding:16px;gap:12px;align-items:center"></div>
         </div>
 
         <!-- Modal -->
@@ -141,6 +160,20 @@ const FichaTecnica = {
                       <option>Laser Lavieen / BB Laser</option>
                       <option>Laser de CO2 Fracionado</option>
                       <option value="__outro_facial__">Outro...</option>
+                    </optgroup>
+                    <optgroup label="Manicure &amp; Nail Designer" data-kind="manicure">
+                      <option>Manicure &amp; Pedicure Tradicional</option>
+                      <option>Esmaltação em Gel</option>
+                      <option>Blindagem de Unhas</option>
+                      <option>Banho de Gel / Banho de Acrílico</option>
+                      <option>Alongamento em Gel (Molde/Tip)</option>
+                      <option>Alongamento em Fibra de Vidro</option>
+                      <option>Alongamento em Acrigel</option>
+                      <option>Alongamento Molde F1 (Dual System)</option>
+                      <option>Manutenção de Alongamento</option>
+                      <option>Remoção de Alongamento / Esmalte em Gel</option>
+                      <option>Nail Art / Decoração</option>
+                      <option value="__outro_manicure__">Outro...</option>
                     </optgroup>
                   </select>
                   <input class="form-control" id="ficha-type-outro" placeholder="Descreva o procedimento..." style="display:none;margin-top:6px" />
@@ -497,6 +530,87 @@ const FichaTecnica = {
                   </div>
                 </div>
 
+                <!-- Laudo de Manicure (só manicure) -->
+                <div id="ficha-sec-manicure" class="form-group form-group-full ficha-section" style="display:none">
+                  <div class="ficha-section-title" style="background:linear-gradient(135deg,rgba(236,72,153,0.12),transparent);border-left:3px solid #ec4899;padding-left:10px">
+                    <span class="material-symbols-outlined">brush</span> Laudo de Manicure &amp; Unhas
+                    <span style="font-size:0.72rem;font-weight:400;opacity:0.7;margin-left:6px">Registro do estado das unhas e técnicas utilizadas</span>
+                  </div>
+                  <div class="form-grid" style="margin-top:12px">
+                    <div class="form-group">
+                      <label class="form-label">Estado das Unhas Naturais</label>
+                      <select class="form-control" id="ficha-nail-condition">
+                        <option value="">-- Selecione --</option>
+                        <option>Saudáveis</option>
+                        <option>Fracas / Quebradiças / Descamação</option>
+                        <option>Roídas (Onicofagia)</option>
+                        <option>Com estrias / Irregularidades</option>
+                        <option>Manchadas / Descoloridas</option>
+                        <option>Indícios de micoses / fungos (Onicomicose)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Formato das Unhas</label>
+                      <select class="form-control" id="ficha-nail-shape">
+                        <option value="">-- Selecione --</option>
+                        <option>Quadrada</option>
+                        <option>Quadrada com cantos arredondados (Squoval)</option>
+                        <option>Almond (Amendoada)</option>
+                        <option>Bailarina</option>
+                        <option>Stiletto</option>
+                        <option>Oval</option>
+                        <option>Redonda</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Cuticulagem</label>
+                      <select class="form-control" id="ficha-nail-cuticle">
+                        <option value="">-- Selecione --</option>
+                        <option>Normal (Alicate)</option>
+                        <option>Russa / Hardware (Brocas)</option>
+                        <option>Combinada (Alicate + Tesoura + Brocas)</option>
+                        <option>Sensível (Gengivite/Fina)</option>
+                        <option>Apenas empurrada</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Tipo de Extensão / Técnica</label>
+                      <select class="form-control" id="ficha-nail-type">
+                        <option value="">-- Selecione --</option>
+                        <option>Sem extensão (Unhas naturais)</option>
+                        <option>Alongamento Fibra de Vidro</option>
+                        <option>Alongamento Gel moldado</option>
+                        <option>Alongamento Gel na Tip</option>
+                        <option>Alongamento Acrilfix / Nova York</option>
+                        <option>Alongamento Molde F1 (Dual System)</option>
+                        <option>Blindagem (Capa Base)</option>
+                        <option>Banho de Gel</option>
+                      </select>
+                    </div>
+                    <div class="form-group form-group-full">
+                      <label class="form-label">Observações e Detalhes da Técnica</label>
+                      <textarea class="form-control" id="ficha-nail-obs" rows="2" placeholder="Ex: alongamento com gel da marca X, decoração encapsulada, francesinha reversa..."></textarea>
+                    </div>
+                    <!-- Mídia da unha -->
+                    <div class="form-group form-group-full">
+                      <label class="form-label">📸 Mídia — Registro Inicial das Unhas
+                        <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted)"> (foto antes do procedimento)</span>
+                      </label>
+                      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+                        <label style="flex:1;min-width:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px;border:2px dashed var(--border);border-radius:10px;cursor:pointer;font-size:0.84rem;color:var(--text-secondary);transition:border-color .2s;text-align:center"
+                               onmouseover="this.style.borderColor='#ec4899'" onmouseout="this.style.borderColor='var(--border)'">
+                          <span class="material-symbols-outlined" style="font-size:28px;color:#ec4899">add_a_photo</span>
+                          Adicionar Foto / Vídeo
+                          <input type="file" id="ficha-nail-media" accept="image/*,video/*" multiple style="display:none" onchange="FichaTecnica._previewNailMedia(this)" />
+                        </label>
+                        <div id="ficha-nail-media-preview" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start"></div>
+                      </div>
+                      <div id="ficha-nail-media-links" style="margin-top:8px;font-size:0.8rem;color:var(--text-muted)"></div>
+                      <p style="font-size:0.75rem;color:var(--text-muted);margin:6px 0 0">💡 Dica: registre o estado ANTES para evitar contestações de clientes após o procedimento.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- ══ OUTROS PROTOCOLOS ══ -->
                 <div class="form-group form-group-full ficha-section">
                   <div class="ficha-section-title" style="background:linear-gradient(135deg,rgba(123,97,255,0.1),transparent);border-left:3px solid #7B61FF;padding-left:10px">
@@ -549,6 +663,46 @@ const FichaTecnica = {
             </form>
           </div>
         </div>`;
+
+        FichaTecnica._renderFichasLoadMoreBtn();
+    },
+
+    async loadMoreFichas() {
+        if (!FichaTecnica._hasMore) return;
+        const btn = document.getElementById('fichas-load-more');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Carregando...'; }
+        try {
+            const result = await Store.getFichasTecnicasPaginated(FichaTecnica._pageSize, FichaTecnica._lastDoc);
+            FichaTecnica._currentFichas = [...FichaTecnica._currentFichas, ...result.fichas];
+            FichaTecnica._lastDoc = result.lastVisible;
+            FichaTecnica._hasMore = result.hasMore;
+            // Re-renderizar grid
+            const grid = document.getElementById('fichas-grid');
+            if (grid) {
+                grid.innerHTML = FichaTecnica._currentFichas.map(f => FichaTecnica.cardHtml(f)).join('');
+            }
+            FichaTecnica._renderFichasLoadMoreBtn();
+        } catch (err) {
+            App.showToast('Erro ao carregar mais fichas: ' + err.message, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">expand_more</span> Carregar mais'; }
+        }
+    },
+
+    _renderFichasLoadMoreBtn() {
+        const container = document.getElementById('fichas-pagination');
+        if (!container) return;
+        const total = FichaTecnica._currentFichas.length;
+        if (FichaTecnica._hasMore) {
+            container.innerHTML = `
+              <span style="font-size:0.82rem;color:var(--text-muted)">${total} fichas carregadas</span>
+              <button id="fichas-load-more" class="btn btn-primary btn-sm" onclick="FichaTecnica.loadMoreFichas()" style="gap:6px">
+                <span class="material-symbols-outlined" style="font-size:16px">expand_more</span> Carregar mais ${FichaTecnica._pageSize}
+              </button>`;
+        } else if (total > 0) {
+            container.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted)">✅ ${total} ficha${total !== 1 ? 's' : ''} carregada${total !== 1 ? 's' : ''}</span>`;
+        } else {
+            container.innerHTML = '';
+        }
     },
 
     cardHtml(f) {
@@ -594,6 +748,13 @@ const FichaTecnica = {
             <span style="font-size:0.72rem;font-weight:600;padding:2px 8px;background:rgba(232,168,56,0.12);color:#E8A838;border-radius:20px">🌟 Lash Lifting</span>
             ${f.complex3d && f.complex3d.length ? `<span style="font-size:0.72rem;padding:2px 8px;background:rgba(232,168,56,0.08);color:#E8A838;border-radius:20px">Lami ${f.complex3d.length}/6</span>` : ''}
             ${f.natMediaUrls && f.natMediaUrls.length ? `<span style="font-size:0.72rem;padding:2px 8px;background:#e3f2fd;color:#1565c0;border-radius:20px">📸 ${f.natMediaUrls.length} mídia(s)</span>` : ''}
+          </div>` : (f.fichaKind === 'manicure') ? `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <span style="font-size:0.72rem;font-weight:600;padding:2px 8px;background:rgba(236,72,153,0.12);color:#ec4899;border-radius:20px">💅 Manicure</span>
+            ${f.nailCondition ? `<span style="font-size:0.72rem;padding:2px 8px;background:var(--surface);border-radius:20px;color:var(--text-secondary)">${f.nailCondition}</span>` : ''}
+            ${f.nailShape ? `<span style="font-size:0.72rem;padding:2px 8px;background:var(--surface);border-radius:20px;color:var(--text-secondary)">${f.nailShape}</span>` : ''}
+            ${f.nailType ? `<span style="font-size:0.72rem;padding:2px 8px;background:var(--surface);border-radius:20px;color:var(--text-secondary)">${f.nailType}</span>` : ''}
+            ${f.nailMediaUrls && f.nailMediaUrls.length ? `<span style="font-size:0.72rem;padding:2px 8px;background:#e3f2fd;color:#1565c0;border-radius:20px">📸 ${f.nailMediaUrls.length} mídia(s)</span>` : ''}
           </div>` : (f.natDesc || f.natSize) ? `
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
             <span style="font-size:0.72rem;font-weight:600;padding:2px 8px;background:var(--primary-xlight);color:var(--primary);border-radius:20px">🔬 Laudo Cílios</span>
@@ -607,12 +768,16 @@ const FichaTecnica = {
             ${f.value ? `<span>Valor: <strong>${App.formatCurrency(Number(f.value))}</strong></span>` : ''}
           </div>
           ${f.notes ? `<div class="ficha-notes">${f.notes}</div>` : ''}
-          ${f.natMediaUrls && f.natMediaUrls.length ? `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-            ${f.natMediaUrls.map(u=>`<a href="${u}" target="_blank" style="display:block;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
-              ${u.match(/\.(mp4|mov|webm)/i) ? `<video src="${u}" style="width:70px;height:70px;object-fit:cover"></video>` : `<img src="${u}" style="width:70px;height:70px;object-fit:cover" />`}
-            </a>`).join('')}
-          </div>` : ''}
+          ${(() => {
+            const urls = f.nailMediaUrls || f.faceMediaUrls || f.lipMediaUrls || f.browMediaUrls || f.natMediaUrls || [];
+            if (!urls.length) return '';
+            return `
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              ${urls.map(u=>`<a href="${u}" target="_blank" style="display:block;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+                ${u.match(/\.(mp4|mov|webm)/i) ? `<video src="${u}" style="width:70px;height:70px;object-fit:cover"></video>` : `<img src="${u}" style="width:70px;height:70px;object-fit:cover" />`}
+              </a>`).join('')}
+            </div>`;
+          })()}
         </div>`;
     },
 
@@ -625,7 +790,7 @@ const FichaTecnica = {
 
         // Atualizar título e mostrar/ocultar seções
         const titleEl = document.getElementById('ficha-modal-title');
-        const titles = {cilios:'✨ Ficha Técnica — Cílios', lashlifting:'🌟 Ficha Técnica — Lash Lifting', sobrancelhas:'🎮 Ficha Técnica — Sobrancelhas', labios:'💋 Ficha Técnica — Lábios (Lips Designer)', facial:'🧴 Ficha Técnica — Facial'};
+        const titles = {cilios:'✨ Ficha Técnica — Cílios', lashlifting:'🌟 Ficha Técnica — Lash Lifting', sobrancelhas:'🎮 Ficha Técnica — Sobrancelhas', labios:'💋 Ficha Técnica — Lábios (Lips Designer)', facial:'🧴 Ficha Técnica — Facial', manicure:'💅 Ficha Técnica — Manicure & Nail Designer'};
         if (titleEl) titleEl.textContent = titles[tipo] || titles.cilios;
         FichaTecnica._applySectionVisibility(tipo);
 
@@ -636,7 +801,7 @@ const FichaTecnica = {
                 const fTipo = f.fichaKind || 'cilios';
                 FichaTecnica.currentType = fTipo;
                 // Re-aplicar visibilidade com tipo real
-                const titles2 = {cilios:'✨ Ficha Técnica — Cílios', lashlifting:'🌟 Ficha Técnica — Lash Lifting', sobrancelhas:'🎮 Ficha Técnica — Sobrancelhas', labios:'💋 Ficha Técnica — Lábios (Lips Designer)', facial:'🧴 Ficha Técnica — Facial'};
+                const titles2 = {cilios:'✨ Ficha Técnica — Cílios', lashlifting:'🌟 Ficha Técnica — Lash Lifting', sobrancelhas:'🎮 Ficha Técnica — Sobrancelhas', labios:'💋 Ficha Técnica — Lábios (Lips Designer)', facial:'🧴 Ficha Técnica — Facial', manicure:'💅 Ficha Técnica — Manicure & Nail Designer'};
                 if (titleEl) titleEl.textContent = titles2[fTipo] || titles2.cilios;
                 FichaTecnica._applySectionVisibility(fTipo);
 
@@ -704,14 +869,29 @@ const FichaTecnica = {
                 if (faceLinks && f.faceMediaUrls && f.faceMediaUrls.length) {
                     faceLinks.innerHTML = f.faceMediaUrls.map((u,i)=>`<a href="${u}" target="_blank" style="margin-right:8px">📎 Mídia ${i+1}</a>`).join('');
                 }
+                // Laudo de manicure
+                const nailCond = document.getElementById('ficha-nail-condition');
+                const nailSh = document.getElementById('ficha-nail-shape');
+                const nailCut = document.getElementById('ficha-nail-cuticle');
+                const nailTy = document.getElementById('ficha-nail-type');
+                const nailOb = document.getElementById('ficha-nail-obs');
+                if (nailCond) nailCond.value = f.nailCondition || '';
+                if (nailSh) nailSh.value = f.nailShape || '';
+                if (nailCut) nailCut.value = f.nailCuticle || '';
+                if (nailTy) nailTy.value = f.nailType || '';
+                if (nailOb) nailOb.value = f.nailObs || '';
+                const nailLinks = document.getElementById('ficha-nail-media-links');
+                if (nailLinks && f.nailMediaUrls && f.nailMediaUrls.length) {
+                    nailLinks.innerHTML = f.nailMediaUrls.map((u,i)=>`<a href="${u}" target="_blank" style="margin-right:8px">📎 Mídia ${i+1}</a>`).join('');
+                }
                 // Mapeamento livre
                 const mapeEl = document.getElementById('ficha-mapeamento');
                 if (mapeEl) mapeEl.value = f.mapeamento || '';
                 // Tipo "Outro"
                 const tipoSel = document.getElementById('ficha-type');
-                const outroKeys = ['__outro_cilios__','__outro_lifting__','__outro_sobrancelhas__','__outro_labios__','__outro_facial__'];
+                const outroKeys = ['__outro_cilios__','__outro_lifting__','__outro_sobrancelhas__','__outro_labios__','__outro_facial__','__outro_manicure__'];
                 if (f.type && !Array.from(tipoSel.options).some(o => o.value === f.type && !outroKeys.includes(o.value))) {
-                    tipoSel.value = fTipo === 'lashlifting' ? '__outro_lifting__' : fTipo === 'sobrancelhas' ? '__outro_sobrancelhas__' : fTipo === 'labios' ? '__outro_labios__' : fTipo === 'facial' ? '__outro_facial__' : '__outro_cilios__';
+                    tipoSel.value = fTipo === 'lashlifting' ? '__outro_lifting__' : fTipo === 'sobrancelhas' ? '__outro_sobrancelhas__' : fTipo === 'labios' ? '__outro_labios__' : fTipo === 'facial' ? '__outro_facial__' : fTipo === 'manicure' ? '__outro_manicure__' : '__outro_cilios__';
                     const outroInput = document.getElementById('ficha-type-outro');
                     if (outroInput) { outroInput.style.display = ''; outroInput.value = f.type; }
                 }
@@ -752,7 +932,7 @@ const FichaTecnica = {
 
         // Tipo: se "Outro" selecionado, pega o campo de texto
         let tipoVal = document.getElementById('ficha-type').value;
-        if (tipoVal === '__outro_cilios__' || tipoVal === '__outro_lifting__' || tipoVal === '__outro_sobrancelhas__' || tipoVal === '__outro_labios__' || tipoVal === '__outro_facial__') {
+        if (tipoVal === '__outro_cilios__' || tipoVal === '__outro_lifting__' || tipoVal === '__outro_sobrancelhas__' || tipoVal === '__outro_labios__' || tipoVal === '__outro_facial__' || tipoVal === '__outro_manicure__') {
             tipoVal = document.getElementById('ficha-type-outro')?.value || 'Outro';
         }
         // Coletar checkboxes do Complex 3D (Lash Lifting)
@@ -788,6 +968,12 @@ const FichaTecnica = {
             faceSensitivity: document.getElementById('ficha-face-sensitivity')?.value || '',
             faceFitzpatrick: document.getElementById('ficha-face-fitzpatrick')?.value || '',
             faceObs:         document.getElementById('ficha-face-obs')?.value || '',
+            // Laudo de manicure
+            nailCondition:   document.getElementById('ficha-nail-condition')?.value || '',
+            nailShape:       document.getElementById('ficha-nail-shape')?.value || '',
+            nailCuticle:     document.getElementById('ficha-nail-cuticle')?.value || '',
+            nailType:        document.getElementById('ficha-nail-type')?.value || '',
+            nailObs:         document.getElementById('ficha-nail-obs')?.value || '',
             // Mapeamento livre
             mapeamento:     document.getElementById('ficha-mapeamento')?.value || '',
             // Protocolos
@@ -831,6 +1017,14 @@ const FichaTecnica = {
                 data.faceMediaUrls = urls;
             } catch(e) { console.warn('Mídia facial não enviada:', e); }
         }
+        // Upload de mídias — Manicure
+        const nailMediaInput = document.getElementById('ficha-nail-media');
+        if (nailMediaInput && nailMediaInput.files.length > 0) {
+            try {
+                const urls = await FichaTecnica._uploadMediaFiles(nailMediaInput.files);
+                data.nailMediaUrls = urls;
+            } catch(e) { console.warn('Mídia manicure não enviada:', e); }
+        }
         try {
             if (FichaTecnica.editingId) await Store.updateFichaTecnica(FichaTecnica.editingId, data);
             else await Store.addFichaTecnica(data);
@@ -854,7 +1048,7 @@ const FichaTecnica = {
     _toggleOutroTipo() {
         const sel = document.getElementById('ficha-type');
         const inp = document.getElementById('ficha-type-outro');
-        if (inp) inp.style.display = (sel?.value === '__outro_cilios__' || sel?.value === '__outro_lifting__' || sel?.value === '__outro_sobrancelhas__' || sel?.value === '__outro_labios__' || sel?.value === '__outro_facial__') ? '' : 'none';
+        if (inp) inp.style.display = (sel?.value === '__outro_cilios__' || sel?.value === '__outro_lifting__' || sel?.value === '__outro_sobrancelhas__' || sel?.value === '__outro_labios__' || sel?.value === '__outro_facial__' || sel?.value === '__outro_manicure__') ? '' : 'none';
     },
 
     _applySectionVisibility(tipo) {
@@ -864,17 +1058,20 @@ const FichaTecnica = {
         const secBrow       = document.getElementById('ficha-sec-sobrancelhas');
         const secLip        = document.getElementById('ficha-sec-labios');
         const secFace       = document.getElementById('ficha-sec-facial');
+        const secNail       = document.getElementById('ficha-sec-manicure');
         const isCil  = tipo === 'cilios';
         const isLift = tipo === 'lashlifting';
         const isBrow = tipo === 'sobrancelhas';
         const isLip  = tipo === 'labios';
         const isFace = tipo === 'facial';
+        const isNail = tipo === 'manicure';
         if (secCilios)     secCilios.style.display     = (isCil || isLift) ? '' : 'none';
-        if (secMapeamento) secMapeamento.style.display  = (isCil || isLift || isBrow || isLip || isFace) ? '' : 'none';
+        if (secMapeamento) secMapeamento.style.display  = (isCil || isLift || isBrow || isLip || isFace || isNail) ? '' : 'none';
         if (secLami)       secLami.style.display        = (isLift || isBrow) ? '' : 'none';
         if (secBrow)       secBrow.style.display        = isBrow ? '' : 'none';
         if (secLip)        secLip.style.display         = isLip ? '' : 'none';
         if (secFace)       secFace.style.display        = isFace ? '' : 'none';
+        if (secNail)       secNail.style.display        = isNail ? '' : 'none';
         // Filtrar optgroups de procedimentos — exibir apenas os do tipo selecionado
         const sel = document.getElementById('ficha-type');
         if (sel) {
@@ -977,6 +1174,20 @@ const FichaTecnica = {
 
     _previewFacialMedia(input) {
         const preview = document.getElementById('ficha-face-media-preview');
+        if (!preview) return;
+        preview.innerHTML = '';
+        Array.from(input.files).forEach(file => {
+            const url = URL.createObjectURL(file);
+            const isVideo = file.type.startsWith('video');
+            const el = isVideo
+                ? `<video src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" muted></video>`
+                : `<img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" />`;
+            preview.insertAdjacentHTML('beforeend', el);
+        });
+    },
+
+    _previewNailMedia(input) {
+        const preview = document.getElementById('ficha-nail-media-preview');
         if (!preview) return;
         preview.innerHTML = '';
         Array.from(input.files).forEach(file => {

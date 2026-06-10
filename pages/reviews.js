@@ -27,6 +27,12 @@ const Reviews = {
     _buildHTML(data, all) {
         const avgDisplay = data.avg > 0 ? data.avg.toFixed(1) : '—';
         const satPct = data.avg > 0 ? Math.round(data.avg / 5 * 100) : 0;
+        const promoters = all.filter(r => r.rating === 5).length;
+        const passives = all.filter(r => r.rating === 4).length;
+        const detractors = all.filter(r => r.rating >= 1 && r.rating <= 3).length;
+        const npsScore = all.length > 0 ? Math.round((promoters/all.length - detractors/all.length) * 100) : 0;
+        const npsColor = npsScore >= 50 ? '#22c55e' : npsScore >= 0 ? '#f59e0b' : '#ef4444';
+        const npsLabel = npsScore >= 75 ? 'Zona de Excelência' : npsScore >= 50 ? 'Zona de Qualidade' : npsScore >= 0 ? 'Zona de Aperfeiçoamento' : 'Zona Crítica';
         const npsCategory = data.avg >= 4.5 ? { label: 'Excelente', color: '#22c55e' }
             : data.avg >= 3.5 ? { label: 'Bom', color: '#84cc16' }
             : data.avg >= 2.5 ? { label: 'Regular', color: '#f59e0b' }
@@ -66,6 +72,39 @@ const Reviews = {
                 </div>
                 <!-- Distribuição de estrelas -->
                 <div id="nps-dist" style="min-width:200px;flex:1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NPS Score Card -->
+          <div class="card">
+            <div class="card-body" style="padding:24px">
+              <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+                <div style="text-align:center;min-width:100px">
+                  <div style="font-size:2.8rem;font-weight:900;color:${npsColor};line-height:1">${npsScore}</div>
+                  <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">NPS Score</div>
+                  <div style="font-size:0.7rem;padding:3px 10px;border-radius:20px;background:${npsColor}15;color:${npsColor};font-weight:600;margin-top:6px">${npsLabel}</div>
+                </div>
+                <div style="flex:1;min-width:200px;display:flex;gap:16px;flex-wrap:wrap">
+                  <div style="flex:1;min-width:80px;text-align:center;padding:12px;background:rgba(34,197,94,0.06);border-radius:10px;border:1px solid rgba(34,197,94,0.15)">
+                    <div style="font-size:1.3rem;font-weight:800;color:#22c55e">${promoters}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted)">Promotoras (5★)</div>
+                  </div>
+                  <div style="flex:1;min-width:80px;text-align:center;padding:12px;background:rgba(245,158,11,0.06);border-radius:10px;border:1px solid rgba(245,158,11,0.15)">
+                    <div style="font-size:1.3rem;font-weight:800;color:#f59e0b">${passives}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted)">Neutras (4★)</div>
+                  </div>
+                  <div style="flex:1;min-width:80px;text-align:center;padding:12px;background:rgba(239,68,68,0.06);border-radius:10px;border:1px solid rgba(239,68,68,0.15)">
+                    <div style="font-size:1.3rem;font-weight:800;color:#ef4444">${detractors}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted)">Detratoras (1-3★)</div>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:16px;padding:10px 14px;background:rgba(59,130,246,0.04);border-radius:8px;border:1px solid rgba(59,130,246,0.1)">
+                <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.5;margin:0">
+                  📊 <strong>NPS</strong> = % Promotoras − % Detratoras · Escala: -100 a +100 · 
+                  <span style="color:#22c55e">≥75</span> Excelência · <span style="color:#84cc16">≥50</span> Qualidade · <span style="color:#f59e0b">≥0</span> Aperfeiçoamento · <span style="color:#ef4444">&lt;0</span> Crítica
+                </p>
               </div>
             </div>
           </div>

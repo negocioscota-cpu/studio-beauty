@@ -178,7 +178,7 @@ const Reminders = {
             `Olá ${r.clientName}! 💕\n\n` +
             `Passando para lembrar que seu retoque de *${r.procedure}* está ${r.status === 'overdue' ? 'pendente desde' : 'agendado para'} *${dateStr}*.\n\n` +
             `Posso confirmar o horário para você? 😊\n\n` +
-            `✨ LashBrow`
+            `✨ Studio Beauty`
         );
 
         return `

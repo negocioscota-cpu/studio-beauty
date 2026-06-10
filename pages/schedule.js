@@ -6,9 +6,16 @@ const Schedule = {
     currentDate: new Date(),
     _dragData: null,
 
+    focusNfeConfig: null,
+
     async render(container) {
-        Schedule.currentClients = await Store.getClients();
+        const [cls, doc] = await Promise.all([
+            Store.getClients(),
+            firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null)
+        ]);
+        Schedule.currentClients = cls;
         Schedule.currentDate = new Date();
+        Schedule.focusNfeConfig = doc && doc.exists && doc.data().focusNfeConfig ? doc.data().focusNfeConfig : null;
 
         container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:20px">
@@ -139,6 +146,10 @@ const Schedule = {
                   <textarea class="form-control" id="appt-notes" rows="2"></textarea>
                 </div>
               </div>
+
+              <!-- Seção Fiscal (NFS-e) -->
+              <div id="appt-fiscal-section" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px" class="hidden"></div>
+
               <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="Schedule.closeModal()">Cancelar</button>
                 <button type="submit" class="btn btn-primary">
@@ -246,6 +257,7 @@ const Schedule = {
         const client = Schedule.currentClients.find(c => c.id === a.clientId);
         const clientName = client?.name || a.clientName || 'Cliente';
         const clientPhone = client?.phone || '';
+        const clientEmail = client?.email || '';
         const isDone = a.status === 'done';
         const isCanceled = a.status === 'canceled';
 
@@ -273,17 +285,18 @@ const Schedule = {
               </div>
               <div class="appt-right">
                 <div style="font-weight:700;color:var(--primary)">${a.value ? App.formatCurrency(Number(a.value)) : ''}</div>
+                ${a.paymentStatus === 'paid' ? '<span class="badge" style="background:rgba(46,160,67,.15);color:#2ea043;font-size:0.68rem;padding:2px 8px;border-radius:12px">💳 Pago</span>' : ''}
                 ${statusBadge}
                 <div class="appt-actions">
                   <button class="btn btn-ghost btn-sm" onclick="Schedule.openModal('${a.id}')" title="Editar">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
                   ${!isCanceled ? `<button class="btn btn-wa btn-sm" title="Enviar confirmação por WhatsApp"
-                    onclick="WA.confirmation('${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${dateDisplay}','${a.time||''}')">
+                    onclick="WA.confirmation('${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${dateDisplay}','${a.time||''}','${clientEmail}')">
                     <span style="font-size:15px">📲</span>
                   </button>` : ''}
                   ${!isCanceled && !isDone ? `<button class="btn btn-reminder btn-sm" title="Enviar lembrete D-1"
-                    onclick="WA.reminder('${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${a.time||''}')">
+                    onclick="WA.reminder('${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${a.time||''}','${clientEmail}')">
                     <span class="material-symbols-outlined" style="font-size:15px">notifications</span>
                   </button>` : ''}
                   ${isDone ? `<button class="btn btn-review btn-sm" title="Enviar link de avaliação"
@@ -291,7 +304,7 @@ const Schedule = {
                     <span class="material-symbols-outlined" style="font-size:15px">star</span>
                   </button>` : ''}
                   ${a.status === 'scheduled' || a.status === 'confirmed' ? `<button class="btn btn-ghost btn-sm" title="Marcar como concluído"
-                    onclick="Schedule.markDone('${a.id}','${a.clientId}','${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${reviewUrl}',${loyaltyConfig ? loyaltyConfig.threshold : 0},'${loyaltyConfig ? (loyaltyConfig.reward||'').replace(/'/g,"\\'") : ''}')">
+                    onclick="Schedule.markDone('${a.id}','${a.clientId}','${clientName}','${clientPhone}','${(a.procedure||'').replace(/'/g,"\\'")}','${reviewUrl}',${loyaltyConfig ? loyaltyConfig.threshold : 0},'${loyaltyConfig ? (loyaltyConfig.reward||'').replace(/'/g,"\\'") : ''}','${clientEmail}')">
                     <span class="material-symbols-outlined" style="font-size:15px">check_circle</span>
                   </button>` : ''}
                   <button class="btn btn-ghost btn-sm" onclick="Schedule.delete('${a.id}')" style="color:var(--danger)" title="Excluir">
@@ -455,7 +468,11 @@ const Schedule = {
 
         try {
             const [y,m,d] = newDateStr.split('-').map(Number);
-            const newDate = firebase.firestore.Timestamp.fromDate(new Date(y, m-1, d));
+            // Preservar horário original do agendamento
+            const timeStr = Schedule._dragData.time || '00:00';
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const newDateObj = new Date(y, m-1, d, hours || 0, minutes || 0);
+            const newDate = firebase.firestore.Timestamp.fromDate(newDateObj);
             await Store.updateAppointment(apptId, { date: newDate });
             App.showToast(`📅 Agendamento movido para ${new Date(y,m-1,d).toLocaleDateString('pt-BR')}!`, 'success');
             await Schedule.loadView();
@@ -508,15 +525,16 @@ const Schedule = {
                 ${active.map(a => {
                     const c = Schedule.currentClients.find(x => x.id === a.clientId);
                     const phone = c?.phone || '';
+                    const email = c?.email || '';
                     const name = c?.name || a.clientName || 'Cliente';
-                    return `<div class="reminder-item" data-phone="${phone}" data-name="${name}" data-procedure="${(a.procedure||'').replace(/"/g,'&quot;')}" data-time="${a.time||''}">
+                    return `<div class="reminder-item" data-phone="${phone}" data-name="${name}" data-email="${email}" data-procedure="${(a.procedure||'').replace(/"/g,'&quot;')}" data-time="${a.time||''}">
                       <div class="reminder-avatar">${name.charAt(0)}</div>
                       <div class="reminder-info">
                         <div class="reminder-name">${name}</div>
                         <div class="reminder-detail">${a.procedure || '—'} · ${a.time || ''}</div>
                       </div>
                       ${phone
-                        ? `<button class="btn btn-wa btn-sm" onclick="WA.reminder('${name}','${phone}','${(a.procedure||'').replace(/'/g,"\\'")}','${a.time||''}')" title="Enviar lembrete">📲</button>`
+                        ? `<button class="btn btn-wa btn-sm" onclick="WA.reminder('${name}','${phone}','${(a.procedure||'').replace(/'/g,"\\'")}','${a.time||''}','${email}')" title="Enviar lembrete">📲</button>`
                         : `<span style="font-size:0.75rem;color:var(--text-muted)">Sem telefone</span>`
                       }
                     </div>`;
@@ -527,7 +545,7 @@ const Schedule = {
 
         Schedule._remindersData = active.map(a => {
             const c = Schedule.currentClients.find(x => x.id === a.clientId);
-            return { name: c?.name || a.clientName || 'Cliente', phone: c?.phone || '', procedure: a.procedure || '', time: a.time || '' };
+            return { name: c?.name || a.clientName || 'Cliente', phone: c?.phone || '', email: c?.email || '', procedure: a.procedure || '', time: a.time || '' };
         });
     },
 
@@ -537,7 +555,7 @@ const Schedule = {
         if (!withPhone.length) { App.showToast('Nenhuma cliente com telefone cadastrado.', 'error'); return; }
         let delay = 0;
         withPhone.forEach(d => {
-            setTimeout(() => WA.reminder(d.name, d.phone, d.procedure, d.time), delay);
+            setTimeout(() => WA.reminder(d.name, d.phone, d.procedure, d.time, d.email), delay);
             delay += 800;
         });
         App.showToast(`📲 ${withPhone.length} lembretes abertos!`, 'success');
@@ -556,18 +574,42 @@ const Schedule = {
     },
 
     // Marcar como concluído + verificar fidelidade
-    async markDone(apptId, clientId, clientName, clientPhone, procedure, reviewUrl, loyaltyThreshold, loyaltyReward) {
+    async markDone(apptId, clientId, clientName, clientPhone, procedure, reviewUrl, loyaltyThreshold, loyaltyReward, email = null) {
         try {
-            await new Promise(resolve => {
-                Inventory.buildUsageModal(apptId, async (usedItems) => {
-                    for (const item of usedItems) {
-                        const newQty = Math.max(0, item.currentQty - item.qty);
-                        try { await Store.updateInventoryItem(item.id, { qty: newQty }); } catch(e) { console.warn(e); }
+            const catalog = await Store.getCatalog();
+            const service = catalog.find(s => s.name.toLowerCase() === procedure.toLowerCase());
+            
+            if (service && service.inputs && service.inputs.length > 0) {
+                const inventory = await Store.getInventory();
+                
+                for (const inp of service.inputs) {
+                    const invItem = inventory.find(i => i.id === inp.productId);
+                    if (invItem) {
+                        const newQty = Math.max(0, invItem.qty - inp.qty);
+                        await Store.updateInventoryItem(invItem.id, { qty: newQty });
+                        
+                        try {
+                            const db = firebase.firestore();
+                            await db.collection('inventory_logs').add({
+                                userId: Store._uid(),
+                                apptId: apptId,
+                                productId: invItem.id,
+                                productName: invItem.name,
+                                qty: inp.qty,
+                                type: 'out',
+                                description: `Baixa automática - Atendimento de ${clientName || 'Cliente'} em ${new Date().toLocaleDateString('pt-BR')}`,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        } catch(logErr) { console.warn("Erro ao gravar log de estoque:", logErr); }
                     }
-                    resolve();
-                });
-            });
-        } catch(e) { /* ignora — segue sem baixa de estoque */ }
+                }
+                console.log(`✅ Baixa automática concluída silenciosamente para o serviço "${procedure}".`);
+            } else {
+                console.log(`ℹ️ Serviço "${procedure}" sem receita cadastrada no catálogo. Nenhuma baixa realizada.`);
+            }
+        } catch(e) {
+            console.warn("Erro no processamento da baixa de estoque automática:", e);
+        }
 
         try {
             await Store.updateAppointment(apptId, { status: 'done' });
@@ -576,16 +618,29 @@ const Schedule = {
             if (loyaltyThreshold > 0 && clientId) {
                 const milestone = await Store.checkLoyaltyMilestone(clientId, loyaltyThreshold);
                 if (milestone.reached) {
-                    Schedule._showLoyaltyToast(clientName, clientPhone, loyaltyReward, milestone.totalVisits);
+                    Schedule._showLoyaltyToast(clientName, clientPhone, loyaltyReward, milestone.totalVisits, email);
                 }
             }
+
+            // Enviar cuidados pós-atendimento
+            if (clientPhone && procedure) {
+                try {
+                    const cfg = await Store.getStudioConfig();
+                    if (cfg.aftercareEnabled !== false) { // ativado por padrão
+                        setTimeout(() => {
+                            Schedule._showAftercareToast(clientName, clientPhone, procedure, cfg.aftercareTemplates, email);
+                        }, loyaltyThreshold > 0 ? 2500 : 1000);
+                    }
+                } catch(e) { console.warn('Aftercare config error:', e); }
+            }
+
             await Schedule.loadView();
         } catch(err) {
             App.showToast('Erro: ' + err.message, 'error');
         }
     },
 
-    _showLoyaltyToast(clientName, phone, reward, visitCount) {
+    _showLoyaltyToast(clientName, phone, reward, visitCount, email = null) {
         const container = document.getElementById('toast-container');
         if (!container) return;
         const id = 'loyalty-' + Date.now();
@@ -598,7 +653,7 @@ const Schedule = {
             <div style="font-weight:800;font-size:0.95rem;color:var(--gold)">Marco de Fidelidade!</div>
             <div style="font-size:0.82rem;margin-top:2px"><strong>${clientName}</strong> atingiu <strong>${visitCount} atendimentos</strong> e ganhou: <em>${reward}</em></div>
             <div style="display:flex;gap:8px;margin-top:10px">
-              <button class="btn btn-wa btn-sm" onclick="WA.loyaltyReward('${clientName}','${phone}','${reward}','${visitCount}')">
+              <button class="btn btn-wa btn-sm" onclick="WA.loyaltyReward('${clientName}','${phone}','${reward}','${visitCount}','${email}')">
                 📲 Avisar no WhatsApp
               </button>
               <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${id}').remove()">Fechar</button>
@@ -607,6 +662,30 @@ const Schedule = {
         container.appendChild(el);
         setTimeout(() => el.remove(), 15000);
     },
+
+    _showAftercareToast(clientName, phone, procedure, customTemplates, email = null) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const id = 'aftercare-' + Date.now();
+        const el = document.createElement('div');
+        el.id = id;
+        el.className = 'toast toast-aftercare';
+        el.style.cssText = 'display:flex;gap:12px;align-items:flex-start;padding:16px 20px;background:linear-gradient(135deg,#1a2a1a,#2d4a2d);border:1px solid rgba(37,211,102,0.3);border-radius:14px;color:white;max-width:420px;animation:slideIn 0.4s ease';
+        el.innerHTML = `
+          <div style="font-size:1.5rem">📲</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:0.92rem;color:#25D366">Cuidados Pós-Atendimento</div>
+            <div style="font-size:0.82rem;margin-top:4px;color:rgba(255,255,255,0.8)">Enviar orientações de <strong>${procedure}</strong> para <strong>${clientName}</strong>?</div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-sm" style="background:#25D366;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.82rem" onclick="WA.aftercare('${clientName.replace(/'/g, "\\'")}','${phone}','${(procedure||'').replace(/'/g, "\\'")}',${customTemplates ? 'Schedule._aftercareTemplates' : 'null'},'${email}');document.getElementById('${id}').remove()">📲 Enviar cuidados</button>
+              <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,0.6);border:none;cursor:pointer;font-size:0.82rem" onclick="document.getElementById('${id}').remove()">Agora não</button>
+            </div>
+          </div>`;
+        container.appendChild(el);
+        if (customTemplates) Schedule._aftercareTemplates = customTemplates;
+        setTimeout(() => el.remove(), 15000);
+    },
+    _aftercareTemplates: null,
 
     // ===== MODAL CADASTRO/EDIÇÃO =====
     async openModal(id = null) {
@@ -637,6 +716,24 @@ const Schedule = {
                 Schedule._fillModalFields(a);
             }
         }
+        
+        if (id && Schedule.focusNfeConfig && Schedule.focusNfeConfig.enabled) {
+            const appts = await Store.getAppointments();
+            const a = appts.find(x => x.id === id);
+            if (a) {
+                Schedule.renderFiscalSection(a);
+            } else {
+                try {
+                    const doc = await firebase.firestore().collection('appointments').doc(id).get();
+                    if (doc.exists) {
+                        Schedule.renderFiscalSection({ id: doc.id, ...doc.data() });
+                    }
+                } catch(e){}
+            }
+        } else {
+            document.getElementById('appt-fiscal-section')?.classList.add('hidden');
+        }
+
         document.getElementById('schedule-modal').classList.remove('hidden');
     },
 
@@ -743,7 +840,7 @@ const Schedule = {
             <div style="font-weight:700;font-size:0.9rem">Enviar confirmação para ${client.name}?</div>
             <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">${dateDisplay} às ${data.time}</div>
             <div style="display:flex;gap:8px;margin-top:10px">
-              <button class="btn btn-wa btn-sm" onclick="WA.confirmation('${client.name}','${client.phone}','${(data.procedure||'').replace(/'/g,"\\'")}','${dateDisplay}','${data.time}');document.getElementById('${id}').remove()">
+              <button class="btn btn-wa btn-sm" onclick="WA.confirmation('${client.name}','${client.phone}','${(data.procedure||'').replace(/'/g,"\\'")}','${dateDisplay}','${data.time}','${client.email || ''}');document.getElementById('${id}').remove()">
                 📲 Enviar WhatsApp
               </button>
               <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${id}').remove()">Agora não</button>
@@ -818,6 +915,335 @@ const Schedule = {
             App.showToast(`📅 ${synced} agendamento${synced !== 1 ? 's' : ''} sincronizado${synced !== 1 ? 's' : ''} com Google Calendar!`, 'success');
         } catch(err) {
             App.showToast('Erro ao sincronizar: ' + (err.message || err.result?.error?.message || 'Verifique as credenciais OAuth'), 'error');
+        }
+    },
+
+    // ===== NOTA FISCAL ELETRÔNICA (FOCUS NFE) =====
+    renderFiscalSection(a) {
+        const sec = document.getElementById('appt-fiscal-section');
+        if (!sec || !Schedule.focusNfeConfig) return;
+        sec.classList.remove('hidden');
+
+        const invoice = a.invoice || {};
+        const status = invoice.status || 'not_issued';
+
+        let content = '';
+
+        if (status === 'authorized') {
+            content = `
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:0.85rem;font-weight:700;color:#22c55e;display:flex;align-items:center;gap:6px">
+                  <span class="material-symbols-outlined" style="font-size:18px">check_circle</span> NFS-e Autorizada com Sucesso!
+                </span>
+                <span style="font-size:0.75rem;color:var(--text-muted)">Emitida em ${invoice.issuedAt ? new Date(invoice.issuedAt).toLocaleDateString('pt-BR') : '—'}</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <a href="${invoice.pdfUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;font-size:0.78rem;gap:4px;display:flex;align-items:center;justify-content:center">
+                  <span class="material-symbols-outlined" style="font-size:16px">picture_as_pdf</span> Baixar PDF
+                </a>
+                <a href="${invoice.xmlUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;font-size:0.78rem;gap:4px;display:flex;align-items:center;justify-content:center">
+                  <span class="material-symbols-outlined" style="font-size:16px">code</span> Baixar XML
+                </a>
+              </div>
+            </div>`;
+        } else if (status === 'processing') {
+            content = `
+            <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;text-align:center">
+              <div class="spinner" style="width:20px;height:20px;border-width:2.5px;margin:0 auto 8px"></div>
+              <span style="font-size:0.85rem;font-weight:600;color:#3b82f6">NFS-e sendo processada na prefeitura...</span>
+              <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">A prefeitura pode levar alguns minutos. Você pode fechar o modal e verificar mais tarde.</p>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="Schedule.checkInvoiceStatus('${a.id}')" style="margin-top:8px;font-size:0.75rem;gap:4px;display:inline-flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="font-size:15px">sync</span> Verificar Status
+              </button>
+            </div>`;
+        } else {
+            const isError = status === 'error';
+            content = `
+            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font-weight:700;font-size:0.85rem;color:var(--text-primary)">🧾 Nota Fiscal Eletrônica (NFS-e)</span>
+                <span class="badge ${isError ? 'badge-red' : 'badge-brown'}">${isError ? 'Erro na Emissão' : 'Não Emitida'}</span>
+              </div>
+              
+              ${isError ? `
+              <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px;font-size:0.78rem;color:#ef4444;line-height:1.4">
+                ❌ <strong>Motivo da rejeição:</strong><br>${invoice.errorMessage || 'Erro desconhecido.'}
+              </div>` : ''}
+
+              <p style="font-size:0.78rem;color:var(--text-muted);margin:0">Deseja emitir a nota fiscal de serviço para esta cliente?</p>
+              
+              <button type="button" class="btn btn-primary btn-sm" onclick="Schedule.openFiscalModal('${a.id}')" style="margin-top:4px;gap:6px;align-self:flex-start;display:inline-flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="font-size:16px">send</span> Preparar e Emitir NFS-e
+              </button>
+            </div>`;
+        }
+
+        sec.innerHTML = content;
+    },
+
+    async openFiscalModal(apptId) {
+        const appts = await Store.getAppointments();
+        const a = appts.find(x => x.id === apptId);
+        if (!a) return;
+
+        const client = Schedule.currentClients.find(c => c.id === a.clientId) || {};
+        const fd = client.fiscalData || {};
+        const addr = fd.address || {};
+
+        let modal = document.getElementById('fiscal-emission-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fiscal-emission-modal';
+            modal.className = 'modal-overlay hidden';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+        <div class="modal-container" style="max-width:550px;width:100%" onclick="event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title">🧾 Preparar Nota Fiscal (NFS-e)</h3>
+              <button class="modal-close" onclick="document.getElementById('fiscal-emission-modal').classList.add('hidden')">✕</button>
+            </div>
+            <form id="fiscal-emission-form" class="modal-body" style="display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:80vh">
+              
+              <div style="background:rgba(201,169,110,0.06);border:1px solid rgba(201,169,110,0.15);border-radius:10px;padding:12px">
+                <p style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;margin:0">
+                  ⚠️ Preencha ou revise as informações abaixo. Se houver dados faltantes (como o CPF do cliente), preencha aqui e eles serão <strong>salvos de volta na ficha do cliente</strong> automaticamente após a emissão.
+                </p>
+              </div>
+
+              <!-- Dados do Tomador (Cliente) -->
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <h4 style="font-size:0.85rem;font-weight:700;color:var(--primary);margin:0">👤 Dados do Cliente (Tomador)</h4>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Nome Completo</label>
+                    <input class="form-control" id="f-client-name" value="${client.name || a.clientName || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">CPF ou CNPJ</label>
+                    <input class="form-control" id="f-client-cpf" value="${fd.cpfCnpj || ''}" required placeholder="000.000.000-00" oninput="Clients._maskCpfCnpj(this)" style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" style="font-size:0.75rem">E-mail (para envio da nota)</label>
+                  <input class="form-control" type="email" id="f-client-email" value="${client.email || ''}" required placeholder="cliente@email.com" style="font-size:0.8rem;padding:6px 10px" />
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:12px">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">CEP</label>
+                    <div style="display:flex;gap:6px">
+                      <input class="form-control" id="f-client-cep" value="${addr.zipCode || ''}" required placeholder="00000-000" maxlength="9" oninput="Clients._maskCep(this)" style="font-size:0.8rem;padding:6px 10px;flex:1" />
+                      <button type="button" class="btn btn-ghost btn-sm" onclick="Schedule.searchFiscalCep()" style="padding:0 8px;font-size:0.72rem" id="btn-f-search-cep">Buscar</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Rua / Logradouro</label>
+                    <input class="form-control" id="f-client-street" value="${addr.street || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:12px">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Número</label>
+                    <input class="form-control" id="f-client-number" value="${addr.number || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Complemento</label>
+                    <input class="form-control" id="f-client-complement" value="${addr.complement || ''}" placeholder="Apto, Sala..." style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Bairro</label>
+                    <input class="form-control" id="f-client-neighborhood" value="${addr.neighborhood || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:12px">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Cidade</label>
+                    <input class="form-control" id="f-client-city" value="${addr.city || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Estado (UF)</label>
+                    <input class="form-control" id="f-client-uf" value="${addr.state || ''}" required maxlength="2" style="font-size:0.8rem;padding:6px 10px;text-transform:uppercase" />
+                  </div>
+                </div>
+              </div>
+
+              <hr style="border:none;border-top:1px solid var(--border);margin:4px 0" />
+
+              <!-- Dados do Serviço -->
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <h4 style="font-size:0.85rem;font-weight:700;color:var(--primary);margin:0">💅 Detalhes da Prestação de Serviço</h4>
+                
+                <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:12px">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">CNAE de Serviço</label>
+                    <input class="form-control" id="f-service-cnae" value="${a.cnae || Schedule.focusNfeConfig.defaultCnae || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:0.75rem">Valor dos Serviços (R$)</label>
+                    <input class="form-control" type="number" step="0.01" min="0" id="f-service-value" value="${a.value || ''}" required style="font-size:0.8rem;padding:6px 10px" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" style="font-size:0.75rem">Descrição que constará na NFS-e</label>
+                  <textarea class="form-control" id="f-service-description" rows="3" required style="font-size:0.8rem;padding:6px 10px;line-height:1.4">${Schedule.focusNfeConfig.defaultServiceDescription || ''}</textarea>
+                </div>
+              </div>
+
+              <div class="modal-footer" style="padding:10px 0 0">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('fiscal-emission-modal').classList.add('hidden')">Cancelar</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="Schedule.submitFiscalNFSe('${a.id}', '${a.clientId}')" id="btn-submit-fiscal-nfse" style="display:inline-flex;align-items:center;gap:4px">
+                  <span class="material-symbols-outlined" style="font-size:15px">check</span> Confirmar e Emitir Nota
+                </button>
+              </div>
+            </form>
+        </div>`;
+
+        modal.onclick = (event) => {
+            if (event.target === modal) modal.classList.add('hidden');
+        };
+
+        modal.classList.remove('hidden');
+    },
+
+    async searchFiscalCep() {
+        const cepEl = document.getElementById('f-client-cep');
+        const btn = document.getElementById('btn-f-search-cep');
+        if (!cepEl) return;
+        const cep = cepEl.value.replace(/\D/g, '');
+        if (cep.length !== 8) {
+            App.showToast('CEP inválido!', 'error');
+            return;
+        }
+        if (btn) { btn.disabled = true; btn.innerHTML = '...'; }
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if (data.erro) {
+                App.showToast('CEP não encontrado.', 'error');
+            } else {
+                document.getElementById('f-client-street').value = data.logradouro || '';
+                document.getElementById('f-client-neighborhood').value = data.bairro || '';
+                document.getElementById('f-client-city').value = data.localidade || '';
+                document.getElementById('f-client-uf').value = data.uf || '';
+                document.getElementById('f-client-number')?.focus();
+            }
+        } catch (err) {
+            App.showToast('Erro ao buscar CEP: ' + err.message, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Buscar'; }
+        }
+    },
+
+    async submitFiscalNFSe(apptId, clientId) {
+        const btn = document.getElementById('btn-submit-fiscal-nfse');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Enviando...'; }
+        
+        const clientName = document.getElementById('f-client-name').value.trim();
+        const cpfCnpj = document.getElementById('f-client-cpf').value.trim();
+        const email = document.getElementById('f-client-email').value.trim();
+        const zipCode = document.getElementById('f-client-cep').value.trim();
+        const street = document.getElementById('f-client-street').value.trim();
+        const number = document.getElementById('f-client-number').value.trim();
+        const complement = document.getElementById('f-client-complement').value.trim();
+        const neighborhood = document.getElementById('f-client-neighborhood').value.trim();
+        const city = document.getElementById('f-client-city').value.trim();
+        const state = document.getElementById('f-client-uf').value.trim().toUpperCase();
+
+        const serviceCnae = document.getElementById('f-service-cnae').value.trim();
+        const serviceValue = parseFloat(document.getElementById('f-service-value').value) || 0;
+        const serviceDescription = document.getElementById('f-service-description').value.trim();
+
+        if (!clientName || !cpfCnpj || !email || !zipCode || !street || !number || !neighborhood || !city || !state || !serviceCnae || !serviceValue || !serviceDescription) {
+            App.showToast('Por favor, preencha todos os campos obrigatórios.', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px">check</span> Confirmar e Emitir Nota'; }
+            return;
+        }
+
+        try {
+            const clientFiscalUpdate = {
+                name: clientName,
+                email: email,
+                fiscalData: {
+                    cpfCnpj,
+                    address: {
+                        zipCode, street, number, complement, neighborhood, city, state
+                    }
+                }
+            };
+            await Store.updateClient(clientId, clientFiscalUpdate);
+
+            const uid = Store._uid();
+            const emitFunction = firebase.functions().httpsCallable('emitFocusNFSe');
+            
+            const response = await emitFunction({
+                studioUid: uid,
+                bookingId: apptId,
+                clientId,
+                clientName,
+                clientEmail: email,
+                cpfCnpj,
+                zipCode, street, number, complement, neighborhood, city, state,
+                serviceCnae,
+                serviceValue,
+                serviceDescription
+            });
+
+            const result = response.data;
+            if (result.status === 'success' || result.status === 'processing') {
+                App.showToast('NFS-e enviada para processamento! 🧾', 'success');
+                document.getElementById('fiscal-emission-modal').classList.add('hidden');
+                
+                // Recarregar agendamentos locais para atualizar
+                await Schedule.loadView();
+                
+                // Achar agendamento atualizado para renderizar a seção fiscal de novo
+                const appts = await Store.getAppointments();
+                const a = appts.find(x => x.id === apptId);
+                if (a) {
+                    Schedule.renderFiscalSection(a);
+                }
+            } else {
+                throw new Error(result.message || 'Erro ao emitir NFS-e.');
+            }
+        } catch (err) {
+            App.showToast('Erro ao emitir NFS-e: ' + err.message, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px">check</span> Confirmar e Emitir Nota'; }
+        }
+    },
+
+    async checkInvoiceStatus(apptId) {
+        try {
+            const checkFunction = firebase.functions().httpsCallable('checkFocusNFSeStatus');
+            const response = await checkFunction({
+                studioUid: Store._uid(),
+                bookingId: apptId
+            });
+            const result = response.data;
+            if (result.status === 'authorized') {
+                App.showToast('NFS-e Autorizada! ✅', 'success');
+            } else if (result.status === 'error') {
+                App.showToast('NFS-e rejeitada pela prefeitura: ' + (result.errorMessage || ''), 'error');
+            } else {
+                App.showToast('A NFS-e ainda está sendo processada.', 'info');
+            }
+            
+            await Schedule.loadView();
+            const appts = await Store.getAppointments();
+            const a = appts.find(x => x.id === apptId);
+            if (a) {
+                Schedule.renderFiscalSection(a);
+            }
+        } catch (err) {
+            App.showToast('Erro ao consultar status: ' + err.message, 'error');
         }
     }
 };

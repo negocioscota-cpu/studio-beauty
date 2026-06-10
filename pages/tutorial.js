@@ -1,4 +1,4 @@
-// === TUTORIAL — Guia de Uso LashBrow ===
+// === TUTORIAL — Guia de Uso LashBrow / Studio Beauty ===
 const Tutorial = {
 
     _sections: [
@@ -6,20 +6,24 @@ const Tutorial = {
             id: 'inicio', icon: '🚀', title: 'Primeiros Passos',
             color: '#c4756a',
             steps: [
-                { title: 'Acesse o sistema', text: 'Entre em <b>lashbrow.clientehub.app.br</b> com seu e-mail e senha. O sistema funciona no celular e no computador.' },
+                { title: 'Acesse o sistema', text: 'Entre em <b>studiobeauty.clientehub.app.br</b> com seu e-mail e senha. O sistema funciona no celular e no computador.' },
                 { title: 'Complete seu perfil', text: 'Vá em <b>🏪 Perfil do Studio</b> e preencha: nome do studio, telefone, endereço e foto de capa. Esses dados aparecem na sua Agenda Online.' },
                 { title: 'Cadastre seus serviços', text: 'Em <b>📱 Catálogo de Serviços</b>, adicione cada serviço com nome, descrição, preço e duração. Ex: "Extensão Fio a Fio – R$180 – 2h30min".' },
                 { title: 'Cadastre suas clientes', text: 'Em <b>Cadastro</b>, crie a ficha de cada cliente: nome, telefone, data de nascimento e observações. Clientes cadastradas são sugeridas em toda a plataforma.' },
+                { title: 'Máscara de telefone', text: 'O campo de telefone formata automaticamente para <b>(00) 00000-0000</b>. Basta digitar os números — o sistema cuida do formato.' },
             ]
         },
         {
-            id: 'agenda', icon: '📅', title: 'Agenda',
+            id: 'agenda', icon: '📅', title: 'Agenda & Atendimentos',
             color: '#7B61FF',
             steps: [
                 { title: 'Criar agendamento', text: 'Clique em <b>+ Novo</b> na Agenda. Selecione a cliente, serviço, data e horário. O sistema bloqueia horários em conflito automaticamente.' },
                 { title: 'Visualizar a semana', text: 'A agenda exibe a visão semanal. Clique em qualquer horário vazio para criar um novo agendamento rapidamente.' },
                 { title: 'Confirmar e concluir', text: 'Mude o status do agendamento para <b>Confirmado</b> após a cliente confirmar, e <b>Concluído</b> após o atendimento. Isso alimenta os relatórios automaticamente.' },
                 { title: 'Agenda Online', text: 'Em <b>📅 Agenda Online</b>, ative o link de agendamento público para que clientes marquem sozinhas. Compartilhe o link no Instagram e WhatsApp.' },
+                { title: 'Arrastar para reagendar', text: 'Arraste qualquer agendamento para outro dia na visão semanal. O horário original é preservado automaticamente.' },
+                { title: 'Cuidados pós-atendimento', text: 'Ao marcar como <b>Concluído</b>, o sistema oferece envio automático de cuidados pós-procedimento via WhatsApp. Os templates são personalizáveis em <b>Configurações</b>.' },
+                { title: 'Faturamento de NFS-e direto', text: 'Para agendamentos finalizados, se você configurou o módulo fiscal, o sistema exibe o bloco **Nota Fiscal (NFS-e)** para você emitir a nota fiscal de serviço oficial com 1 clique direto pela agenda.' },
             ]
         },
         {
@@ -30,6 +34,8 @@ const Tutorial = {
                 { title: 'Criar nova ficha', text: 'Clique em <b>+ Nova Ficha</b>. Vincule à cliente, preencha os detalhes técnicos. Na próxima vez, você terá tudo registrado para repetir o trabalho com perfeição.' },
                 { title: 'Histórico por cliente', text: 'Cada cliente tem um histórico de fichas, ordenado da mais recente. Ideal para acompanhar a evolução e planejar manutenções.' },
                 { title: 'Alerta de retoque', text: 'Informe a data prevista do retoque. O sistema exibe lembretes automáticos para você entrar em contato com a cliente no momento certo.' },
+                { title: '5 tipos de ficha', text: 'Escolha entre Cílios, Lash Lifting, Sobrancelhas, Lábios e Facial. Cada tipo tem campos específicos: laudo de cílios naturais, protocolo Lami System 3D, laudo labial, laudo facial com Fitzpatrick.' },
+                { title: 'Fotos de registro', text: 'Adicione fotos do estado ANTES do procedimento em cada ficha. Essa evidência protege você em caso de contestações.' },
             ]
         },
         {
@@ -38,30 +44,33 @@ const Tutorial = {
             steps: [
                 { title: 'Cadastro completo', text: 'Em <b>Cadastro</b>, registre nome, telefone, e-mail, data de nascimento, endereço e observações (ex: alergias, preferências). Todas as informações em um só lugar.' },
                 { title: 'Histórico de atendimentos', text: 'Em <b>Histórico</b>, visualize todos os serviços realizados por cada cliente: data, serviço, valor pago e profissional responsável.' },
-                { title: 'Termo de consentimento', text: 'Em <b>📋 Termo de Consentimento</b>, gere e registre o aceite digital da cliente antes de procedimentos. Protege você juridicamente.' },
+                { title: 'Termo de consentimento', text: 'Em <b>📋 Termo de Consentimento</b>, gere e registre o aceite digital da cliente antes de procedimentos. A cliente lê e assina no próprio celular via QR Code, sem papéis.' },
                 { title: 'Aniversariantes', text: 'Em <b>🎂 Aniversariantes</b>, veja quem faz aniversário no mês. Envie um WhatsApp de parabéns com um toque de desconto — fideliza muito!' },
+                { title: 'Aba Retenção', text: 'Clique em <b>📈 Retenção</b> dentro de Clientes para ver: taxa de retorno, clientes inativos (45+ dias), churn, ticket médio, gráfico de evolução mensal e Top 10 fiéis.' },
+                { title: 'Reconquistar clientes inativas', text: 'Na aba Retenção, use o botão <b>📲 Reconquistar</b> para enviar mensagem de retorno via WhatsApp. Filtre por 45, 60, 90 ou 120 dias de ausência.' },
+                { title: 'Dados fiscais integrados', text: 'No perfil de cada cliente, você pode salvar o CPF/CNPJ e endereço completo. Use a busca por CEP integrada para preencher os dados de endereço na hora.' },
             ]
         },
         {
             id: 'financeiro', icon: '💰', title: 'Central Financeira',
             color: '#4CAF50',
             steps: [
-                { title: 'Contas a Receber', text: 'Acesse <b>Financeiro → Contas a Receber</b>. Clique em <b>Nova Venda</b> e preencha: categoria (Ex: Extensão), descrição (Ex: Volume Russo), cliente, valor e forma de recebimento.' },
-                { title: 'Tipos de lançamento', text: 'Escolha o tipo: <b>Única</b> (pagamento avulso), <b>Parcelada</b> (informe o nº de parcelas) ou <b>Recorrente</b> (pacotes mensais com dia fixo de cobrança).' },
-                { title: 'Contas a Pagar', text: 'Na aba <b>Contas a Pagar</b>, clique em <b>Nova Despesa</b>. Informe: categoria (Ex: Descartáveis), descrição, valor, vencimento e forma de pagamento.' },
-                { title: 'Filtros e período', text: 'Use os filtros de data e status para ver apenas o mês atual, despesas vencidas ou pagamentos pendentes. Os KPIs do topo se atualizam automaticamente.' },
-                { title: 'Histórico da cliente', text: 'No campo "Cliente" de uma nova venda, clique no ícone 🕐 para ver todo o histórico de atendimentos e gastos daquela cliente antes de registrar.' },
+                { title: 'Lançamentos Automáticos', text: 'Ao dar baixa em atendimentos concluídos na agenda, o sistema faz o lançamento automático da entrada no fluxo de caixa no Bolsa Beleza.' },
+                { title: 'Contas a Pagar e Despesas', text: 'Na aba <b>Contas a Pagar</b>, clique em <b>Nova Despesa</b>. Informe: categoria (Ex: Aluguel, Descartáveis), descrição, valor, vencimento e forma de pagamento.' },
+                { title: 'Recebimento Online (Asaas)', text: 'Habilite pagamentos online nas Configurações. Suas clientes podem pagar sinal ou valor integral ao agendar. A confirmação é 100% automatizada e altera o status da agenda no mesmo segundo.' },
+                { title: 'Divisão de Comissões', text: 'Com profissionais cadastrados, o sistema calcula na hora a fatia da profissional que atendeu e consolida o relatório para folha de pagamento na aba Comissões.' },
+                { title: 'Filtros e períodos de caixa', text: 'Filtre suas despesas e receitas por períodos (mês atual, semanas) ou por status de pagamento (vencidas, pagas, pendentes) para controle absoluto.' },
             ]
         },
         {
             id: 'estoque', icon: '📦', title: 'Gestão de Estoque',
             color: '#FF9800',
             steps: [
-                { title: 'Cadastrar produto', text: 'Em <b>Estoque</b>, clique em <b>+ Novo Produto</b>. Informe: nome (Ex: Microbrush), quantidade atual, quantidade mínima e unidade (unid, ml, g...).' },
-                { title: 'Quantidade mínima', text: 'A <b>Quantidade Mínima</b> define o alerta de estoque crítico. Ex: se você cadastrar mínimo = 10 e tiver 8 unidades, o item aparecerá em vermelho como "⚠️ Baixo".' },
-                { title: 'Alertas automáticos', text: 'O painel de Estoque mostra automaticamente produtos em nível crítico. Clique em <b>+ Comprar</b> ao lado de qualquer item para adicioná-lo à Lista de Compras.' },
-                { title: 'Lista de Compras', text: 'A Lista de Compras agrupa tudo que precisa ser reposto. Marque itens como ✅ comprado após ir ao fornecedor. Acesse pelo botão com badge de contador no painel de Estoque.' },
-                { title: 'Ajustar quantidade', text: 'Após uma compra, clique no ícone de edição (✏️) ao lado do produto e atualize a quantidade. O sistema recalcula os alertas instantaneamente.' },
+                { title: 'Cadastrar produto de estoque', text: 'Em <b>Estoque</b>, clique em <b>+ Novo Produto</b>. Informe: nome (Ex: Gel Base, Cola), quantidade atual, quantidade mínima (alerta crítico) e unidade (ml, g, un).' },
+                { title: 'Baixa Silenciosa Automática', text: 'Vincule a receita de insumos aos serviços no Catálogo. Ao concluir os atendimentos na Agenda, o estoque é debitado silenciosamente nas frações exatas usadas.' },
+                { title: 'Leitor XML de Notas Fiscais', text: 'Cadastre suas reposições arrastando o arquivo `.xml` da nota de compra. O sistema extrai fornecedor, itens e quantidades automaticamente.' },
+                { title: 'Mapeamento inteligente De/Para', text: 'Associe os itens da nota fiscal aos produtos do seu estoque. O sistema memoriza esses vínculos para preenchê-los sozinho em compras futuras do mesmo fornecedor.' },
+                { title: 'Balanço Físico e Auditorias', text: 'Na aba <b>Inventários</b>, faça contagens físicas de controle. Se houver divergências (sobras ou perdas), justifique o motivo (Vencimento, Quebra, Furto) para ajustar o estoque real.' },
             ]
         },
         {
@@ -74,14 +83,33 @@ const Tutorial = {
             ]
         },
         {
-            id: 'marketing', icon: '📣', title: 'Marketing & Fidelização',
+            id: 'custos', icon: '🧮', title: 'Análise de Custos',
+            color: '#FF5722',
+            steps: [
+                { title: 'Calcular custo por procedimento', text: 'Em <b>🧮 Análise de Custos</b>, selecione os produtos que usa em cada procedimento e o sistema calcula o custo total dos insumos.' },
+                { title: 'Margem de lucro real', text: 'O calculador cruza os custos de aquisição do seu estoque com a receita de insumos e o preço de venda para indicar a margem exata e alertar contra prejuízos.' },
+                { title: 'Otimizar preços', text: 'Use a análise de custos para ajustar seus preços com base em dados reais, não em achismo.' },
+            ]
+        },
+        {
+            id: 'marketing', icon: '📣', title: 'Comunicação & CRM',
             color: '#9C27B0',
             steps: [
-                { title: 'Portfólio', text: 'Em <b>📸 Portfólio</b>, salve fotos dos seus trabalhos vinculadas a cada cliente. Use a galeria como cartão de visitas digital para novas clientes.' },
-                { title: 'Programa de Fidelidade', text: 'Em <b>💎 Fidelidade</b>, configure pontos por atendimento ou valor gasto. Clientes que acumulam pontos ganham benefícios — isso aumenta a retenção.' },
-                { title: 'Indique e Ganhe', text: 'Em <b>🎁 Indique e Ganhe</b>, configure comissões para quem indicar novas clientes. Cada indicação bem-sucedida gera um crédito automático.' },
+                { title: 'Central Automática na Nuvem', text: 'Ative os lembretes de E-mail e SMS na nuvem. O sistema faz os disparos no background nos horários configurados sem depender do seu celular.' },
+                { title: 'Recargas de SMS instantâneas', text: 'Compre pacotes pré-pagos de SMS na tela via PIX com liberação em segundos. SMS convertem e reduzem faltas em até 85%.' },
+                { title: 'Central de Disparos CRM (Lote)', text: 'No painel administrativo do CRM (admin-convites.html), cadastre contatos e envie comunicados ou campanhas de marketing em massa via E-mail/SMS com placeholders dinâmicos.' },
                 { title: 'Link da Bio', text: 'Em <b>🔗 Link da Bio</b>, gere um micro-site com sua foto, serviços, portfólio e link de agendamento. Coloque no Instagram e WhatsApp.' },
-                { title: 'Avaliações NPS', text: 'Em <b>⭐ Avaliações NPS</b>, envie o link de avaliação após cada atendimento. As respostas ficam salvas para você monitorar a satisfação das clientes.' },
+                { title: 'NPS com cálculo real', text: 'Em <b>⭐ Avaliações</b>, o sistema calcula o NPS real: <b>Promotoras</b> (5★), <b>Neutras</b> (4★) e <b>Detratoras</b> (1-3★). Acompanhe a lealdade da base.' },
+            ]
+        },
+        {
+            id: 'config', icon: '⚙️', title: 'Configurações',
+            color: '#607D8B',
+            steps: [
+                { title: 'Configurar Pagamentos (Asaas)', text: 'Cole sua API Key do Asaas e ative o switch de recebimento online. Suas clientes pagam no cartão/PIX ao agendar online.' },
+                { title: 'Configurar NFS-e (Focus NFe)', text: 'Cole seu Token da Focus NFe, defina o Regime Tributário, alíquota de ISS e CNAE padrão para automatizar as emissões fiscais.' },
+                { title: 'Mensagens pós-atendimento', text: 'Ative ou desative o envio de cuidados pós-procedimento. O sistema inclui templates prontos (Cílios, Sobrancelhas, Micropigmentação, Henna, Lami) que você pode editar.' },
+                { title: 'Templates de WhatsApp', text: 'Personalize os textos de confirmações e lembretes com emojis ou com a linguagem do seu estúdio.' },
             ]
         },
         {
@@ -89,8 +117,8 @@ const Tutorial = {
             color: '#795548',
             steps: [
                 { title: 'Convidar profissional', text: 'Em <b>👥 Equipe</b>, clique em <b>Convidar Profissional</b> e informe o e-mail dela. Ela receberá um convite e terá acesso ao sistema com permissões limitadas.' },
-                { title: 'Permissões', text: 'Profissionais veem Agenda, Clientes, Ficha Técnica e Portfólio. Dados financeiros (Financeiro, Relatórios, Estoque) são exclusivos da proprietária.' },
-                { title: 'Comissões', text: 'Configure o percentual de comissão de cada profissional. O sistema calcula automaticamente com base nos atendimentos registrados.' },
+                { title: 'Permissões e restrições', text: 'Profissionais veem Agenda, Clientes, Ficha Técnica e Portfólio. Dados financeiros (Financeiro, Relatórios, Estoque, Configurações Fiscais) são exclusivos da proprietária.' },
+                { title: 'Comissões automáticas', text: 'Configure o percentual de comissão de cada profissional. O sistema calcula automaticamente com base nos atendimentos concluídos na agenda.' },
             ]
         },
         {
@@ -98,9 +126,9 @@ const Tutorial = {
             color: '#607D8B',
             steps: [
                 { title: '☀️ Manhã — Verifique a agenda', text: 'Abra o <b>Dashboard</b> para ver os agendamentos do dia e quaisquer alertas de estoque antes de começar os atendimentos.' },
-                { title: '🌙 Noite — Lance os recebimentos', text: 'Ao final do dia, registre em <b>Financeiro → Contas a Receber</b> todos os serviços realizados. 5 minutos por dia = controle total no mês.' },
-                { title: '📦 Semanal — Confira o estoque', text: 'Uma vez por semana, revise as quantidades em <b>Estoque</b>. Itens em vermelho = compra urgente. Itens em amarelo = planejamento.' },
-                { title: '📲 Instale no celular', text: 'Ao acessar o sistema pelo Chrome no celular, clique em <b>"Adicionar à tela inicial"</b>. O LashBrow funciona como um app — rápido e offline!' },
+                { title: '🌙 Noite — Conclua os atendimentos', text: 'Marcar os agendamentos como concluídos no final do dia garante que o financeiro, comissões de equipe e a baixa do estoque fiquem 100% redondos.' },
+                { title: '📦 Semanal — Auditoria de Estoque', text: 'Realize contagens físicas semanais nas auditorias para identificar desvios ou perdas e manter o calculador de custos afiado.' },
+                { title: '📲 Instale no celular', text: 'Ao acessar o sistema pelo Chrome no celular, clique em <b>"Adicionar à tela inicial"</b>. O Studio Beauty funciona como um app — rápido e offline!' },
             ]
         },
     ],
@@ -114,7 +142,7 @@ const Tutorial = {
           <!-- Hero -->
           <div style="background:linear-gradient(135deg,#c4756a,#a0506a);border-radius:16px;padding:28px 32px;color:#fff;position:relative;overflow:hidden">
             <div style="position:absolute;right:-20px;top:-20px;font-size:100px;opacity:0.1">📖</div>
-            <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 6px">Guia de Uso — LashBrow</h1>
+            <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 6px">Guia de Uso — Studio Beauty</h1>
             <p style="opacity:0.9;font-size:0.92rem;margin:0">Aprenda a usar cada funcionalidade do sistema para organizar seu studio e aumentar seus resultados.</p>
             <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <span style="background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:20px;font-size:0.8rem">✅ ${Tutorial._sections.reduce((a,s)=>a+s.steps.length,0)} passos</span>
@@ -162,7 +190,7 @@ const Tutorial = {
             <div style="font-size:2rem">💬</div>
             <div style="font-weight:700;font-size:1rem;margin:8px 0 4px;color:var(--text-primary)">Ainda tem dúvidas?</div>
             <p style="font-size:0.86rem;color:var(--text-secondary);margin:0 0 16px">Nossa equipe está pronta para te ajudar pelo WhatsApp.</p>
-            <a href="https://wa.me/5537991208394?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20o%20LashBrow." target="_blank"
+            <a href="https://wa.me/5537991208394?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20o%20Studio%20Beauty." target="_blank"
                style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#25D366;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.92rem">
               <span class="material-symbols-outlined">chat</span> Falar com o Suporte
             </a>
@@ -202,3 +230,6 @@ const Tutorial = {
         }
     }
 };
+
+// Garantir que Tutorial esteja disponível no escopo global
+window.Tutorial = Tutorial;

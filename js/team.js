@@ -70,7 +70,15 @@ const Team = {
 
     canAccess(page) {
         if (Team.isOwner()) return true;
-        if (Team.isProfessional()) return Team.professionalPages.includes(page);
+        if (Team.isProfessional()) {
+            if (Team.profData && Team.profData.permissions) {
+                const hasPerm = Team.profData.permissions[page];
+                if (hasPerm !== undefined) {
+                    return !!hasPerm;
+                }
+            }
+            return Team.professionalPages.includes(page);
+        }
         return false;
     },
 
@@ -79,9 +87,31 @@ const Team = {
         const uid = Team.getStudioUid();
         const snap = await db.collection('professionals')
             .where('ownerId', '==', uid)
-            .orderBy('name')
             .get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        const uniqueMembers = [];
+        const seenEmails = new Set();
+        
+        // Ordena para que os registros ativos com UID real (sem inviteId) venham primeiro
+        members.sort((a, b) => {
+            const aIsReal = !a.inviteId ? 1 : 0;
+            const bIsReal = !b.inviteId ? 1 : 0;
+            return bIsReal - aIsReal;
+        });
+        
+        for (const m of members) {
+            if (m.status !== 'active') continue;
+            if (!seenEmails.has(m.email)) {
+                seenEmails.add(m.email);
+                uniqueMembers.push(m);
+            }
+        }
+        
+        // Re-ordena por nome
+        uniqueMembers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        return uniqueMembers;
     },
 
     async getTeamLimit() {
@@ -156,6 +186,9 @@ const Team = {
 
     async activateProfessional(profDocId, authUid) {
         // Chamado quando um profissional faz login e encontra seu convite pelo email
+        const inviteDoc = await db.collection('professionals').doc(profDocId).get();
+        const inviteData = inviteDoc.exists ? inviteDoc.data() : {};
+
         await db.collection('professionals').doc(profDocId).update({
             authUid: authUid,
             status: 'active',
@@ -164,12 +197,13 @@ const Team = {
 
         // Cria documento com o UID real para lookup rápido
         await db.collection('professionals').doc(authUid).set({
-            ownerId: (await db.collection('professionals').doc(profDocId).get()).data().ownerId,
-            name: (await db.collection('professionals').doc(profDocId).get()).data().name,
-            email: (await db.collection('professionals').doc(profDocId).get()).data().email,
-            phone: (await db.collection('professionals').doc(profDocId).get()).data().phone || '',
+            ownerId: inviteData.ownerId || '',
+            name: inviteData.name || '',
+            email: inviteData.email || '',
+            phone: inviteData.phone || '',
             role: 'professional',
             status: 'active',
+            permissions: inviteData.permissions || null,
             originalInviteId: profDocId,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -241,6 +275,7 @@ const Team = {
                 phone: inviteData.phone || '',
                 role: 'professional',
                 status: 'active',
+                permissions: inviteData.permissions || null,
                 originalInviteId: inviteDoc.id,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });

@@ -61,7 +61,7 @@ const StudioProfile = {
                   <input class="form-control" id="s-address" value="${comp.address || ''}" placeholder="Rua, número, bairro">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Chave PIX (Bolsa LashBrow)</label>
+                  <label class="form-label">Chave PIX (Bolsa Studio Beauty)</label>
                   <input class="form-control" id="s-pix" value="${comp.pixKey || ''}" placeholder="CPF, CNPJ, e-mail ou telefone">
                 </div>
               </div>
@@ -79,7 +79,7 @@ const StudioProfile = {
               <span class="material-symbols-outlined">workspace_premium</span>
               <div>
                 <h3 class="settings-section-title">Meu Plano</h3>
-                <p class="settings-section-sub">Gerencie sua assinatura LashBrow</p>
+                <p class="settings-section-sub">Gerencie sua assinatura Studio Beauty</p>
               </div>
             </div>
             <div class="settings-section-body">
@@ -102,7 +102,7 @@ const StudioProfile = {
                     <li>✓ Controle de estoque 📦</li>
                     <li>✓ Financeiro básico</li>
                   </ul>
-                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Solo+LashBrow" target="_blank" class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px">Assinar</a>
+                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Solo+Studio+Beauty" target="_blank" class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px">Assinar</a>
                 </div>
                 <div class="settings-plan-card settings-plan-featured">
                   <div class="settings-plan-badge-top">Mais Popular ✨</div>
@@ -112,10 +112,10 @@ const StudioProfile = {
                   <ul class="settings-plan-features">
                     <li>✓ Tudo do Solo</li>
                     <li>✓ Equipe até 3</li>
-                    <li>✓ Bolsa LashBrow</li>
+                    <li>✓ Bolsa Studio Beauty</li>
                     <li>✓ Programa de Indicações</li>
                   </ul>
-                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Studio+LashBrow" target="_blank" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">Assinar</a>
+                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Studio+Studio+Beauty" target="_blank" class="btn btn-primary btn-sm" style="width:100%;margin-top:12px">Assinar</a>
                 </div>
                 <div class="settings-plan-card">
                   <div class="settings-plan-name">Premium</div>
@@ -126,7 +126,7 @@ const StudioProfile = {
                     <li>✓ Relatórios avançados</li>
                     <li>✓ Suporte prioritário</li>
                   </ul>
-                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Premium+LashBrow" target="_blank" class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px">Assinar</a>
+                  <a href="https://wa.me/5511999999999?text=Quero+assinar+o+plano+Premium+Studio+Beauty" target="_blank" class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px">Assinar</a>
                 </div>
               </div>
             </div>

@@ -17,6 +17,9 @@ const PageHelp = {
                 { title: 'Confirmar atendimento', text: 'Mude o status para <b>Confirmado</b> após a cliente confirmar. Use <b>Concluído</b> após o serviço — isso alimenta os relatórios.' },
                 { title: 'Visão semanal e diária', text: 'Alterne entre semana e dia no topo da agenda. No celular, a visão diária é mais prática.' },
                 { title: 'Agenda Online', text: 'Ative o link de agendamento público em <b>📅 Agenda Online</b> para que clientes marquem sozinhas.' },
+                { title: 'Arrastar para reagendar', text: 'Na visão semanal, arraste um agendamento para outro dia. O horário original é preservado automaticamente.' },
+                { title: 'Cuidados pós-procedimento', text: 'Ao marcar <b>Concluído</b>, o sistema oferece envio de cuidados via WhatsApp. Templates personalizáveis em <b>Configurações</b>.' },
+                { title: 'Exportar Excel', text: 'Clique em <b>Exportar</b> para baixar a agenda da semana/mês em formato Excel.' },
             ]
         },
         clients: {
@@ -26,6 +29,9 @@ const PageHelp = {
                 { title: 'Buscar cliente', text: 'Use a barra de busca para encontrar pelo nome ou telefone. Funciona mesmo com nome parcial.' },
                 { title: 'Data de nascimento', text: 'Cadastre a data de nascimento para que a cliente apareça em <b>🎂 Aniversariantes</b>.' },
                 { title: 'Observações importantes', text: 'Use o campo de observações para registrar alergias, preferências e particularidades. Aparece na Ficha Técnica.' },
+                { title: 'Aba Retenção', text: 'Clique em <b>📈 Retenção</b> para ver taxa de retorno, clientes inativos, churn e Top 10 fiéis. Use <b>📲 Reconquistar</b> para enviar mensagem de retorno.' },
+                { title: 'Paginação', text: 'O sistema carrega 50 clientes por vez. Clique em <b>Carregar mais</b> para ver os próximos. A busca funciona em toda a base.' },
+                { title: 'Máscara de telefone', text: 'O campo de telefone formata automaticamente para <b>(00) 00000-0000</b>. Basta digitar os números.' },
             ]
         },
         ficha: {
@@ -122,9 +128,9 @@ const PageHelp = {
         loyalty: {
             icon: '💎', color: '#9C27B0', title: 'Programa de Fidelidade',
             tips: [
-                { title: 'Configurar programa', text: 'Defina quantos pontos cada serviço gera e qual o benefício ao atingir a meta de pontos.' },
-                { title: 'Saldo das clientes', text: 'Cada cliente acumula pontos automaticamente a cada atendimento registrado.' },
-                { title: 'Resgatar benefício', text: 'Ao aplicar desconto de fidelidade, clique em <b>Resgatar</b> para debitar os pontos da cliente.' },
+                { title: 'Programa individual', text: 'Cada cliente acumula visitas individualmente. Ao atingir o número configurado, ela ganha a recompensa automaticamente.' },
+                { title: 'Configurar meta', text: 'Defina o <b>número de visitas</b> para a recompensa e qual <b>benefício</b> a cliente recebe (ex: 10ª sessão grátis, 20% de desconto).' },
+                { title: 'Progresso no perfil', text: 'O progresso de fidelidade aparece no <b>drawer do perfil</b> de cada cliente. Ao concluir um agendamento, o sistema verifica se a meta foi atingida.' },
             ]
         },
         team: {
@@ -139,7 +145,7 @@ const PageHelp = {
             icon: '⭐', color: '#FF9800', title: 'Avaliações NPS',
             tips: [
                 { title: 'Enviar link de avaliação', text: 'Após cada atendimento, clique em <b>Enviar Link</b> para a cliente receber o formulário de satisfação.' },
-                { title: 'Interpretar o NPS', text: 'Acima de 70 é excelente. Entre 50-70 é bom. Abaixo de 50, investigue o que melhorar.' },
+                { title: 'NPS real', text: 'O sistema calcula o NPS: <b>Promotoras</b> (5★) - <b>Detratoras</b> (1-3★). Zonas: ≥75 Excelência, ≥50 Qualidade, ≥0 Aperfeiçoamento, <0 Crítica.' },
                 { title: 'Atenção às críticas', text: 'Clientes insatisfeitas merecem atenção rápida. Use o WhatsApp para resolver e reconquistar.' },
             ]
         },
@@ -189,6 +195,22 @@ const PageHelp = {
                 { title: 'Compartilhe seu link', text: 'Envie o link exclusivo de indicação pelo WhatsApp para colegas lashistas.' },
                 { title: 'Acompanhar indicações', text: 'O painel mostra quantas indicações estão pendentes e quantas foram convertidas em assinantes.' },
                 { title: 'Como é o pagamento', text: 'R$ 30,00 por indicação convertida. Pagamento via PIX todo dia 05 do mês seguinte.' },
+            ]
+        },
+        settings: {
+            icon: '⚙️', color: '#607D8B', title: 'Configurações',
+            tips: [
+                { title: 'Mensagens pós-atendimento', text: 'Ative/desative o envio automático de cuidados via WhatsApp. Personalize os 6 templates para cada tipo de procedimento.' },
+                { title: 'Templates editáveis', text: 'Cada procedimento tem um template padrão que pode ser editado. Use <b>🔄 Restaurar padrão</b> para voltar ao texto original.' },
+                { title: 'Link de avaliação', text: 'Configure e copie o link de avaliação NPS para enviar às clientes após cada atendimento.' },
+            ]
+        },
+        'cost-calc': {
+            icon: '🧮', color: '#FF5722', title: 'Análise de Custos',
+            tips: [
+                { title: 'Criar análise', text: 'Selecione o procedimento, adicione os produtos utilizados e suas quantidades. O sistema calcula o custo total automático.' },
+                { title: 'Margem de lucro', text: 'Compare o custo dos insumos com o valor cobrado para saber sua margem real por serviço.' },
+                { title: 'Produtos do estoque', text: 'A análise puxa os preços do seu <b>Estoque</b>. Mantenha os custos atualizados para cálculos precisos.' },
             ]
         },
     },

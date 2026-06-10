@@ -229,6 +229,11 @@
       border-top-color: #C4758A; border-radius: 50%; animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .bk-spin {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
 
     .bk-logo-text {
       font-size: 1.3rem; font-weight: 800;
@@ -366,6 +371,50 @@
         <button class="btn-primary" id="btn-confirm" onclick="Booking.confirm()">
           Confirmar Agendamento ✨
         </button>
+      </div>
+    </div>
+
+    <!-- Payment Choice (hidden by default, shown if payment is enabled) -->
+    <div class="booking-card" id="bk-payment-choice" style="display:none">
+      <div class="booking-card-title">
+        <span class="material-symbols-outlined">payment</span>
+        Deseja pagar agora?
+      </div>
+
+      <div style="font-size:0.88rem;color:var(--text-muted);margin-bottom:16px">
+        Seu agendamento foi salvo! Você pode garantir seu horário pagando agora ou pagar no dia do atendimento.
+      </div>
+
+      <div class="booking-summary" style="margin-bottom:16px">
+        <div class="summary-row">
+          <span class="summary-label">Serviço</span>
+          <span class="summary-value" id="bk-pay-service"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Data/Horário</span>
+          <span class="summary-value" id="bk-pay-date"></span>
+        </div>
+        <div class="summary-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+          <span class="summary-label">Valor</span>
+          <span class="summary-value" style="color:var(--gold);font-size:1.1rem" id="bk-pay-amount"></span>
+        </div>
+      </div>
+
+      <!-- Política de cancelamento -->
+      <div id="bk-pay-policy" style="display:none;font-size:0.78rem;color:var(--text-muted);background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;border-left:3px solid var(--gold)"></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn-primary" id="btn-pay-now" onclick="Booking.payNow()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+          💳 Pagar agora e garantir meu horário
+        </button>
+        <button class="btn-ghost" onclick="Booking.skipPayment()">
+          Prefiro pagar no dia do atendimento
+        </button>
+      </div>
+
+      <div style="text-align:center;margin-top:12px;font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:4px">
+        <span class="material-symbols-outlined" style="font-size:0.85rem">lock</span>
+        Pagamento seguro via Asaas (PIX, cartão ou boleto)
       </div>
     </div>
 

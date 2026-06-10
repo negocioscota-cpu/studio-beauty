@@ -34,7 +34,7 @@ const Referrals = {
                 navigator.clipboard.writeText(link).then(() => App.showToast('Link copiado!', 'success'));
             });
             document.getElementById('btn-share-whatsapp')?.addEventListener('click', () => {
-                const msg = encodeURIComponent(`✨ Conheça o LashBrow — gestão completa para designers de cílios e sobrancelhas! Cadastre-se pelo meu link: ${link}`);
+                const msg = encodeURIComponent(`✨ Conheça o Studio Beauty — gestão completa para designers de cílios e sobrancelhas! Cadastre-se pelo meu link: ${link}`);
                 window.open(`https://wa.me/?text=${msg}`, '_blank');
             });
 

@@ -51,30 +51,24 @@ const App = {
             'booking-online': '📅 Agenda Online',
             'notifications-config': '🔔 Notificações e Lembretes',
             'bio-link':   '🔗 Link da Bio',
-            tutorial:     '📖 Guia de Uso'
+            tutorial:     '📖 Guia de Uso',
+            settings:     '⚙️ Configurações',
+            'cost-calc':  '🧮 Calculadora de Custo'
         };
         document.getElementById('topbar-title').textContent = titles[page] || page;
 
         // Atualiza ícone de ajuda contextual
         if (typeof PageHelp !== 'undefined') PageHelp.update(page);
 
-        // 🔒 Guard de acesso — bloquear páginas owner-only para profissionais
-        // Páginas exclusivas da proprietária — profissionais verão tela de "Acesso Restrito"
-        const ownerOnlyPages = [
-            'dashboard', 'reports', 'invoices', 'inventory', 'catalog',
-            'bolsa-beleza', 'referrals', 'loyalty', 'team',
-            'studio-profile', 'business-hours', 'booking-online',
-            'notifications-config', 'bio-link', 'reviews'
-        ];
-        if (typeof Team !== 'undefined' && Team.isProfessional() && ownerOnlyPages.includes(page)) {
+        if (typeof Team !== 'undefined' && Team.isProfessional() && !Team.canAccess(page)) {
             const content = document.getElementById('page-content');
             content.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;text-align:center">
                     <span class="material-symbols-outlined" style="font-size:64px;color:var(--primary);opacity:0.5">lock</span>
                     <h3 style="margin-top:16px;color:var(--text-primary)">Acesso Restrito</h3>
                     <p style="color:var(--text-secondary);margin-top:8px;max-width:360px">
-                        Esta página é exclusiva para a proprietária do studio.
-                        Você tem acesso a Agenda, Clientes, Ficha Técnica, Portfólio e outros módulos operacionais.
+                        Você não tem permissão para acessar esta página.
+                        Se precisar de acesso, solicite à proprietária do estúdio.
                     </p>
                     <button class="btn btn-primary" onclick="App.navigate('schedule')" style="margin-top:20px">
                         <span class="material-symbols-outlined">event</span> Ir para Agenda
@@ -114,6 +108,8 @@ const App = {
                 case 'notifications-config': await NotificationsConfig.render(content); break;
                 case 'bio-link':             await BioLink.render(content); break;
                 case 'tutorial':             Tutorial.render(content); break;
+                case 'settings':             await Settings.render(content); break;
+                case 'cost-calc':            await CostCalc.render(content); break;
                 default:             content.innerHTML = '<p>Página não encontrada</p>';
             }
         } catch (err) {
@@ -151,7 +147,7 @@ const App = {
                 <h2 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px">Indique e Ganhe!</h2>
               </div>
               <p style="font-size:1.05rem;line-height:1.7;opacity:0.95;margin-bottom:20px">
-                Convide colegas lashistas para usar o LashBrow e <strong>receba R$ 30,00 por cada indicação</strong> que se tornar assinante!
+                Convide colegas lashistas para usar o Studio Beauty e <strong>receba R$ 30,00 por cada indicação</strong> que se tornar assinante!
               </p>
               <div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:20px;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15)">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">

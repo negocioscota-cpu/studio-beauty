@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Studio Beauty — Controle de Indicações e Pagamentos</title>
+  <link rel="icon" href="img/logo-studio-beauty.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --primary: #C4758A; --primary-dark: #9E4F65; --primary-light: #F0B8C8;
+      --gold: #C9A96E; --gold-light: #EDD9B0;
+      --bg: #0b050f; --bg-card: #12071a; --surface: #1a0e24; --surface-light: #221333;
+      --border: rgba(255,255,255,0.06);
+      --text: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-full: 9999px;
+      --transition: 0.25s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Header */
+    .admin-header {
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+      padding: 20px 5%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .admin-header h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .admin-header h1 span { color: var(--gold); }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Login Gate */
+    .login-gate {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at center, #1a0e24 0%, #0b050f 70%);
+    }
+    .login-box {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl);
+      padding: 48px 36px; max-width: 400px; width: 90%; text-align: center;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+    .login-box h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .login-box h2 span { color: var(--gold); }
+    .login-box p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 24px; }
+    .gate-error { color: var(--danger); font-size: 0.82rem; margin-top: 12px; display: none; font-weight: 600; }
+
+    /* Containers */
+    .container { max-width: 1300px; margin: 0 auto; padding: 32px 5%; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 28px; margin-bottom: 24px;
+    }
+    .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+    /* KPI Row */
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 20px; text-align: center;
+    }
+    .kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 2rem; font-weight: 900; }
+    .kpi-value.gold { color: var(--gold); }
+    .kpi-value.green { color: var(--success); }
+    .kpi-value.rose { color: var(--primary-light); }
+    .kpi-value.warn { color: var(--warning); }
+
+    /* Forms */
+    .form-control {
+      width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); color: var(--text); font-size: 0.88rem; font-family: inherit;
+      transition: border-color var(--transition);
+    }
+    .form-control:focus { outline: none; border-color: var(--gold); }
+    select.form-control { appearance: none; cursor: pointer; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
+    }
+    .toolbar .form-control { max-width: 260px; }
+    .toolbar select { max-width: 200px; }
+
+    /* Filter pills */
+    .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 8px 16px; border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all var(--transition); border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-muted);
+    }
+    .filter-pill.active { background: rgba(201,169,110,0.15); border-color: rgba(201,169,110,0.4); color: var(--gold-light); }
+    .filter-pill:hover { border-color: rgba(201,169,110,0.3); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .custom-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 900px; }
+    .custom-table thead th {
+      text-align: left; padding: 14px 16px; background: var(--surface);
+      color: var(--text-muted); font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border);
+    }
+    .custom-table tbody td {
+      padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle;
+    }
+    .custom-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    /* Checkbox */
+    .row-checkbox { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; }
+
+    /* Badges */
+    .badge { padding: 4px 12px; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-pending { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-converted { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-paid { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-plan { background: rgba(201,169,110,0.12); color: var(--gold-light); border: 1px solid rgba(201,169,110,0.3); }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 8px; border: none;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--gold) 0%, #9A7535 100%); color: #fff; box-shadow: 0 4px 16px rgba(201,169,110,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,169,110,0.4); }
+    .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold-light); }
+    .btn-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .btn-success:hover { background: rgba(16,185,129,0.25); }
+    .btn-danger { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; font-size: 0.78rem; padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; transition: all var(--transition); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* Spinner */
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Payment Summary Box */
+    .payment-summary {
+      background: linear-gradient(135deg, rgba(201,169,110,0.08), rgba(201,169,110,0.02));
+      border: 1px solid rgba(201,169,110,0.2); border-radius: var(--radius-md);
+      padding: 20px; margin-bottom: 20px;
+    }
+    .payment-summary h4 { font-size: 0.9rem; font-weight: 700; color: var(--gold-light); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .payment-summary .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.85rem; }
+    .payment-summary .summary-row:last-child { border-bottom: none; font-weight: 700; font-size: 0.95rem; }
+    .payment-summary .summary-label { color: var(--text-muted); }
+    .payment-summary .summary-value { color: var(--text); font-weight: 600; }
+    .payment-summary .summary-value.highlight { color: var(--gold-light); font-size: 1.1rem; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text);
+      padding: 14px 28px; border-radius: var(--radius-full);
+      font-size: 0.88rem; font-weight: 600; z-index: 9999;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5); transition: all 0.4s ease; opacity: 0;
+      pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { flex-direction: column; }
+      .toolbar .form-control, .toolbar select { max-width: 100%; }
+      .header-actions { width: 100%; }
+      .header-actions .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============= LOGIN GATE ============= -->
+<div id="login-gate" class="login-gate">
+  <div class="login-box">
+    <div style="font-size:3rem;margin-bottom:16px">💰</div>
+    <h2>Controle de <span>Indicações</span></h2>
+    <p>Painel administrativo para gestão de pagamentos do programa Indique e Ganhe.</p>
+    <input class="form-control" type="password" id="admin-pin-input" placeholder="PIN de segurança" style="text-align:center;font-size:1.1rem;letter-spacing:3px;margin-bottom:12px"/>
+    <button class="btn btn-primary" id="btn-admin-enter" style="width:100%;justify-content:center;margin-top:8px">
+      <span class="material-symbols-outlined" style="font-size:18px">lock_open</span>
+      Acessar Painel
+    </button>
+    <div id="gate-error" class="gate-error"></div>
+  </div>
+</div>
+
+<!-- ============= APP ============= -->
+<div id="admin-app" style="display:none">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <h1>
+      <span class="material-symbols-outlined" style="font-size:28px">loyalty</span>
+      Controle de <span>Indicações & Pagamentos</span>
+    </h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="btn-export-csv">
+        <span class="material-symbols-outlined" style="font-size:18px">download</span>
+        Exportar CSV
+      </button>
+      <button class="btn btn-ghost" id="btn-logout">
+        <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+        Sair
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de Indicações</div>
+        <div class="kpi-value rose" id="kpi-total">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pendentes de Assinatura</div>
+        <div class="kpi-value warn" id="kpi-pending">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Convertidas (assinaram)</div>
+        <div class="kpi-value" style="color:var(--info)" id="kpi-converted">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Já Pagos</div>
+        <div class="kpi-value green" id="kpi-paid">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total a Pagar (pendente)</div>
+        <div class="kpi-value gold" id="kpi-total-pay">R$ 0,00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total já Pago</div>
+        <div class="kpi-value green" id="kpi-total-paid">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div class="payment-summary" id="payment-summary" style="display:none">
+      <h4>
+        <span class="material-symbols-outlined" style="font-size:20px">account_balance</span>
+        Resumo de Pagamento — Selecionados
+      </h4>
+      <div id="payment-summary-content"></div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-success" id="btn-mark-paid">
+          <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
+          Marcar Selecionados como PAGO
+        </button>
+        <button class="btn btn-ghost" id="btn-export-selected">
+          <span class="material-symbols-outlined" style="font-size:18px">download</span>
+          Exportar Selecionados (CSV)
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <h3>
+        <span class="material-symbols-outlined" style="color:var(--gold)">list_alt</span>
+        Indicações Registradas
+      </h3>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="search-box" style="position:relative;flex:1;min-width:200px">
+          <span class="material-symbols-outlined" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--text-muted)">search</span>
+          <input class="form-control" id="search-input" placeholder="Buscar por nome, email ou código..." style="padding-left:40px"/>
+        </div>
+        <div class="filter-pills" id="status-filters">
+          <div class="filter-pill active" data-filter="all">Todos</div>
+          <div class="filter-pill" data-filter="pending">⏳ Pendentes</div>
+          <div class="filter-pill" data-filter="converted">✓ Convertidas</div>
+          <div class="filter-pill" data-filter="paid">💰 Pagos</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="row-checkbox" id="select-all" title="Selecionar todos"/></th>
+              <th>Quem Indicou (Studio)</th>
+              <th>E-mail / PIX</th>
+              <th>Código</th>
+              <th>Indicada(o)</th>
+              <th>Data</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="referrals-tbody">
+            <tr><td colspan="9" class="text-center" style="padding:48px;color:var(--text-muted)">
+              <div class="spinner"></div>
+              <div style="margin-top:16px">Carregando indicações...</div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+
+<script>
+  const ADMIN_PIN = 'lash@2026';
+  const SESSION_KEY = 'studiobeauty_admin_indicacoes_ok';
+
+  let allReferrals = [];
+  let studiosCache = {};
+
+  // ─── Session ─────────────────────────────────────────────────────
+  function checkSession() {
+    if (sessionStorage.getItem(SESSION_KEY) === '1') {
+      showApp();
+    } else {
+      document.getElementById('login-gate').style.display = 'flex';
+      document.getElementById('admin-app').style.display = 'none';
+      setTimeout(() => document.getElementById('admin-pin-input').focus(), 150);
+    }
+  }
+
+  function showApp() {
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'block';
+    loadReferrals();
+  }
+
+  document.getElementById('btn-admin-enter').addEventListener('click', () => {
+    const pin = document.getElementById('admin-pin-input').value.trim();
+    if (pin === ADMIN_PIN) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      showApp();
+      showToast('🔑 Bem-vindo ao painel de indicações!');
+    } else {
+      const el = document.getElementById('gate-error');
+      el.textContent = 'PIN incorreto. Tente novamente.';
+      el.style.display = 'block';
+      document.getElementById('admin-pin-input').value = '';
+      document.getElementById('admin-pin-input').focus();
+    }
+  });
+
+  document.getElementById('admin-pin-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-admin-enter').click();
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('login-gate').style.display = 'flex';
+    document.getElementById('admin-app').style.display = 'none';
+    showToast('🚪 Sessão encerrada.');
+  });
+
+  // ─── Load Referrals ──────────────────────────────────────────────
+  async function loadReferrals() {
+    const tbody = document.getElementById('referrals-tbody');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text-muted)"><div class="spinner"></div><div style="margin-top:16px">Carregando indicações...</div></td></tr>';
+
+    try {
+      // Load all studios for name/email lookup
+      const studiosSnap = await db.collection('studios').get();
+      studiosCache = {};
+      studiosSnap.forEach(doc => {
+        const d = doc.data();
+        studiosCache[doc.id] = {
+          name: d.studioName || d.name || d.ownerName || '—',
+          email: d.email || d.ownerEmail || '—',
+          phone: d.phone || d.ownerPhone || '',
+          pix: d.pixKey || d.email || '',
+          plan: d.plan || '—',
+          referralCode: d.referralCode || ''
+        };
+      });
+
+      // Load all referral payments
+      const snap = await db.collection('referral_payments').orderBy('createdAt', 'desc').get();
+      allReferrals = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      updateKPIs();
+      renderTable();
+
+    } catch (err) {
+      console.error('Erro ao carregar indicações:', err);
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--danger)">${err.message}</td></tr>`;
+    }
+  }
+
+  // ─── KPIs ────────────────────────────────────────────────────────
+  function updateKPIs() {
+    const pending = allReferrals.filter(r => r.status === 'pending');
+    const converted = allReferrals.filter(r => r.status === 'converted');
+    const paid = allReferrals.filter(r => r.status === 'paid');
+    const toPay = [...pending, ...converted];
+
+    document.getElementById('kpi-total').textContent = allReferrals.length;
+    document.getElementById('kpi-pending').textContent = pending.length;
+    document.getElementById('kpi-converted').textContent = converted.length;
+    document.getElementById('kpi-paid').textContent = paid.length;
+
+    const totalToPay = toPay.reduce((s, r) => s + (r.bonusAmount || 30), 0);
+    const totalPaid = paid.reduce((s, r) => s + (r.bonusAmount || 30), 0);
+
+    document.getElementById('kpi-total-pay').textContent = `R$ ${totalToPay.toFixed(2).replace('.', ',')}`;
+    document.getElementById('kpi-total-paid').textContent = `R$ ${totalPaid.toFixed(2).replace('.', ',')}`;
+  }
+
+  // ─── Render Table ────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('referrals-tbody');
+    const search = document.getElementById('search-input').value.toLowerCase().trim();
+    const filter = document.querySelector('#status-filters .filter-pill.active').getAttribute('data-filter');
+
+    const filtered = allReferrals.filter(r => {
+      if (filter !== 'all' && r.status !== filter) return false;
+      if (search) {
+        const studio = studiosCache[r.referrerId] || {};
+        const haystack = [
+          studio.name, studio.email, r.referrerCode, r.referredEmail
+        ].join(' ').toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text-muted)"><div style="font-size:2.5rem;margin-bottom:8px">🔍</div>Nenhuma indicação encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(r => {
+      const studio = studiosCache[r.referrerId] || {};
+      const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('pt-BR') : '—';
+      const paidDate = r.paidAt?.toDate ? r.paidAt.toDate().toLocaleDateString('pt-BR') : '';
+      const amount = r.bonusAmount || 30;
+
+      const statusBadge = {
+        pending:   '<span class="badge badge-pending">⏳ Pendente</span>',
+        converted: '<span class="badge badge-converted">✓ Convertida</span>',
+        paid:      '<span class="badge badge-paid">💰 Pago' + (paidDate ? ` (${paidDate})` : '') + '</span>'
+      }[r.status] || r.status;
+
+      const actionsHTML = r.status !== 'paid'
+        ? `<button class="btn-danger" onclick="markSinglePaid('${r.id}')" title="Marcar como pago">💰 Pagar</button>`
+        : `<span style="color:var(--success);font-size:0.78rem;font-weight:600">✓ Quitado</span>`;
+
+      return `<tr data-id="${r.id}">
+        <td><input type="checkbox" class="row-checkbox row-cb" value="${r.id}" onchange="updatePaymentSummary()" ${r.status === 'paid' ? 'disabled' : ''}/></td>
+        <td><strong>${studio.name}</strong></td>
+        <td style="font-size:0.82rem">${studio.email}<br><span style="color:var(--text-muted);font-size:0.75rem">PIX: ${studio.pix || studio.email}</span></td>
+        <td><span class="badge badge-plan">${r.referrerCode || '—'}</span></td>
+        <td>${r.referredEmail || '—'}</td>
+        <td>${date}</td>
+        <td><strong style="color:var(--gold-light)">R$ ${amount.toFixed(2).replace('.', ',')}</strong></td>
+        <td>${statusBadge}</td>
+        <td>${actionsHTML}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ─── Filters & Search ───────────────────────────────────────────
+  document.querySelectorAll('#status-filters .filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#status-filters .filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      renderTable();
+    });
+  });
+  document.getElementById('search-input').addEventListener('input', () => renderTable());
+
+  // ─── Select All ──────────────────────────────────────────────────
+  document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.row-cb:not(:disabled)').forEach(cb => { cb.checked = this.checked; });
+    updatePaymentSummary();
+  });
+
+  // ─── Payment Summary ────────────────────────────────────────────
+  function updatePaymentSummary() {
+    const selected = getSelectedIds();
+    const box = document.getElementById('payment-summary');
+
+    if (selected.length === 0) {
+      box.style.display = 'none';
+      return;
+    }
+
+    box.style.display = 'block';
+
+    // Group by referrer
+    const byReferrer = {};
+    selected.forEach(id => {
+      const ref = allReferrals.find(r => r.id === id);
+      if (!ref) return;
+      const key = ref.referrerId;
+      if (!byReferrer[key]) byReferrer[key] = { items: [], total: 0 };
+      byReferrer[key].items.push(ref);
+      byReferrer[key].total += (ref.bonusAmount || 30);
+    });
+
+    let html = '';
+    let grandTotal = 0;
+    for (const uid in byReferrer) {
+      const studio = studiosCache[uid] || {};
+      const group = byReferrer[uid];
+      grandTotal += group.total;
+      html += `<div class="summary-row">
+        <span class="summary-label">${studio.name} (${group.items.length} indicaç${group.items.length > 1 ? 'ões' : 'ão'}) — PIX: ${studio.pix || studio.email}</span>
+        <span class="summary-value">R$ ${group.total.toFixed(2).replace('.', ',')}</span>
+      </div>`;
+    }
+    html += `<div class="summary-row">
+      <span class="summary-label" style="color:var(--gold-light);font-weight:700">TOTAL A PAGAR</span>
+      <span class="summary-value highlight">R$ ${grandTotal.toFixed(2).replace('.', ',')}</span>
+    </div>`;
+
+    document.getElementById('payment-summary-content').innerHTML = html;
+  }
+
+  function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.row-cb:checked')).map(cb => cb.value);
+  }
+
+  // ─── Mark as Paid ────────────────────────────────────────────────
+  document.getElementById('btn-mark-paid').addEventListener('click', async () => {
+    const ids = getSelectedIds();
+    if (ids.length === 0) { showToast('⚠️ Selecione indicações para marcar como pagas.'); return; }
+
+    const confirm_ = confirm(`Confirmar pagamento de ${ids.length} indicaç${ids.length > 1 ? 'ões' : 'ão'}?\n\nEsta ação marcará como PAGO no sistema.`);
+    if (!confirm_) return;
+
+    const btn = document.getElementById('btn-mark-paid');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Processando...';
+
+    try {
+      const batch = db.batch();
+      ids.forEach(id => {
+        batch.update(db.collection('referral_payments').doc(id), {
+          status: 'paid',
+          paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+          paidBy: 'admin'
+        });
+      });
+      await batch.commit();
+
+      showToast(`✅ ${ids.length} indicaç${ids.length > 1 ? 'ões marcadas' : 'ão marcada'} como PAGA(S)!`);
+      await loadReferrals();
+      document.getElementById('payment-summary').style.display = 'none';
+    } catch (err) {
+      showToast('❌ Erro: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">check_circle</span> Marcar Selecionados como PAGO';
+    }
+  });
+
+  async function markSinglePaid(id) {
+    if (!confirm('Confirmar pagamento desta indicação?')) return;
+    try {
+      await db.collection('referral_payments').doc(id).update({
+        status: 'paid',
+        paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paidBy: 'admin'
+      });
+      showToast('✅ Marcado como pago!');
+      await loadReferrals();
+    } catch (err) {
+      showToast('❌ Erro: ' + err.message);
+    }
+  }
+
+  // ─── Export CSV ──────────────────────────────────────────────────
+  function exportCSV(items, filename) {
+    if (items.length === 0) { showToast('⚠️ Nenhum item para exportar.'); return; }
+    const BOM = '\uFEFF';
+    const header = 'Studio,E-mail Studio,PIX,Código,Indicada(o),Data Indicação,Valor,Status,Data Pagamento\n';
+    const rows = items.map(r => {
+      const studio = studiosCache[r.referrerId] || {};
+      const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('pt-BR') : '';
+      const paidDate = r.paidAt?.toDate ? r.paidAt.toDate().toLocaleDateString('pt-BR') : '';
+      const amount = (r.bonusAmount || 30).toFixed(2).replace('.', ',');
+      return `"${studio.name}","${studio.email}","${studio.pix || studio.email}","${r.referrerCode || ''}","${r.referredEmail || ''}","${date}","R$ ${amount}","${r.status}","${paidDate}"`;
+    }).join('\n');
+
+    const csv = BOM + header + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    showToast(`📥 Exportados ${items.length} registros.`);
+  }
+
+  document.getElementById('btn-export-csv').addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0, 10);
+    exportCSV(allReferrals, `indicacoes_completo_${date}.csv`);
+  });
+
+  document.getElementById('btn-export-selected').addEventListener('click', () => {
+    const ids = getSelectedIds();
+    const items = allReferrals.filter(r => ids.includes(r.id));
+    const date = new Date().toISOString().slice(0, 10);
+    exportCSV(items, `indicacoes_pagamento_${date}.csv`);
+  });
+
+  // ─── Helpers ─────────────────────────────────────────────────────
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  checkSession();
+</script>
+</body>
+</html>

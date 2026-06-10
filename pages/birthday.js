@@ -195,7 +195,7 @@ const Birthday = {
             `Parabéns pelo seu aniversário! 🥳🎉\n\n` +
             `Que esse novo ciclo traga muitas conquistas e alegrias! ` +
             `É uma honra cuidar da sua beleza. 😘✨\n\n` +
-            `Com carinho,\n✨ LashBrow`
+            `Com carinho,\n✨ Studio Beauty`
         );
         window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
     },
@@ -209,7 +209,7 @@ const Birthday = {
             `🎁 *10% OFF* em qualquer procedimento durante este mês!\n\n` +
             `Aproveite para agendar aquele procedimento que você está querendo. ` +
             `Válido durante todo o mês do seu aniversário! 💕\n\n` +
-            `Agende agora mesmo! 😘\n✨ LashBrow`
+            `Agende agora mesmo! 😘\n✨ Studio Beauty`
         );
         window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
     },

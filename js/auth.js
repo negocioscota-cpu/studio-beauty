@@ -40,7 +40,7 @@ const Auth = {
                         const data = doc.data();
                         const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
                         const now = new Date();
-                        const TRIAL_DAYS = 14;
+                        const TRIAL_DAYS = 7;
 
                         // Status do Asaas (preenchido pelo webhook)
                         const subStatus = data.subscriptionStatus; // active | overdue | cancelled | pending_payment | null
@@ -176,6 +176,23 @@ const Auth = {
 
                 App.init();
 
+                // 🔑 Carregar nome do studio para mensagens WhatsApp Z-API
+                try {
+                    const uid = Team.ownerId || user.uid;
+                    const cfgDoc = await db.collection('studioConfig').doc(uid).get();
+                    if (cfgDoc.exists && cfgDoc.data().studioName) {
+                        window._studioName = cfgDoc.data().studioName;
+                    } else {
+                        const compDoc = await db.collection('companies').doc(uid).get();
+                        if (compDoc.exists) window._studioName = compDoc.data().companyName || 'Nosso Studio';
+                    }
+                } catch(e) { console.warn('Não foi possível carregar nome do studio:', e.message); }
+
+                // 📩 Carregar templates WhatsApp customizados
+                if (typeof WA !== 'undefined' && WA.loadCustomTemplates) {
+                    WA.loadCustomTemplates().catch(e => console.warn('Templates WA:', e.message));
+                }
+
                 // 🔌 Inicializar indicador de status online/offline
                 if (typeof OfflineIndicator !== 'undefined') {
                     OfflineIndicator.init();
@@ -272,6 +289,10 @@ const Auth = {
                             cred.user.displayName || ''
                         );
                     }
+                    // Registrar indicação no sistema de referrals
+                    if (ref && typeof Referrals !== 'undefined') {
+                        Referrals.registerReferral(ref, cred.user.uid, cred.user.email).catch(e => console.warn('Referral:', e.message));
+                    }
                     localStorage.removeItem('selectedPlan');
                 }
             } catch (err) {
@@ -339,6 +360,10 @@ const Auth = {
                 // Registrar uso do convite no Firestore
                 if (typeof Invites !== 'undefined' && inviteData) {
                     await Invites.registerUse(cred.user.uid, email, name, studio);
+                }
+                // Registrar indicação no sistema de referrals
+                if (ref && typeof Referrals !== 'undefined') {
+                    Referrals.registerReferral(ref, cred.user.uid, email).catch(e => console.warn('Referral:', e.message));
                 }
                 localStorage.removeItem('referralCode');
                 localStorage.removeItem('selectedPlan');
@@ -449,9 +474,10 @@ const Auth = {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
-        // Esconder itens marcados como owner-only para profissionais
-        sidebar.querySelectorAll('.nav-item[data-role="owner"]').forEach(item => {
-            if (Team.isProfessional()) {
+        // Esconder itens da sidebar dinamicamente de acordo com as permissões da profissional
+        sidebar.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            const page = item.dataset.page;
+            if (Team.isProfessional() && !Team.canAccess(page)) {
                 item.style.display = 'none';
             } else {
                 item.style.display = '';

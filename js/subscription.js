@@ -31,7 +31,7 @@ const Subscription = (() => {
       // 2. Garantir que o customer existe no Asaas
       const customerRes = await post('/createAsaasCustomer', {
         uid,
-        name:  company.ownerName  || company.companyName || user.displayName || 'Cliente LashBrow',
+        name:  company.ownerName  || company.companyName || user.displayName || 'Cliente Studio Beauty',
         email: company.ownerEmail || user.email || '',
         phone: company.ownerPhone || '',
       });

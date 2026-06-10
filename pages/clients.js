@@ -4,6 +4,14 @@ const Clients = {
     editingId: null,
     activeTagFilter: null,
     _selectedTags: [],
+    activeTab: 'clientes',
+
+    // === Paginação ===
+    _pageSize: 50,
+    _lastDoc: null,
+    _hasMore: false,
+    _isSearching: false,
+    _searchTimer: null,
 
     // Tags pré-definidas
     TAGS: ['VIP', 'Nova', 'Recorrente', 'Fiel', 'Pós-operatório', 'Retorno pendente', 'Indicação'],
@@ -23,11 +31,17 @@ const Clients = {
     async render(container) {
         container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:20px">
+          <!-- Abas Clientes / Retenção -->
+          <div style="display:flex;border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:8px">
+            <button id="tab-clientes" onclick="Clients.switchMainTab('clientes')" style="flex:1;padding:10px 20px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--primary);color:#fff">👥 Clientes</button>
+            <button id="tab-retencao" onclick="Clients.switchMainTab('retencao')" style="flex:1;padding:10px 20px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;transition:all 0.2s;background:var(--bg-secondary);color:var(--text-primary);border-left:1px solid var(--border)">📈 Retenção</button>
+          </div>
+          <div id="clients-tab-content">
           <!-- Toolbar -->
           <div class="toolbar">
             <div class="search-wrapper">
               <span class="material-symbols-outlined search-icon">search</span>
-              <input class="search-input" id="clients-search" placeholder="Buscar clientes..." oninput="Clients.filterClients()" />
+              <input class="search-input" id="clients-search" placeholder="Buscar clientes..." oninput="clearTimeout(Clients._searchTimer); Clients._searchTimer = setTimeout(() => Clients.filterClients(), 300)" />
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button class="btn btn-ghost btn-sm" onclick="Clients.importFromPhone()" title="Importar contatos do celular">
@@ -75,7 +89,7 @@ const Clients = {
                 </div>
                 <div class="form-group">
                   <label class="form-label">Telefone</label>
-                  <input class="form-control" id="client-phone" placeholder="(00) 00000-0000" />
+                  <input class="form-control" id="client-phone" placeholder="(00) 00000-0000" oninput="Clients._maskPhone(this)" maxlength="16" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Email</label>
@@ -128,6 +142,46 @@ const Clients = {
                   <label class="form-label">Observações / Alergias</label>
                   <textarea class="form-control" id="client-notes" rows="3" placeholder="Alergias, preferências, observações..."></textarea>
                 </div>
+
+                <!-- Seção Dados Fiscais -->
+                <div class="form-group form-group-full" style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+                  <h4 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;margin:0">🧾 Dados Fiscais (NFS-e)</h4>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CPF ou CNPJ</label>
+                  <input class="form-control" id="client-cpf-cnpj" placeholder="000.000.000-00" oninput="Clients._maskCpfCnpj(this)" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CEP</label>
+                  <div style="display:flex;gap:8px">
+                    <input class="form-control" id="client-cep" placeholder="00000-000" maxlength="9" oninput="Clients._maskCep(this)" style="flex:1" />
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="Clients.searchCep()" id="btn-search-cep" style="padding:0 12px;font-size:0.8rem">Buscar</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Logradouro (Rua/Avenida)</label>
+                  <input class="form-control" id="client-street" placeholder="Rua..." />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Número</label>
+                  <input class="form-control" id="client-number" placeholder="Ex: 123" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Complemento</label>
+                  <input class="form-control" id="client-complement" placeholder="Ex: Bloco B Apto 23" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Bairro</label>
+                  <input class="form-control" id="client-neighborhood" placeholder="Bairro" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cidade</label>
+                  <input class="form-control" id="client-city" placeholder="Cidade" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Estado (UF)</label>
+                  <input class="form-control" id="client-uf" placeholder="Ex: SP" maxlength="2" style="text-transform:uppercase" />
+                </div>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="Clients.closeModal()">Cancelar</button>
@@ -167,15 +221,86 @@ const Clients = {
           <div id="drawer-content" class="drawer-content">
             <div class="empty-state"><div class="spinner"></div></div>
           </div>
+        </div>
+          </div><!-- /clients-tab-content -->
+          <div id="retention-tab-content" style="display:none"></div>
         </div>`;
 
         await Clients.loadClients();
         Clients._renderTagFilterBar();
     },
 
+    async switchMainTab(tab) {
+        Clients.activeTab = tab;
+        document.getElementById('tab-clientes').style.background = tab === 'clientes' ? 'var(--primary)' : 'var(--bg-secondary)';
+        document.getElementById('tab-clientes').style.color = tab === 'clientes' ? '#fff' : 'var(--text-primary)';
+        document.getElementById('tab-retencao').style.background = tab === 'retencao' ? 'var(--primary)' : 'var(--bg-secondary)';
+        document.getElementById('tab-retencao').style.color = tab === 'retencao' ? '#fff' : 'var(--text-primary)';
+        
+        const clientsContent = document.getElementById('clients-tab-content');
+        const retentionContent = document.getElementById('retention-tab-content');
+        
+        if (tab === 'clientes') {
+            clientsContent.style.display = '';
+            retentionContent.style.display = 'none';
+        } else {
+            clientsContent.style.display = 'none';
+            retentionContent.style.display = '';
+            retentionContent.innerHTML = '<div style="text-align:center;padding:48px"><div class="spinner"></div></div>';
+            await Retention.render(retentionContent);
+        }
+    },
+
     async loadClients() {
-        Clients.currentClients = await Store.getClients();
+        Clients._lastDoc = null;
+        Clients._hasMore = false;
+        Clients._isSearching = false;
+        const result = await Store.getClientsPaginated(Clients._pageSize);
+        Clients.currentClients = result.clients;
+        Clients._lastDoc = result.lastVisible;
+        Clients._hasMore = result.hasMore;
         Clients.renderTable(Clients.currentClients);
+        Clients._renderLoadMoreBtn();
+    },
+
+    async loadMore() {
+        if (!Clients._hasMore || Clients._isSearching) return;
+        const btn = document.getElementById('clients-load-more');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Carregando...'; }
+        try {
+            const result = await Store.getClientsPaginated(Clients._pageSize, Clients._lastDoc);
+            Clients.currentClients = [...Clients.currentClients, ...result.clients];
+            Clients._lastDoc = result.lastVisible;
+            Clients._hasMore = result.hasMore;
+            Clients.renderTable(Clients.currentClients);
+            Clients._renderLoadMoreBtn();
+        } catch (err) {
+            App.showToast('Erro ao carregar mais clientes: ' + err.message, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">expand_more</span> Carregar mais'; }
+        }
+    },
+
+    _renderLoadMoreBtn() {
+        let container = document.getElementById('clients-pagination');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'clients-pagination';
+            container.style.cssText = 'display:flex;justify-content:center;padding:16px;gap:12px;align-items:center';
+            const card = document.querySelector('#clients-tab-content .card');
+            if (card) card.parentElement.appendChild(container);
+        }
+        const total = Clients.currentClients.length;
+        if (Clients._hasMore && !Clients._isSearching) {
+            container.innerHTML = `
+              <span style="font-size:0.82rem;color:var(--text-muted)">${total} clientes carregados</span>
+              <button id="clients-load-more" class="btn btn-primary btn-sm" onclick="Clients.loadMore()" style="gap:6px">
+                <span class="material-symbols-outlined" style="font-size:16px">expand_more</span> Carregar mais ${Clients._pageSize}
+              </button>`;
+        } else if (total > 0) {
+            container.innerHTML = `<span style="font-size:0.82rem;color:var(--text-muted)">✅ ${total} cliente${total !== 1 ? 's' : ''} carregado${total !== 1 ? 's' : ''}</span>`;
+        } else {
+            container.innerHTML = '';
+        }
     },
 
     // === TAG FILTER BAR ===
@@ -250,14 +375,31 @@ const Clients = {
         }).join('');
     },
 
-    filterClients() {
-        const q = document.getElementById('clients-search').value.toLowerCase();
-        const filtered = Clients.currentClients.filter(c =>
-            c.name?.toLowerCase().includes(q) ||
-            c.phone?.includes(q) ||
-            c.email?.toLowerCase().includes(q)
-        );
-        Clients.renderTable(filtered);
+    async filterClients() {
+        const q = document.getElementById('clients-search')?.value?.trim() || '';
+        if (q.length >= 2) {
+            // Busca: carrega todos e filtra client-side
+            Clients._isSearching = true;
+            try {
+                const all = await Store.searchClients(q);
+                Clients.renderTable(all);
+                Clients._renderLoadMoreBtn();
+            } catch (err) {
+                App.showToast('Erro na busca: ' + err.message, 'error');
+            }
+        } else if (q.length === 0 && Clients._isSearching) {
+            // Limpou busca: volta para paginação normal
+            Clients._isSearching = false;
+            await Clients.loadClients();
+        } else {
+            // Filtra no que já está carregado (digitou só 1 char)
+            const filtered = Clients.currentClients.filter(c =>
+                c.name?.toLowerCase().includes(q.toLowerCase()) ||
+                c.phone?.includes(q) ||
+                c.email?.toLowerCase().includes(q.toLowerCase())
+            );
+            Clients.renderTable(filtered);
+        }
     },
 
     // ===== DRAWER DE PERFIL =====
@@ -463,14 +605,58 @@ const Clients = {
             const isFicha = item.type === 'ficha';
             const detailId = `tl-detail-${idx}`;
 
-            const fichaDetails = isFicha ? `
-              <div id="${detailId}" class="timeline-detail hidden">
-                ${item.ph ? `<div class="timeline-detail-row"><span>pH</span><strong>${item.ph}</strong></div>` : ''}
-                ${item.product ? `<div class="timeline-detail-row"><span>Produto</span><strong>${item.product}</strong></div>` : ''}
-                ${item.time ? `<div class="timeline-detail-row"><span>Tempo</span><strong>${item.time} min</strong></div>` : ''}
-                ${item.curl ? `<div class="timeline-detail-row"><span>Curvatura</span><strong>${item.curl}</strong></div>` : ''}
-                ${item.observation ? `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs.</span><strong>${item.observation}</strong></div>` : ''}
-              </div>` : '';
+            let fichaDetails = '';
+            if (isFicha) {
+                let rows = '';
+                if (item.fichaKind === 'manicure') {
+                    if (item.nailCondition) rows += `<div class="timeline-detail-row"><span>Estado</span><strong>${item.nailCondition}</strong></div>`;
+                    if (item.nailShape) rows += `<div class="timeline-detail-row"><span>Formato</span><strong>${item.nailShape}</strong></div>`;
+                    if (item.nailCuticle) rows += `<div class="timeline-detail-row"><span>Cutícula</span><strong>${item.nailCuticle}</strong></div>`;
+                    if (item.nailType) rows += `<div class="timeline-detail-row"><span>Técnica</span><strong>${item.nailType}</strong></div>`;
+                    if (item.nailObs) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs. Unhas</span><strong>${item.nailObs}</strong></div>`;
+                } else if (item.fichaKind === 'sobrancelhas') {
+                    if (item.browDensity) rows += `<div class="timeline-detail-row"><span>Densidade</span><strong>${item.browDensity}</strong></div>`;
+                    if (item.browShape) rows += `<div class="timeline-detail-row"><span>Formato</span><strong>${item.browShape}</strong></div>`;
+                    if (item.browColor) rows += `<div class="timeline-detail-row"><span>Cor</span><strong>${item.browColor}</strong></div>`;
+                    if (item.browObs) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs. Sobrancelhas</span><strong>${item.browObs}</strong></div>`;
+                } else if (item.fichaKind === 'labios') {
+                    if (item.lipColor) rows += `<div class="timeline-detail-row"><span>Cor</span><strong>${item.lipColor}</strong></div>`;
+                    if (item.lipShape) rows += `<div class="timeline-detail-row"><span>Formato</span><strong>${item.lipShape}</strong></div>`;
+                    if (item.lipTexture) rows += `<div class="timeline-detail-row"><span>Textura</span><strong>${item.lipTexture}</strong></div>`;
+                    if (item.lipObs) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs. Lábios</span><strong>${item.lipObs}</strong></div>`;
+                } else if (item.fichaKind === 'facial') {
+                    if (item.faceSkin) rows += `<div class="timeline-detail-row"><span>Pele</span><strong>${item.faceSkin}</strong></div>`;
+                    if (item.faceHydration) rows += `<div class="timeline-detail-row"><span>Hidratação</span><strong>${item.faceHydration}</strong></div>`;
+                    if (item.faceTexture) rows += `<div class="timeline-detail-row"><span>Textura</span><strong>${item.faceTexture}</strong></div>`;
+                    if (item.faceObs) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs. Pele</span><strong>${item.faceObs}</strong></div>`;
+                } else {
+                    if (item.natDesc) rows += `<div class="timeline-detail-row"><span>Cílios</span><strong>${item.natDesc}</strong></div>`;
+                    if (item.natSize) rows += `<div class="timeline-detail-row"><span>Tamanho</span><strong>${item.natSize}</strong></div>`;
+                    if (item.natObs) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Obs. Cílios</span><strong>${item.natObs}</strong></div>`;
+                }
+                
+                if (item.mapeamento) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Mapeamento</span><strong>${item.mapeamento}</strong></div>`;
+                if (item.products) rows += `<div class="timeline-detail-row" style="grid-column:1/-1"><span>Produtos</span><strong>${item.products}</strong></div>`;
+                if (item.duration) rows += `<div class="timeline-detail-row"><span>Duração</span><strong>${item.duration}</strong></div>`;
+                
+                const urls = item.nailMediaUrls || item.faceMediaUrls || item.lipMediaUrls || item.browMediaUrls || item.natMediaUrls || [];
+                let mediaHtml = '';
+                if (urls.length) {
+                    mediaHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;grid-column:1/-1">
+                      ${urls.map(u=>`<a href="${u}" target="_blank" style="display:block;border-radius:4px;overflow:hidden;border:1px solid var(--border)">
+                        ${u.match(/\.(mp4|mov|webm)/i) ? `<video src="${u}" style="width:40px;height:40px;object-fit:cover"></video>` : `<img src="${u}" style="width:40px;height:40px;object-fit:cover" />`}
+                      </a>`).join('')}
+                    </div>`;
+                }
+
+                fichaDetails = `
+                  <div id="${detailId}" class="timeline-detail hidden" style="background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);margin-top:8px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:0.78rem">
+                      ${rows}
+                    </div>
+                    ${mediaHtml}
+                  </div>`;
+            }
 
             return `
             <div class="timeline-item">
@@ -638,7 +824,9 @@ const Clients = {
             const c = await Store.getClient(id);
             if (c) {
                 document.getElementById('client-name').value = c.name || '';
-                document.getElementById('client-phone').value = c.phone || '';
+                const phoneInput = document.getElementById('client-phone');
+                phoneInput.value = c.phone || '';
+                Clients._maskPhone(phoneInput);
                 document.getElementById('client-email').value = c.email || '';
                 document.getElementById('client-birthday').value = c.birthday || '';
                 document.getElementById('client-procedure').value = c.procedure || '';
@@ -646,7 +834,27 @@ const Clients = {
                 document.getElementById('client-notes').value = c.notes || '';
                 document.getElementById('client-source').value = c.source || '';
                 selectedTags = c.tags || [];
+
+                const fd = c.fiscalData || {};
+                const addr = fd.address || {};
+                document.getElementById('client-cpf-cnpj').value = fd.cpfCnpj || '';
+                document.getElementById('client-cep').value = addr.zipCode || '';
+                document.getElementById('client-street').value = addr.street || '';
+                document.getElementById('client-number').value = addr.number || '';
+                document.getElementById('client-complement').value = addr.complement || '';
+                document.getElementById('client-neighborhood').value = addr.neighborhood || '';
+                document.getElementById('client-city').value = addr.city || '';
+                document.getElementById('client-uf').value = addr.state || '';
             }
+        } else {
+            document.getElementById('client-cpf-cnpj').value = '';
+            document.getElementById('client-cep').value = '';
+            document.getElementById('client-street').value = '';
+            document.getElementById('client-number').value = '';
+            document.getElementById('client-complement').value = '';
+            document.getElementById('client-neighborhood').value = '';
+            document.getElementById('client-city').value = '';
+            document.getElementById('client-uf').value = '';
         }
         Clients._renderTagSelector(selectedTags);
         document.getElementById('client-modal').classList.remove('hidden');
@@ -671,7 +879,19 @@ const Clients = {
             status:    document.getElementById('client-status').value,
             notes:     document.getElementById('client-notes').value.trim(),
             source:    document.getElementById('client-source').value,
-            tags:      Clients._selectedTags
+            tags:      Clients._selectedTags,
+            fiscalData: {
+                cpfCnpj: document.getElementById('client-cpf-cnpj').value.trim(),
+                address: {
+                    zipCode:      document.getElementById('client-cep').value.trim(),
+                    street:       document.getElementById('client-street').value.trim(),
+                    number:       document.getElementById('client-number').value.trim(),
+                    complement:   document.getElementById('client-complement').value.trim(),
+                    neighborhood: document.getElementById('client-neighborhood').value.trim(),
+                    city:         document.getElementById('client-city').value.trim(),
+                    state:        document.getElementById('client-uf').value.trim().toUpperCase()
+                }
+            }
         };
         try {
             if (Clients.editingId) await Store.updateClient(Clients.editingId, data);
@@ -759,6 +979,74 @@ const Clients = {
         } catch (err) {
             if (err.name === 'AbortError') return;
             App.showToast('Erro na importação: ' + err.message, 'error');
+        }
+    },
+
+    _maskPhone(el) {
+        let v = el.value.replace(/\D/g, '');
+        if (v.length > 11) v = v.substring(0, 11);
+        if (v.length > 7) {
+            el.value = `(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7)}`;
+        } else if (v.length > 2) {
+            el.value = `(${v.substring(0,2)}) ${v.substring(2)}`;
+        } else if (v.length > 0) {
+            el.value = `(${v}`;
+        }
+    },
+
+    async searchCep() {
+        const cepEl = document.getElementById('client-cep');
+        const btn = document.getElementById('btn-search-cep');
+        if (!cepEl) return;
+        const cep = cepEl.value.replace(/\D/g, '');
+        if (cep.length !== 8) {
+            App.showToast('CEP inválido! Digite 8 números.', 'error');
+            return;
+        }
+        if (btn) { btn.disabled = true; btn.innerHTML = '...'; }
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if (data.erro) {
+                App.showToast('CEP não encontrado.', 'error');
+            } else {
+                document.getElementById('client-street').value = data.logradouro || '';
+                document.getElementById('client-neighborhood').value = data.bairro || '';
+                document.getElementById('client-city').value = data.localidade || '';
+                document.getElementById('client-uf').value = data.uf || '';
+                document.getElementById('client-number')?.focus();
+                App.showToast('Endereço preenchido! 📍', 'success');
+            }
+        } catch (err) {
+            App.showToast('Erro ao buscar CEP: ' + err.message, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Buscar'; }
+        }
+    },
+
+    _maskCpfCnpj(el) {
+        let v = el.value.replace(/\D/g, '');
+        if (v.length > 14) v = v.substring(0, 14);
+        if (v.length > 11) {
+            el.value = `${v.substring(0,2)}.${v.substring(2,5)}.${v.substring(5,8)}/${v.substring(8,12)}-${v.substring(12)}`;
+        } else if (v.length > 9) {
+            el.value = `${v.substring(0,3)}.${v.substring(3,6)}.${v.substring(6,9)}-${v.substring(9)}`;
+        } else if (v.length > 6) {
+            el.value = `${v.substring(0,3)}.${v.substring(3,6)}.${v.substring(6)}`;
+        } else if (v.length > 3) {
+            el.value = `${v.substring(0,3)}.${v.substring(3)}`;
+        } else {
+            el.value = v;
+        }
+    },
+
+    _maskCep(el) {
+        let v = el.value.replace(/\D/g, '');
+        if (v.length > 8) v = v.substring(0, 8);
+        if (v.length > 5) {
+            el.value = `${v.substring(0,5)}-${v.substring(5)}`;
+        } else {
+            el.value = v;
         }
     }
 };

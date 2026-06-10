@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliação do Sistema — Studio Beauty</title>
+  <meta name="description" content="Questionário de avaliação do sistema de gestão Studio Beauty para profissionais de estética e beleza." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #C4758A;
+      --primary-dark: #9E4F65;
+      --primary-light: #F0B8C8;
+      --primary-xlight: #FDF0F3;
+      --gold: #C9A96E;
+      --gold-dark: #9A7535;
+      --gold-light: #EDD9B0;
+      --rose: #E8A0B0;
+      --bg: #FDFBFC;
+      --text: #1E0E17;
+      --text-muted: #8A6070;
+      --gradient-hero: linear-gradient(135deg, #2C1A22 0%, #4A2038 50%, #2C1A22 100%);
+      --gradient-rose: linear-gradient(135deg, #C4758A 0%, #9E4F65 100%);
+      --gradient-gold: linear-gradient(135deg, #C9A96E 0%, #9A7535 100%);
+      --shadow-card: 0 4px 24px rgba(44,26,34,0.10);
+      --shadow-lg: 0 16px 64px rgba(44,26,34,0.15);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --transition: 0.25s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── Hero ─────────────────────── */
+    .hero {
+      background: var(--gradient-hero);
+      padding: 60px 24px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 30% 40%, rgba(196,117,138,0.15), transparent 60%),
+                  radial-gradient(circle at 70% 60%, rgba(201,169,110,0.1), transparent 50%);
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(196,117,138,0.15); border: 1px solid rgba(196,117,138,0.3);
+      border-radius: var(--radius-full); padding: 6px 16px;
+      font-size: 0.78rem; font-weight: 600; color: var(--primary-light);
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 800; color: #fff;
+      line-height: 1.2; margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--gold-light); }
+    .hero p {
+      font-size: 1rem; color: rgba(255,255,255,0.7);
+      max-width: 480px; margin: 0 auto 24px;
+    }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 32px;
+      flex-wrap: wrap; margin-top: 16px;
+    }
+    .hero-stat {
+      text-align: center;
+    }
+    .hero-stat-value {
+      font-size: 1.6rem; font-weight: 800; color: var(--gold-light);
+    }
+    .hero-stat-label {
+      font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Container ─────────────────── */
+    .container {
+      max-width: 720px; margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    /* ── Progress ─────────────────── */
+    .progress-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(253,251,252,0.95); backdrop-filter: blur(12px);
+      padding: 12px 20px; border-bottom: 1px solid rgba(196,117,138,0.1);
+    }
+    .progress-inner {
+      max-width: 720px; margin: 0 auto;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .progress-track {
+      flex: 1; height: 6px; background: rgba(196,117,138,0.12);
+      border-radius: var(--radius-full); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: var(--gradient-rose);
+      border-radius: var(--radius-full);
+      transition: width 0.5s ease;
+    }
+    .progress-text {
+      font-size: 0.75rem; font-weight: 700; color: var(--primary);
+      white-space: nowrap;
+    }
+
+    /* ── Section Card ──────────────── */
+    .section-card {
+      background: #fff;
+      border: 1px solid rgba(196,117,138,0.1);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      padding: 28px 24px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .section-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(196,117,138,0.08);
+    }
+    .section-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 1.1rem; font-weight: 800; color: var(--text);
+    }
+    .section-desc {
+      font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;
+    }
+
+    /* ── Form Elements ─────────────── */
+    .question {
+      margin-bottom: 24px;
+    }
+    .question:last-child { margin-bottom: 0; }
+    .q-label {
+      font-size: 0.92rem; font-weight: 700; color: var(--text);
+      margin-bottom: 10px; display: block; line-height: 1.4;
+    }
+    .q-hint {
+      font-size: 0.78rem; color: var(--text-muted); font-weight: 400;
+      display: block; margin-top: 3px;
+    }
+
+    /* Star Rating */
+    .star-rating {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .star-btn {
+      width: 44px; height: 44px;
+      border: 2px solid rgba(196,117,138,0.15);
+      border-radius: 12px; background: rgba(196,117,138,0.03);
+      font-size: 1.2rem; cursor: pointer;
+      transition: all 0.2s; display: flex;
+      align-items: center; justify-content: center;
+      color: var(--text-muted);
+    }
+    .star-btn:hover {
+      border-color: var(--gold);
+      background: rgba(201,169,110,0.08);
+      transform: scale(1.1);
+    }
+    .star-btn.active {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, rgba(201,169,110,0.15), rgba(201,169,110,0.08));
+      color: var(--gold-dark);
+      font-weight: 700;
+    }
+    .star-label {
+      font-size: 0.72rem; color: var(--text-muted);
+      margin-left: 8px; font-style: italic;
+    }
+
+    /* Scale labels */
+    .scale-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 6px; padding: 0 4px;
+    }
+    .scale-label {
+      font-size: 0.68rem; color: rgba(138,96,112,0.6);
+    }
+
+    /* NPS */
+    .nps-row {
+      display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;
+    }
+    .nps-btn {
+      width: 40px; height: 40px;
+      border: 2px solid rgba(196,117,138,0.12);
+      border-radius: 10px; background: rgba(196,117,138,0.03);
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; color: var(--text-muted);
+    }
+    .nps-btn:hover { transform: scale(1.08); }
+    .nps-btn.active.detractor { border-color: #E74C3C; background: rgba(231,76,60,0.1); color: #E74C3C; }
+    .nps-btn.active.neutral { border-color: #F39C12; background: rgba(243,156,18,0.1); color: #F39C12; }
+    .nps-btn.active.promoter { border-color: #27AE60; background: rgba(39,174,96,0.1); color: #27AE60; }
+
+    /* Textarea */
+    .form-textarea {
+      width: 100%; padding: 14px 16px;
+      border: 1.5px solid rgba(196,117,138,0.15);
+      border-radius: var(--radius-md);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; color: var(--text);
+      resize: vertical; min-height: 80px;
+      background: rgba(253,240,243,0.3);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(196,117,138,0.1);
+    }
+    .form-textarea::placeholder { color: rgba(138,96,112,0.4); }
+
+    /* Input */
+    .form-input {
+      width: 100%; padding: 12px 16px;
+      border: 1.5px solid rgba(196,117,138,0.15);
+      border-radius: var(--radius-md);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; color: var(--text);
+      background: rgba(253,240,243,0.3);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(196,117,138,0.1);
+    }
+
+    /* Checkbox list */
+    .checkbox-list {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .checkbox-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius-md);
+      border: 1.5px solid rgba(196,117,138,0.1);
+      background: rgba(253,240,243,0.2);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .checkbox-item:hover { border-color: var(--primary-light); background: rgba(253,240,243,0.5); }
+    .checkbox-item.checked {
+      border-color: var(--primary);
+      background: rgba(196,117,138,0.06);
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--primary);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .checkbox-label {
+      font-size: 0.88rem; color: var(--text); cursor: pointer; flex: 1;
+    }
+
+    /* Submit */
+    .btn-submit {
+      width: 100%; padding: 16px 32px;
+      background: var(--gradient-rose);
+      color: #fff; font-size: 1rem; font-weight: 700;
+      border: none; border-radius: var(--radius-md);
+      cursor: pointer; transition: all 0.3s;
+      box-shadow: 0 8px 32px rgba(196,117,138,0.3);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(196,117,138,0.4);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6; cursor: not-allowed; transform: none;
+    }
+
+    /* Success */
+    .success-card {
+      text-align: center; padding: 48px 24px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .success-icon {
+      font-size: 4rem; margin-bottom: 16px;
+      animation: bounce 0.6s ease;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center; padding: 32px 20px;
+      color: var(--text-muted); font-size: 0.78rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .section-card { padding: 20px 16px; }
+      .star-btn { width: 38px; height: 38px; font-size: 1rem; }
+      .nps-btn { width: 34px; height: 34px; font-size: 0.85rem; }
+      .hero { padding: 40px 16px 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ HERO ═══════════ -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">📋 Avaliação de Produto</div>
+    <h1>Avalie o <span>Studio Beauty</span></h1>
+    <p>Sua opinião é fundamental para entregarmos o melhor sistema de gestão para profissionais de estética e beleza.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">6</div>
+        <div class="hero-stat-label">Seções</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">~8 min</div>
+        <div class="hero-stat-label">Tempo estimado</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">100%</div>
+        <div class="hero-stat-label">Anônimo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PROGRESS BAR ═══════════ -->
+<div class="progress-bar">
+  <div class="progress-inner">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="progress-text" id="progress-text">0%</div>
+  </div>
+</div>
+
+<!-- ═══════════ FORM ═══════════ -->
+<div class="container">
+  <form id="survey-form" onsubmit="return submitSurvey(event)">
+
+    <!-- ────── SEÇÃO 1: PERFIL ────── -->
+    <div class="section-card" data-section="1">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(196,117,138,0.15),rgba(196,117,138,0.05))">👤</div>
+        <div>
+          <div class="section-title">1. Seu Perfil Profissional</div>
+          <div class="section-desc">Nos ajude a entender seu contexto de uso</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Qual sua área de atuação principal?</label>
+        <div class="checkbox-list">
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="cilios"> <span class="checkbox-label">Extensão / Lifting de Cílios</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="sobrancelhas"> <span class="checkbox-label">Design de Sobrancelhas / Micropigmentação</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="estetica"> <span class="checkbox-label">Estética Facial / Corporal</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="unhas"> <span class="checkbox-label">Manicure / Nail Designer</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="cabelo"> <span class="checkbox-label">Cabelo / Penteados</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="area" value="outro"> <span class="checkbox-label">Outra área</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Há quanto tempo atua na área?</label>
+        <div class="star-rating" data-name="experiencia">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span class="scale-label">Menos de 1 ano</span>
+          <span class="scale-label">1–2 anos</span>
+          <span class="scale-label">2–5 anos</span>
+          <span class="scale-label">5–10 anos</span>
+          <span class="scale-label">10+ anos</span>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Quantas clientes você atende por semana, em média?</label>
+        <div class="star-rating" data-name="volume">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span class="scale-label">1–5</span>
+          <span class="scale-label">6–15</span>
+          <span class="scale-label">16–30</span>
+          <span class="scale-label">31–50</span>
+          <span class="scale-label">50+</span>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Já usou algum sistema de gestão antes?
+          <span class="q-hint">Se sim, qual?</span>
+        </label>
+        <input type="text" class="form-input" name="sistema_anterior" placeholder="Ex: Trinks, SimSave, Planilha, Nenhum..." />
+      </div>
+    </div>
+
+    <!-- ────── SEÇÃO 2: PRIMEIRA IMPRESSÃO ────── -->
+    <div class="section-card" data-section="2">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(201,169,110,0.15),rgba(201,169,110,0.05))">✨</div>
+        <div>
+          <div class="section-title">2. Primeira Impressão</div>
+          <div class="section-desc">Visual, navegação e clareza geral</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O visual do sistema transmite profissionalismo e confiança?</label>
+        <div class="star-rating" data-name="visual">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+          <span class="star-label" data-for="visual"></span>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Nada profissional</span><span class="scale-label">Muito profissional</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">A navegação entre os módulos é intuitiva?
+          <span class="q-hint">Conseguiu encontrar o que procurava facilmente?</span>
+        </label>
+        <div class="star-rating" data-name="navegacao">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+          <span class="star-label" data-for="navegacao"></span>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Muito confuso</span><span class="scale-label">Muito fácil</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O sistema carregou rápido e sem travamentos?</label>
+        <div class="star-rating" data-name="performance">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+          <span class="star-label" data-for="performance"></span>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Muito lento</span><span class="scale-label">Muito rápido</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Os textos e ícones são claros e de fácil compreensão?</label>
+        <div class="star-rating" data-name="clareza">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+          <span class="star-label" data-for="clareza"></span>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Nada claro</span><span class="scale-label">Totalmente claro</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O que mais chamou sua atenção no visual do sistema? (positivo ou negativo)</label>
+        <textarea class="form-textarea" name="impressao_visual" placeholder="Descreva suas primeiras impressões visuais..."></textarea>
+      </div>
+    </div>
+
+    <!-- ────── SEÇÃO 3: AVALIAÇÃO POR MÓDULO ────── -->
+    <div class="section-card" data-section="3">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(39,174,96,0.12),rgba(39,174,96,0.04))">📱</div>
+        <div>
+          <div class="section-title">3. Avaliação por Módulo</div>
+          <div class="section-desc">Avalie cada funcionalidade de 1 (ruim) a 5 (excelente). Deixe em branco se não testou.</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">📅 Agenda — agendar, reagendar, concluir atendimentos</label>
+        <div class="star-rating" data-name="mod_agenda">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">👥 Cadastro de Clientes — cadastrar, buscar, editar</label>
+        <div class="star-rating" data-name="mod_clientes">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">✨ Ficha Técnica — registrar procedimentos com detalhes</label>
+        <div class="star-rating" data-name="mod_ficha">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">💰 Financeiro — receitas, despesas, cobranças</label>
+        <div class="star-rating" data-name="mod_financeiro">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">📦 Estoque — controle de produtos e materiais</label>
+        <div class="star-rating" data-name="mod_estoque">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">📲 WhatsApp Automático — confirmação, lembrete, pós-atendimento</label>
+        <div class="star-rating" data-name="mod_whatsapp">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">⭐ Avaliações NPS — pesquisa de satisfação com clientes</label>
+        <div class="star-rating" data-name="mod_nps">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">💎 Fidelidade — programa de recompensas por visitas</label>
+        <div class="star-rating" data-name="mod_fidelidade">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">📊 Dashboard e Relatórios — métricas e análises</label>
+        <div class="star-rating" data-name="mod_relatorios">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Algum módulo que não funcionou ou gerou confusão?</label>
+        <textarea class="form-textarea" name="modulo_problemas" placeholder="Descreva o módulo e o que aconteceu..."></textarea>
+      </div>
+    </div>
+
+    <!-- ────── SEÇÃO 4: FUNCIONALIDADES ESSENCIAIS ────── -->
+    <div class="section-card" data-section="4">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(142,68,173,0.12),rgba(142,68,173,0.04))">🎯</div>
+        <div>
+          <div class="section-title">4. Funcionalidades Essenciais</div>
+          <div class="section-desc">Priorize o que é mais importante para seu dia a dia</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Quais funcionalidades você considera INDISPENSÁVEIS?
+          <span class="q-hint">Marque todas que se aplicam</span>
+        </label>
+        <div class="checkbox-list">
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="agenda"> <span class="checkbox-label">Agenda de atendimentos</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="clientes"> <span class="checkbox-label">Cadastro de clientes com histórico</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="ficha"> <span class="checkbox-label">Ficha técnica por procedimento</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="financeiro"> <span class="checkbox-label">Controle financeiro</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="whatsapp"> <span class="checkbox-label">Mensagens automáticas via WhatsApp</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="estoque"> <span class="checkbox-label">Controle de estoque</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="nps"> <span class="checkbox-label">Pesquisa de satisfação (NPS)</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="fidelidade"> <span class="checkbox-label">Programa de fidelidade</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="portfolio"> <span class="checkbox-label">Portfólio de trabalhos</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="agendaonline"> <span class="checkbox-label">Link de agendamento online</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="equipe"> <span class="checkbox-label">Gestão de equipe (múltiplos profissionais)</span>
+          </label>
+          <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="essencial" value="consentimento"> <span class="checkbox-label">Termo de consentimento digital</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Falta alguma funcionalidade que você considera essencial?</label>
+        <textarea class="form-textarea" name="funcionalidade_falta" placeholder="Descreva o que gostaria de ver no sistema..."></textarea>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O sistema atende ao que você precisa para gerenciar seu negócio?</label>
+        <div class="star-rating" data-name="atende_necessidade">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+          <span class="star-label" data-for="atende_necessidade"></span>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Não atende</span><span class="scale-label">Atende completamente</span></div>
+      </div>
+    </div>
+
+    <!-- ────── SEÇÃO 5: USABILIDADE E CONFIANÇA ────── -->
+    <div class="section-card" data-section="5">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(52,152,219,0.12),rgba(52,152,219,0.04))">🔐</div>
+        <div>
+          <div class="section-title">5. Usabilidade e Confiança</div>
+          <div class="section-desc">Facilidade de uso, segurança e confiabilidade</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Conseguiu realizar as tarefas sem precisar de ajuda?</label>
+        <div class="star-rating" data-name="autonomia">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Precisei de muita ajuda</span><span class="scale-label">Totalmente sozinha</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Você confiaria seus dados de clientes e financeiro a este sistema?</label>
+        <div class="star-rating" data-name="confianca">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Sem confiança</span><span class="scale-label">Total confiança</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O sistema funciona bem no celular?</label>
+        <div class="star-rating" data-name="mobile">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Péssimo no celular</span><span class="scale-label">Perfeito no celular</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O Guia de Uso (tutorial) foi suficiente para entender o sistema?</label>
+        <div class="star-rating" data-name="tutorial">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Insuficiente</span><span class="scale-label">Muito completo</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Encontrou algum erro ou bug durante o uso?</label>
+        <textarea class="form-textarea" name="bugs" placeholder="Descreva o que aconteceu, em qual tela e o que estava fazendo..."></textarea>
+      </div>
+    </div>
+
+    <!-- ────── SEÇÃO 6: SATISFAÇÃO GERAL ────── -->
+    <div class="section-card" data-section="6">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(201,169,110,0.15),rgba(201,169,110,0.05))">💕</div>
+        <div>
+          <div class="section-title">6. Satisfação Geral</div>
+          <div class="section-desc">Sua avaliação final do Studio Beauty</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">De 0 a 10, o quanto você recomendaria o Studio Beauty para outra profissional?
+          <span class="q-hint">NPS — Net Promoter Score</span>
+        </label>
+        <div class="nps-row" data-name="nps">
+          <button type="button" class="nps-btn" data-value="0" onclick="setNPS(this)">0</button>
+          <button type="button" class="nps-btn" data-value="1" onclick="setNPS(this)">1</button>
+          <button type="button" class="nps-btn" data-value="2" onclick="setNPS(this)">2</button>
+          <button type="button" class="nps-btn" data-value="3" onclick="setNPS(this)">3</button>
+          <button type="button" class="nps-btn" data-value="4" onclick="setNPS(this)">4</button>
+          <button type="button" class="nps-btn" data-value="5" onclick="setNPS(this)">5</button>
+          <button type="button" class="nps-btn" data-value="6" onclick="setNPS(this)">6</button>
+          <button type="button" class="nps-btn" data-value="7" onclick="setNPS(this)">7</button>
+          <button type="button" class="nps-btn" data-value="8" onclick="setNPS(this)">8</button>
+          <button type="button" class="nps-btn" data-value="9" onclick="setNPS(this)">9</button>
+          <button type="button" class="nps-btn" data-value="10" onclick="setNPS(this)">10</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label" style="color:#E74C3C">Jamais recomendaria</span><span class="scale-label" style="color:#F39C12">Neutro</span><span class="scale-label" style="color:#27AE60">Com certeza!</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Considerando os valores (Solo R$69 / Studio R$99,80 / Premium R$149,80), o sistema vale o investimento?</label>
+        <div class="star-rating" data-name="custo_beneficio">
+          <button type="button" class="star-btn" data-value="1" onclick="setRating(this)">1</button>
+          <button type="button" class="star-btn" data-value="2" onclick="setRating(this)">2</button>
+          <button type="button" class="star-btn" data-value="3" onclick="setRating(this)">3</button>
+          <button type="button" class="star-btn" data-value="4" onclick="setRating(this)">4</button>
+          <button type="button" class="star-btn" data-value="5" onclick="setRating(this)">5</button>
+        </div>
+        <div class="scale-labels"><span class="scale-label">Muito caro</span><span class="scale-label">Excelente custo-benefício</span></div>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O que você MAIS gostou no sistema?</label>
+        <textarea class="form-textarea" name="mais_gostou" placeholder="Conte o que mais te agradou..." rows="3"></textarea>
+      </div>
+
+      <div class="question">
+        <label class="q-label">O que você MENOS gostou ou mudaria?</label>
+        <textarea class="form-textarea" name="menos_gostou" placeholder="Conte o que melhoraria..." rows="3"></textarea>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Se pudesse dar um conselho para a equipe de desenvolvimento, qual seria?</label>
+        <textarea class="form-textarea" name="conselho" placeholder="Sua sugestão é muito valiosa..." rows="3"></textarea>
+      </div>
+
+      <div class="question">
+        <label class="q-label">Seu nome e WhatsApp (opcional)
+          <span class="q-hint">Caso queira receber novidades ou participar de um grupo VIP de testadoras</span>
+        </label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input type="text" class="form-input" name="resp_nome" placeholder="Seu nome" style="flex:1;min-width:140px" />
+          <input type="text" class="form-input" name="resp_whatsapp" placeholder="(00) 00000-0000" style="flex:1;min-width:140px" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ────── SUBMIT ────── -->
+    <button type="submit" class="btn-submit" id="btn-submit">
+      ✨ Enviar Avaliação
+    </button>
+
+  </form>
+
+  <!-- ────── SUCCESS ────── -->
+  <div id="success-screen" style="display:none">
+    <div class="section-card success-card">
+      <div class="success-icon">💕</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--primary-dark);margin-bottom:12px">Obrigada pela sua avaliação!</h2>
+      <p style="color:var(--text-muted);font-size:1rem;max-width:420px;margin:0 auto 24px">
+        Sua opinião é muito valiosa e será usada para tornar o Studio Beauty ainda melhor para você e todas as profissionais de estética.
+      </p>
+      <div style="background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(196,117,138,0.1));border-radius:var(--radius-md);padding:20px;margin:0 auto;max-width:380px">
+        <p style="font-size:0.88rem;color:var(--text);font-weight:600;margin-bottom:4px">✨ Quer continuar testando?</p>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px">Acesse o sistema e explore à vontade:</p>
+        <a href="app.html" style="display:inline-block;padding:12px 24px;background:var(--gradient-rose);color:#fff;text-decoration:none;border-radius:var(--radius-md);font-weight:700;font-size:0.9rem;box-shadow:0 4px 16px rgba(196,117,138,0.3)">
+          Acessar Studio Beauty →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Studio Beauty © 2024 — Gestão Profissional para Estética e Beleza</p>
+  <p style="margin-top:4px">Desenvolvido com 💕 pela ConnectAI</p>
+</div>
+
+<!-- ═══════════ SCRIPTS ═══════════ -->
+<script>
+  // Firebase init
+  firebase.initializeApp({
+    apiKey: "AIzaSyDu_7cRKPc2rLcukZTsb58yMN-g0IlvIYc",
+    authDomain: "lashbrow-app.firebaseapp.com",
+    projectId: "lashbrow-app",
+    storageBucket: "lashbrow-app.firebasestorage.app",
+    messagingSenderId: "516369013329",
+    appId: "1:516369013329:web:0fd76e28780b2c98703670"
+  });
+  const db = firebase.firestore();
+
+  // Rating labels
+  const ratingLabels = {
+    1: 'Ruim',
+    2: 'Regular',
+    3: 'Bom',
+    4: 'Muito bom',
+    5: 'Excelente'
+  };
+
+  // Star rating
+  function setRating(btn) {
+    const group = btn.closest('.star-rating');
+    const value = parseInt(btn.dataset.value);
+    group.querySelectorAll('.star-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.value) <= value);
+    });
+    group.dataset.selected = value;
+    // Update label
+    const name = group.dataset.name;
+    const label = document.querySelector(`.star-label[data-for="${name}"]`);
+    if (label) label.textContent = ratingLabels[value] || '';
+    updateProgress();
+  }
+
+  // NPS
+  function setNPS(btn) {
+    const group = btn.closest('.nps-row');
+    const value = parseInt(btn.dataset.value);
+    group.querySelectorAll('.nps-btn').forEach(b => {
+      const v = parseInt(b.dataset.value);
+      b.classList.remove('active', 'detractor', 'neutral', 'promoter');
+      if (v <= value) {
+        b.classList.add('active');
+        if (value <= 6) b.classList.add('detractor');
+        else if (value <= 8) b.classList.add('neutral');
+        else b.classList.add('promoter');
+      }
+    });
+    group.dataset.selected = value;
+    updateProgress();
+  }
+
+  // Progress
+  function updateProgress() {
+    const allRatings = document.querySelectorAll('.star-rating, .nps-row');
+    const textareas = document.querySelectorAll('.form-textarea');
+    const checkboxGroups = document.querySelectorAll('.checkbox-list');
+
+    let answered = 0;
+    let total = allRatings.length + textareas.length;
+
+    allRatings.forEach(g => { if (g.dataset.selected) answered++; });
+    textareas.forEach(t => { if (t.value.trim()) answered++; });
+
+    const pct = Math.round((answered / total) * 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = pct + '%';
+  }
+
+  // Collect all data
+  function collectData() {
+    const data = {};
+
+    // Ratings
+    document.querySelectorAll('.star-rating').forEach(g => {
+      data[g.dataset.name] = g.dataset.selected ? parseInt(g.dataset.selected) : null;
+    });
+
+    // NPS
+    const npsGroup = document.querySelector('.nps-row');
+    data.nps = npsGroup?.dataset.selected ? parseInt(npsGroup.dataset.selected) : null;
+
+    // Text inputs
+    document.querySelectorAll('.form-textarea, .form-input[name]').forEach(el => {
+      if (el.name) data[el.name] = el.value.trim() || null;
+    });
+
+    // Checkboxes
+    const checkboxNames = ['area', 'essencial'];
+    checkboxNames.forEach(name => {
+      const checked = [];
+      document.querySelectorAll(`input[name="${name}"]:checked`).forEach(cb => {
+        checked.push(cb.value);
+      });
+      data[name] = checked.length ? checked : null;
+    });
+
+    return data;
+  }
+
+  // Google Sheets endpoint
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyP91oDxLRCJMja7kY_DRT813V6zzeLbgg6Bo3QZrLBmVKNXyloCYUg8gzvLOMJAzf1/exec';
+
+  // Submit
+  async function submitSurvey(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<div style="width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite"></div> Enviando...';
+
+    const data = collectData();
+    data.screenWidth = window.innerWidth;
+
+    try {
+      // Enviar para Google Planilhas via GET + iframe (sem problemas de CORS/redirect)
+      await new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.name = 'sf-' + Date.now();
+        document.body.appendChild(iframe);
+        iframe.src = SHEETS_URL + '?data=' + encodeURIComponent(JSON.stringify(data));
+        setTimeout(() => {
+          try { document.body.removeChild(iframe); } catch(_){}
+          resolve();
+        }, 4000);
+      });
+
+      // Backup no Firestore
+      try {
+        data.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
+        db.collection('survey_responses').add(data);
+      } catch(_) {}
+
+      document.getElementById('survey-form').style.display = 'none';
+      document.getElementById('success-screen').style.display = 'block';
+      document.querySelector('.progress-bar').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert('Erro ao enviar. Tente novamente: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '✨ Enviar Avaliação';
+    }
+  }
+
+  // Init progress listeners
+  document.querySelectorAll('.form-textarea').forEach(t => t.addEventListener('input', updateProgress));
+</script>
+
+</body>
+</html>

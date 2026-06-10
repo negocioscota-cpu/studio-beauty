@@ -519,7 +519,7 @@ const Portfolio = {
         const clientName = Portfolio.currentClients.find(c => c.id === p.clientId)?.name || 'Cliente';
         const msg = encodeURIComponent(`✨ Resultado incrível de ${p.procedure || 'procedimento'} com ${clientName}!\n\n` +
             `Agende o seu horário! 💕\n` +
-            `📱 LashBrow — Gestão Profissional de Cílios & Sobrancelhas`);
+            `📱 Studio Beauty — Gestão Profissional de Estética e Beleza`);
         window.open(`https://wa.me/?text=${msg}`, '_blank');
     },
 

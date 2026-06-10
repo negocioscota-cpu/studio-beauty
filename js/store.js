@@ -13,6 +13,29 @@ const Store = {
         const snap = await db.collection('clients').where('userId','==',this._uid()).orderBy('name').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
+    // Versão paginada de getClients — usa cursor-based pagination
+    async getClientsPaginated(pageSize = 50, lastDoc = null) {
+        let q = db.collection('clients').where('userId','==',this._uid()).orderBy('name');
+        if (lastDoc) q = q.startAfter(lastDoc);
+        q = q.limit(pageSize);
+        const snap = await q.get();
+        const clients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const lastVisible = snap.docs[snap.docs.length - 1] || null;
+        const hasMore = snap.docs.length === pageSize;
+        return { clients, lastVisible, hasMore };
+    },
+    // Busca de clientes com filtro client-side (Firestore não suporta full-text)
+    async searchClients(searchQuery) {
+        const snap = await db.collection('clients').where('userId','==',this._uid()).orderBy('name').get();
+        const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!searchQuery) return all;
+        const q = searchQuery.toLowerCase();
+        return all.filter(c =>
+            c.name?.toLowerCase().includes(q) ||
+            c.phone?.includes(q) ||
+            c.email?.toLowerCase().includes(q)
+        );
+    },
     async getClient(id) {
         const d = await db.collection('clients').doc(id).get();
         return d.exists ? { id: d.id, ...d.data() } : null;
@@ -113,6 +136,20 @@ const Store = {
         q = q.orderBy('date','desc');
         const snap = await q.get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    // Versão paginada de getFichasTecnicas — usa cursor-based pagination
+    async getFichasTecnicasPaginated(pageSize = 30, lastDoc = null, clientId = null) {
+        let q = db.collection('ficha_tecnica').where('userId','==',this._uid());
+        if (clientId) q = q.where('clientId','==',clientId);
+        if (typeof Team !== 'undefined' && Team.isProfessional()) {
+            q = q.where('professionalId','==',this._profUid());
+        }
+        q = q.orderBy('date','desc');
+        if (lastDoc) q = q.startAfter(lastDoc);
+        q = q.limit(pageSize);
+        const snap = await q.get();
+        const fichas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return { fichas, lastVisible: snap.docs[snap.docs.length - 1] || null, hasMore: snap.docs.length === pageSize };
     },
     async addFichaTecnica(data) {
         data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -713,6 +750,81 @@ const Store = {
             usedItems,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+    },
+
+    // === AUDITORIA DE INVENTÁRIO ===
+    async getInventoryAudits() {
+        const snap = await db.collection('inventory_audits')
+            .where('userId', '==', this._uid())
+            .orderBy('date', 'desc')
+            .get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    async addInventoryAudit(data) {
+        data.userId = this._uid();
+        data.date = firebase.firestore.FieldValue.serverTimestamp();
+        data.responsible = firebase.auth().currentUser?.displayName || firebase.auth().currentUser?.email || 'Profissional';
+        const ref = await db.collection('inventory_audits').add(data);
+        return ref.id;
+    },
+
+    // === STUDIO CONFIG ===
+    async getStudioConfig() {
+        const doc = await db.collection('studioConfig').doc(this._uid()).get();
+        return doc.exists ? doc.data() : {};
+    },
+    async updateStudioConfig(data) {
+        data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection('studioConfig').doc(this._uid()).set(data, { merge: true });
+    },
+
+    // === RETENÇÃO DE CLIENTES ===
+    async getRetentionData() {
+        const uid = this._uid();
+        const [clientsSnap, apptsSnap] = await Promise.all([
+            db.collection('clients').where('userId','==',uid).get(),
+            db.collection('appointments').where('userId','==',uid).where('status','==','done').get()
+        ]);
+        const clients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const appts = apptsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        const today = new Date(); today.setHours(0,0,0,0);
+        const clientMap = {};
+        
+        // Agregar por cliente
+        appts.forEach(a => {
+            const cid = a.clientId;
+            if (!clientMap[cid]) clientMap[cid] = { visits: [], totalSpent: 0 };
+            const dt = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            clientMap[cid].visits.push({ date: dt, procedure: a.procedure, price: parseFloat(a.price || a.value || 0) });
+            clientMap[cid].totalSpent += parseFloat(a.price || a.value || 0);
+        });
+        
+        // Calcular métricas por cliente
+        const enriched = clients.map(c => {
+            const data = clientMap[c.id] || { visits: [], totalSpent: 0 };
+            const sorted = data.visits.sort((a, b) => b.date - a.date);
+            const lastVisit = sorted[0]?.date || null;
+            const daysSince = lastVisit ? Math.floor((today - lastVisit) / (1000*60*60*24)) : 999;
+            return {
+                ...c,
+                totalVisits: sorted.length,
+                totalSpent: data.totalSpent,
+                lastVisit,
+                lastProcedure: sorted[0]?.procedure || '',
+                daysSinceLastVisit: daysSince,
+                avgInterval: sorted.length > 1 ? Math.round((sorted[0].date - sorted[sorted.length-1].date) / (1000*60*60*24) / (sorted.length - 1)) : 0
+            };
+        });
+        
+        return { clients: enriched, appointments: appts };
+    },
+
+    async getInactiveClients(daysThreshold = 45) {
+        const { clients } = await this.getRetentionData();
+        return clients
+            .filter(c => c.totalVisits > 0 && c.daysSinceLastVisit >= daysThreshold)
+            .sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit);
     }
 };
 

@@ -216,6 +216,10 @@ const TeamManagement = {
                                 onclick="TeamManagement.editCommission('${m.id}','${(m.name||'').replace(/'/g,"\\'")}')">
                                 ✏️ Editar comissão
                             </button>
+                            <button class="btn btn-ghost btn-sm" style="font-size:.78rem;padding:3px 10px"
+                                onclick="TeamManagement.editPermissions('${m.id}','${(m.name||'').replace(/'/g,"\\'")}')">
+                                🔐 Permissões
+                            </button>
                         </div>
                     </div>
                     <button class="btn btn-ghost" style="color:#ff6b6b;font-size:.82rem;flex-shrink:0"
@@ -434,5 +438,163 @@ const TeamManagement = {
             App.currentPage = null;
             await App.navigate('team');
         } catch(err) { App.toast('Erro: ' + err.message, 'error'); }
+    },
+
+    async editPermissions(memberId, memberName) {
+        let permissions = {};
+        try {
+            const doc = await db.collection('professionals').doc(memberId).get();
+            if (doc.exists && doc.data().permissions) {
+                permissions = doc.data().permissions;
+            }
+        } catch (e) { console.warn('Erro ao buscar permissões:', e); }
+
+        const opModules = [
+            { id: 'schedule',     label: '📅 Agenda',                    desc: 'Visualizar e criar agendamentos de clientes' },
+            { id: 'clients',      label: '👥 Cadastro de Clientes',      desc: 'Cadastrar e editar dados de clientes' },
+            { id: 'interactions', label: '📊 Histórico de Atendimentos', desc: 'Consultar atendimentos antigos das clientes' },
+            { id: 'ficha',        label: '✨ Ficha Técnica',             desc: 'Preencher fichas de anamnese (Cílios, Sobrancelha, Manicure...)' },
+            { id: 'portfolio',    label: '📸 Portfólio de Fotos',        desc: 'Adicionar antes/depois de fotos aos perfis' },
+            { id: 'reminders',    label: '🔔 Central de Lembretes',      desc: 'Ver e enviar mensagens de confirmação e lembretes' },
+            { id: 'birthday',     label: '🎂 Aniversariantes',           desc: 'Visualizar aniversariantes do mês atual' },
+            { id: 'consent',      label: '📋 Termo de Consentimento',    desc: 'Coletar assinaturas digitais nos termos das clientes' },
+            { id: 'tutorial',     label: '📖 Guia de Uso',               desc: 'Acessar tutoriais explicativos da plataforma' }
+        ];
+
+        const admModules = [
+            { id: 'dashboard',            label: '📈 Dashboard Financeiro',      desc: 'Visualizar gráficos, faturamento e resumo financeiro' },
+            { id: 'reports',              label: '📊 Relatórios de Desempenho',  desc: 'Relatórios de faturamento, comissões e atendimentos' },
+            { id: 'invoices',             label: '💰 Central Financeira',        desc: 'Controle de contas a pagar (despesas) e receber' },
+            { id: 'inventory',            label: '📦 Controle de Estoque',       desc: 'Visualizar e editar insumos, colas e produtos' },
+            { id: 'catalog',              label: '🛍️ Catálogo de Serviços',     desc: 'Cadastrar e alterar preços de procedimentos' },
+            { id: 'bolsa-beleza',         label: '👛 A Bolsa da Beleza',         desc: 'Acessar e criar campanhas de vendas e ofertas' },
+            { id: 'referrals',            label: '🎁 Indique e Ganhe',           desc: 'Gerenciar programa de indicação de outras profissionais' },
+            { id: 'loyalty',              label: '💎 Programa de Fidelidade',     desc: 'Configurar cashback e pontos para clientes' },
+            { id: 'reviews',              label: '⭐ Avaliações NPS',             desc: 'Visualizar notas e feedbacks deixados por clientes' },
+            { id: 'booking-online',       label: '📅 Configurar Agenda Online',  desc: 'Alterar regras do link de agendamento da bio' },
+            { id: 'notifications-config', label: '💬 Configurar WhatsApp Z-API',  desc: 'Alterar chaves de automação de mensagens de confirmação' },
+            { id: 'bio-link',             label: '🔗 Personalizar Link da Bio',  desc: 'Configurar cartão de visita digital e links de redes' },
+            { id: 'business-hours',       label: '🕐 Horários de Funcionamento', desc: 'Definir horário padrão do estúdio e dias de folga' },
+            { id: 'studio-profile',       label: '🏪 Perfil do Estúdio',         desc: 'Alterar endereço, logo e nome fantasia do negócio' },
+            { id: 'cost-calc',            label: '🧮 Calculadora de Custos',     desc: 'Calcular preço de custo por procedimento' },
+            { id: 'team',                 label: '👥 Gestão de Equipe',          desc: 'Convidar profissionais, comissões e gerenciar acessos' },
+            { id: 'settings',             label: '⚙️ Configurações & Assinatura',desc: 'Gerenciar fatura do Asaas e chaves gerais da conta' }
+        ];
+
+        const renderCheckboxes = (modules, defaultVal) => {
+            return modules.map(m => {
+                const checked = permissions[m.id] !== undefined ? !!permissions[m.id] : defaultVal;
+                return `
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;margin-bottom:2px">
+                    <input type="checkbox" id="perm-chk-${m.id}" data-page="${m.id}" ${checked ? 'checked' : ''} style="margin-top:4px;cursor:pointer;accent-color:var(--primary)" />
+                    <label for="perm-chk-${m.id}" style="cursor:pointer;flex:1">
+                        <div style="font-weight:600;font-size:.86rem;color:var(--text-primary)">${m.label}</div>
+                        <div style="font-size:.74rem;color:var(--text-muted);margin-top:1px;line-height:1.3">${m.desc}</div>
+                    </label>
+                </div>`;
+            }).join('');
+        };
+
+        const modalId = 'perm-modal-' + memberId;
+        document.getElementById(modalId)?.remove();
+
+        const modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '9999';
+        modal.innerHTML = `
+          <div class="modal-container" onclick="event.stopPropagation()" style="max-width:650px;width:95%">
+            <div class="modal-header">
+              <h3 class="modal-title">🔐 Permissões — ${memberName}</h3>
+              <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">✕</button>
+            </div>
+            <div class="modal-body" style="max-height:75vh;overflow-y:auto;padding-right:4px">
+              <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:16px">
+                Marque abaixo quais páginas e funcionalidades a profissional poderá acessar.
+              </p>
+              
+              <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                <button class="btn btn-outline btn-sm" style="font-size:.78rem;padding:6px 12px" onclick="TeamManagement._setAllPerms('${modalId}', 'operacional')">📋 Operacionais Apenas</button>
+                <button class="btn btn-outline btn-sm" style="font-size:.78rem;padding:6px 12px" onclick="TeamManagement._setAllPerms('${modalId}', 'full')">⚡ Acesso Total</button>
+                <button class="btn btn-outline btn-sm" style="font-size:.78rem;padding:6px 12px" onclick="TeamManagement._setAllPerms('${modalId}', 'none')">❌ Restringir Tudo</button>
+              </div>
+
+              <div style="margin-bottom:20px">
+                <h4 style="font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:10px;border-left:3px solid var(--primary);padding-left:8px">
+                    🛠️ MÓDULOS OPERACIONAIS (ATENDIMENTO)
+                </h4>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(270px, 1fr));gap:8px">
+                    ${renderCheckboxes(opModules, true)}
+                </div>
+              </div>
+
+              <div>
+                <h4 style="font-size:.85rem;font-weight:800;color:#c9a96e;margin-bottom:10px;border-left:3px solid #c9a96e;padding-left:8px">
+                    💼 MÓDULOS DE GESTÃO E CONFIGURAÇÕES
+                </h4>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(270px, 1fr));gap:8px">
+                    ${renderCheckboxes(admModules, false)}
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;border-top:1px solid var(--border-color);padding-top:16px">
+                <button class="btn btn-ghost" onclick="document.getElementById('${modalId}').remove()">Cancelar</button>
+                <button class="btn btn-primary" onclick="TeamManagement._savePermissions('${memberId}','${modalId}')">
+                  <span class="material-symbols-outlined">save</span> Salvar Permissões
+                </button>
+              </div>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+    },
+
+    _setAllPerms(modalId, mode) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        const checks = modal.querySelectorAll('input[type="checkbox"]');
+        const opPages = ['schedule', 'clients', 'interactions', 'ficha', 'portfolio', 'reminders', 'birthday', 'consent', 'tutorial'];
+        checks.forEach(chk => {
+            const page = chk.dataset.page;
+            if (mode === 'full') {
+                chk.checked = true;
+            } else if (mode === 'none') {
+                chk.checked = false;
+            } else if (mode === 'operacional') {
+                chk.checked = opPages.includes(page);
+            }
+        });
+    },
+
+    async _savePermissions(memberId, modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        const newPermissions = {};
+        modal.querySelectorAll('input[type="checkbox"]').forEach(chk => {
+            const page = chk.dataset.page;
+            newPermissions[page] = chk.checked;
+        });
+
+        try {
+            await db.collection('professionals').doc(memberId).update({ permissions: newPermissions });
+
+            const doc = await db.collection('professionals').doc(memberId).get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.authUid) {
+                    await db.collection('professionals').doc(data.authUid).update({ permissions: newPermissions });
+                }
+                if (data.originalInviteId) {
+                    await db.collection('professionals').doc(data.originalInviteId).update({ permissions: newPermissions });
+                }
+            }
+
+            App.toast('✅ Permissões salvas!', 'success');
+            document.getElementById(modalId)?.remove();
+            App.currentPage = null;
+            await App.navigate('team');
+        } catch(err) {
+            App.toast('Erro: ' + err.message, 'error');
+        }
     }
 };

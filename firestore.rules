@@ -28,6 +28,16 @@ service cloud.firestore {
       return isOwner(ownerId) || isProfessionalOf(ownerId);
     }
 
+    // Retorna o ownerId efetivo do usuário autenticado:
+    // - Se é profissional → retorna o ownerId do vínculo
+    // - Se é owner → retorna o próprio uid
+    function effectiveOwnerId() {
+      return exists(/databases/$(database)/documents/professionals/$(request.auth.uid))
+        && get(/databases/$(database)/documents/professionals/$(request.auth.uid)).data.status == 'active'
+        ? get(/databases/$(database)/documents/professionals/$(request.auth.uid)).data.ownerId
+        : request.auth.uid;
+    }
+
     // ============================================================
     // COMPANY — Perfil do studio (só owner)
     // ============================================================
@@ -52,12 +62,13 @@ service cloud.firestore {
     // PROFESSIONALS — Registro de profissionais
     // ============================================================
     match /professionals/{profId} {
-      // Owner pode ler/escrever profissionais vinculados a ele
+      // Owner pode ler profissionais vinculados a ele; profissional lê o próprio
       allow read: if isAuth() && (
         request.auth.uid == profId ||
         resource.data.ownerId == request.auth.uid
       );
-      allow create: if isAuth();
+      // Criação: só o próprio usuário pode criar seu registro de profissional
+      allow create: if isAuth() && request.auth.uid == profId;
       allow update: if isAuth() && (
         request.auth.uid == profId ||
         resource.data.ownerId == request.auth.uid
@@ -69,13 +80,20 @@ service cloud.firestore {
     // TEAM_INVITES — Convites de equipe
     // ============================================================
     match /team_invites/{inviteId} {
-      // Owner pode gerenciar seus convites
-      allow read, write: if isAuth() && (
+      // Leitura: owner dos convites ou destinatário
+      allow read: if isAuth() && (
         resource == null ||
         resource.data.ownerId == request.auth.uid ||
         resource.data.email == request.auth.token.email
       );
-      allow create: if isAuth();
+      // Criação: owner deve ser quem está criando
+      allow create: if isAuth() && request.resource.data.ownerId == request.auth.uid;
+      // Atualização: owner ou destinatário (para aceitar/rejeitar)
+      allow update: if isAuth() && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.email == request.auth.token.email
+      );
+      allow delete: if isAuth() && resource.data.ownerId == request.auth.uid;
     }
 
     // ============================================================
@@ -89,8 +107,16 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo do criador
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
+
+      // Subcoleção technicalSheets (fichas técnicas por cliente)
+      match /technicalSheets/{sheetId} {
+        allow read: if isAuth();
+        allow write: if isAuth();
+      }
     }
 
     // AGENDAMENTOS — equipe pode ver todos do studio, criar os seus
@@ -98,7 +124,9 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
@@ -107,7 +135,9 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && (
         isTeamMember(resource.data.userId)
       );
@@ -118,7 +148,9 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
@@ -127,7 +159,9 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
@@ -136,7 +170,9 @@ service cloud.firestore {
       allow read: if isAuth() && (
         resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth();
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
@@ -145,8 +181,9 @@ service cloud.firestore {
       // Leitura: equipe autenticada OU público (para página de assinatura)
       allow read: if true;
       
-      // Criação: apenas equipe autenticada
-      allow create: if isAuth();
+      // Criação: apenas equipe autenticada com userId correto
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
       
       // Update: equipe autenticada OU update público apenas de campos de assinatura
       allow update: if (isAuth() && isTeamMember(resource.data.userId))
@@ -159,78 +196,115 @@ service cloud.firestore {
 
     // ============================================================
     // DADOS EXCLUSIVOS DO OWNER (gestão)
+    // Owner e profissionais vinculados ao studio
     // ============================================================
 
-    // ESTOQUE — só owner
+    // ESTOQUE — owner e equipe
     match /inventory/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
-    // LOGS DE ESTOQUE — só owner
+    // LOGS DE ESTOQUE — owner e equipe
     match /inventory_logs/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
+    }
+
+    // AUDITORIA DE ESTOQUE — owner e equipe
+    match /inventory_audits/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
+      );
+      // Criação: userId deve ser o ownerId efetivo
+      allow create: if isAuth()
+        && request.resource.data.userId == effectiveOwnerId();
+      allow update, delete: if isAuth() && isTeamMember(resource.data.userId);
     }
 
     // FINANCEIRO — só owner
     match /invoices/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      // Criação: só owner direto (não profissional)
+      allow create: if isAuth()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
     // CONTAS A PAGAR — só owner
     match /expenses/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isOwner(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
     // LISTA DE COMPRAS — só owner
     match /shoppingList/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isOwner(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
-    // CATÁLOGO — só owner
+    // CATÁLOGO — leitura pela equipe, escrita só owner
     match /catalog/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
     // ANÁLISES DE CUSTO — só owner
     match /cost_analyses/{docId} {
-      allow read, write: if isAuth() && (
-        resource == null || resource.data.userId == request.auth.uid
+      allow read: if isAuth() && (
+        resource == null || isOwner(resource.data.userId)
       );
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
     // ============================================================
     // PROGRAMA DE INDICAÇÕES
     // ============================================================
     match /referrals/{docId} {
-      allow read: if isAuth();
+      // Cada usuário só lê seus próprios referrals
+      allow read: if isAuth() && (
+        resource == null ||
+        resource.data.referrerId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
       allow write: if false;
     }
     match /referral_payments/{docId} {
-      allow read: if isAuth() && (
-        resource == null || resource.data.referrerId == request.auth.uid
-      );
+      // Leitura: próprio indicador OU admin (sem auth, protegido por PIN na UI)
+      allow read: if true;
+      // Criação: usuários autenticados (ao se cadastrar via link de indicação)
       allow create: if isAuth();
-      allow update, delete: if false;
+      // Atualização: admin marca como pago (protegido por PIN na UI)
+      allow update: if true;
+      allow delete: if false;
     }
+
     // ============================================================
     // STUDIOS — Perfil do studio (nova coleção centralizada)
     // ============================================================
@@ -242,9 +316,13 @@ service cloud.firestore {
 
       // Subcoleção bookings — escrita pública (clientes sem auth), leitura só do owner
       match /bookings/{bookingId} {
-        allow read: if isOwner(studioId);
+        allow read: if isOwner(studioId) || isProfessionalOf(studioId);
         allow create: if true;  // qualquer cliente pode criar agendamento
-        allow update, delete: if isOwner(studioId);
+        // Update: owner pode tudo, Cloud Function pode atualizar paymentStatus
+        allow update: if isOwner(studioId)
+          || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['paymentStatus', 'paymentId', 'paymentUrl', 'paidAt', 'refundedAt', 'status']);
+        allow delete: if isOwner(studioId);
       }
 
       // Subcoleção services — leitura pública, escrita só owner
@@ -260,10 +338,23 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // CONFIGURAÇÕES DO ESTÚDIO — só owner lê/escreve
+    // CONFIGURAÇÕES DO ESTÚDIO
+    // Leitura pública para booking verificar config de pagamento
+    // Escrita apenas pelo owner
     // ============================================================
     match /studioConfig/{studioId} {
-      allow read, write: if isOwner(studioId);
+      allow read: if true;
+      allow write: if isOwner(studioId);
+    }
+
+    // ============================================================
+    // TRANSAÇÕES DE RECARGA DE SMS
+    // ============================================================
+    match /sms_transactions/{docId} {
+      allow read: if isAuth() && (
+        resource == null || isTeamMember(resource.data.studioId)
+      );
+      allow write: if false; // Gerenciado estritamente via Cloud Functions
     }
 
     // ============================================================
@@ -271,7 +362,12 @@ service cloud.firestore {
     // ============================================================
     match /reviews/{reviewId} {
       // Qualquer pessoa pode criar (link enviado por WhatsApp, sem auth)
-      allow create: if true;
+      // Validar que studioId está presente e é uma string
+      allow create: if request.resource.data.studioId is string
+        && request.resource.data.studioId.size() > 0
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
       // Owner pode ler as suas avaliações
       allow read: if isAuth() && (
         resource == null || resource.data.studioId == request.auth.uid
@@ -281,11 +377,36 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // CONVITES DE PARCEIROS — leitura pública, escrita pelo painel admin
+    // CONVITES DE PARCEIROS — leitura pública, escrita controlada
     // ============================================================
     match /invites/{inviteId} {
       allow read: if true;   // app valida convite sem auth
-      allow write: if true;  // painel admin usa PIN próprio
+      // Criação: apenas autenticados
+      allow create: if isAuth();
+      // Atualização: apenas campos de uso (usedBy, usedAt, status)
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['usedBy', 'usedAt', 'status', 'usedCount']);
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // QUESTIONÁRIO DE AVALIAÇÃO — escrita pública, leitura apenas admin
+    // ============================================================
+    match /survey_responses/{responseId} {
+      // Qualquer pessoa pode criar (formulário público sem auth)
+      allow create: if true;
+      // Ninguém pode ler, editar ou excluir via client
+      allow read, update, delete: if false;
+    }
+
+    // ============================================================
+    // CRM ADMINISTRATIVO E CAMPANHAS EM LOTE
+    // ============================================================
+    match /admin_contacts/{contactId} {
+      allow read, write: if true;
+    }
+    match /admin_campaigns/{campaignId} {
+      allow read, write: if true;
     }
 
   }

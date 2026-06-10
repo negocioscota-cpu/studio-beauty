@@ -15,7 +15,14 @@ const Catalog = {
         { name: 'Henna de Sobrancelhas', category: 'sobrancelhas', duration: '30 min', price: 40 },
     ],
 
+    inventoryItems: [],
+
     async render(container) {
+        Catalog.inventoryItems = [];
+        try {
+            Catalog.inventoryItems = await Store.getInventory();
+        } catch(e) { console.warn("Erro ao buscar estoque no catálogo:", e); }
+
         container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:20px">
           <!-- Header -->
@@ -99,6 +106,18 @@ const Catalog = {
                   <label class="form-label">Descrição</label>
                   <textarea class="form-control" id="cat-description" rows="2" placeholder="Detalhes do procedimento (exibido em futura página de agendamento online)"></textarea>
                 </div>
+
+                <!-- Insumos Utilizados (Baixa Automática) -->
+                <div class="form-group form-group-full" style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+                  <h4 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;margin:0 0 12px 0">📦 Insumos Utilizados (Baixa Automática)</h4>
+                  <div id="cat-inputs-list" style="display:flex;flex-direction:column;gap:10px">
+                    <!-- Gerado dinamicamente -->
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="Catalog.addInputRow()" style="margin-top:10px;gap:6px;font-size:0.75rem;padding:4px 8px;display:inline-flex;align-items:center">
+                    <span class="material-symbols-outlined" style="font-size:16px">add_circle</span> Adicionar Insumo
+                  </button>
+                </div>
+
                 <div class="form-group form-group-full">
                   <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
                     <input type="checkbox" id="cat-active" checked> Serviço ativo (visível para agendamento)
@@ -195,6 +214,9 @@ const Catalog = {
         document.getElementById('cat-active').checked = true;
         document.getElementById('catalog-modal-title').textContent = id ? 'Editar Serviço' : 'Novo Procedimento';
 
+        const inputsContainer = document.getElementById('cat-inputs-list');
+        if (inputsContainer) inputsContainer.innerHTML = '';
+
         if (id) {
             const item = (Catalog._allItems || []).find(i => i.id === id);
             if (item) {
@@ -205,6 +227,11 @@ const Catalog = {
                 document.getElementById('cat-promo-price').value = item.promoPrice || '';
                 document.getElementById('cat-description').value = item.description || '';
                 document.getElementById('cat-active').checked = item.active !== false;
+
+                const inputs = item.inputs || [];
+                inputs.forEach(inp => {
+                    Catalog.addInputRow(inp.productId, inp.qty);
+                });
             }
         }
         document.getElementById('catalog-modal').classList.remove('hidden');
@@ -218,6 +245,19 @@ const Catalog = {
 
     async handleSave(e) {
         e.preventDefault();
+
+        const inputs = [];
+        document.querySelectorAll('.cat-input-item-row').forEach(row => {
+            const select = row.querySelector('.cat-input-select');
+            const qtyInput = row.querySelector('.cat-input-qty');
+            if (select && qtyInput && select.value) {
+                inputs.push({
+                    productId: select.value,
+                    qty: parseFloat(qtyInput.value) || 1
+                });
+            }
+        });
+
         const data = {
             name: document.getElementById('cat-name').value,
             category: document.getElementById('cat-category').value,
@@ -225,7 +265,8 @@ const Catalog = {
             price: parseFloat(document.getElementById('cat-price').value) || 0,
             promoPrice: parseFloat(document.getElementById('cat-promo-price').value) || null,
             description: document.getElementById('cat-description').value,
-            active: document.getElementById('cat-active').checked
+            active: document.getElementById('cat-active').checked,
+            inputs: inputs
         };
 
         try {
@@ -264,5 +305,31 @@ const Catalog = {
         await Store.deleteCatalog(id);
         App.showToast('Serviço removido.', 'success');
         await Catalog.loadList();
+    },
+
+    addInputRow(productId = '', qty = '') {
+        const container = document.getElementById('cat-inputs-list');
+        if (!container) return;
+        
+        const rowId = 'cat-input-row-' + Math.random().toString(36).substring(2, 9);
+        const row = document.createElement('div');
+        row.id = rowId;
+        row.className = 'cat-input-item-row';
+        row.style.cssText = 'display:flex;gap:10px;align-items:center';
+        
+        const optionsHTML = Catalog.inventoryItems.length === 0
+            ? `<option value="">-- Cadastre produtos no estoque --</option>`
+            : `<option value="">-- Selecione o insumo --</option>` + Catalog.inventoryItems.map(i => `<option value="${i.id}" ${i.id === productId ? 'selected' : ''}>${i.name} (${i.unit || 'unid'})</option>`).join('');
+            
+        row.innerHTML = `
+            <select class="form-control cat-input-select" style="flex:1.5;font-size:0.8rem;padding:6px 10px" required>
+                ${optionsHTML}
+            </select>
+            <input class="form-control cat-input-qty" type="number" step="0.001" min="0.001" value="${qty || 1}" placeholder="Qtd" style="flex:0.8;font-size:0.8rem;padding:6px 10px" required />
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('${rowId}').remove()" style="color:var(--danger);padding:4px;display:flex;align-items:center;justify-content:center" title="Remover">
+                <span class="material-symbols-outlined" style="font-size:1.2rem">delete</span>
+            </button>
+        `;
+        container.appendChild(row);
     }
 };
