@@ -14,8 +14,8 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+var auth = firebase.auth();
+var db = firebase.firestore();
 
 // 🔌 Habilitar persistência offline — dados ficam em cache local (IndexedDB)
 // Leituras funcionam offline com cache; escritas entram em fila e sincronizam ao reconectar
