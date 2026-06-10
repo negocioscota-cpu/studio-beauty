@@ -1067,7 +1067,7 @@ const FichaTecnica = {
         const isNail = tipo === 'manicure';
         if (secCilios)     secCilios.style.display     = (isCil || isLift) ? '' : 'none';
         if (secMapeamento) secMapeamento.style.display  = (isCil || isLift || isBrow || isLip || isFace || isNail) ? '' : 'none';
-        if (secLami)       secLami.style.display        = (isLift || isBrow) ? '' : 'none';
+        if (secLami)       secLami.style.display        = (isCil || isLift || isBrow) ? '' : 'none';
         if (secBrow)       secBrow.style.display        = isBrow ? '' : 'none';
         if (secLip)        secLip.style.display         = isLip ? '' : 'none';
         if (secFace)       secFace.style.display        = isFace ? '' : 'none';
