@@ -3,44 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bio — LashBrow</title>
+  <title>Bio — Studio Beauty</title>
   <meta name="description" content="Agende, veja o portfólio, indique e ganhe ou entre em contato." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    :root{--primary:#C4758A;--primary-light:#e8a4b8;--gold:#C9A96E;--bg:#120810;--surface:#1e1018;--surface-2:#2a1520;--border:rgba(196,117,138,.18);--text:#f0e6ea;--text-muted:rgba(240,230,234,.55)}
+    :root{--primary:#C4758A;--primary-light:#e8a4b8;--gold:#C9A96E;--gold-light:#e0c78a;--bg:#0a060d;--surface:#16101a;--surface-2:#201628;--border:rgba(196,117,138,.15);--text:#f2eaee;--text-muted:rgba(240,230,234,.5)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow-x:hidden}
 
     /* Loading */
-    #bio-loading{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#120810,#1e0a14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-    .spin{width:36px;height:36px;border:3px solid rgba(196,117,138,.2);border-top-color:#C4758A;border-radius:50%;animation:spin .8s linear infinite}
+    #bio-loading{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    .spin{width:36px;height:36px;border:3px solid rgba(196,117,138,.2);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .logo-text{font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#e8a4b8,#C9A96E);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-text{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--primary-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
-    /* App */
-    #bio-app{display:none;width:100%;max-width:440px;padding:40px 24px 60px;flex-direction:column;align-items:center;gap:0}
-
-    /* Background decoration */
+    /* Background */
     body::before{
       content:'';position:fixed;inset:0;pointer-events:none;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%,rgba(196,117,138,.18),transparent),
-        radial-gradient(ellipse 60% 40% at 80% 80%,rgba(201,169,110,.08),transparent);
+        radial-gradient(ellipse 100% 60% at 50% -20%,rgba(196,117,138,.12),transparent 60%),
+        radial-gradient(ellipse 70% 50% at 80% 90%,rgba(201,169,110,.06),transparent 50%),
+        radial-gradient(circle at 20% 50%,rgba(196,117,138,.04),transparent 40%);
     }
+    /* Floating particles */
+    body::after{
+      content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%,rgba(196,117,138,.25),transparent),
+        radial-gradient(1px 1px at 30% 45%,rgba(201,169,110,.2),transparent),
+        radial-gradient(1px 1px at 70% 25%,rgba(196,117,138,.15),transparent),
+        radial-gradient(1px 1px at 85% 65%,rgba(201,169,110,.2),transparent),
+        radial-gradient(1px 1px at 50% 80%,rgba(196,117,138,.18),transparent);
+      animation:float 20s ease-in-out infinite alternate;
+    }
+    @keyframes float{0%{transform:translate(0,0)}100%{transform:translate(10px,-15px)}}
+
+    /* App */
+    #bio-app{display:none;width:100%;max-width:440px;padding:48px 24px 60px;flex-direction:column;align-items:center;gap:0;position:relative;z-index:1}
+    #bio-app.visible{display:flex}
 
     /* Avatar */
-    .bio-avatar{width:96px;height:96px;border-radius:50%;background:var(--surface-2);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:2.8rem;box-shadow:0 0 0 8px rgba(196,117,138,.08),0 16px 48px rgba(0,0,0,.5);margin-bottom:20px}
+    .bio-avatar{
+      width:110px;height:110px;border-radius:50%;
+      background:linear-gradient(135deg,var(--surface),var(--surface-2));
+      border:3px solid transparent;
+      background-clip:padding-box;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;
+      font-size:3rem;
+      box-shadow:0 0 0 4px rgba(196,117,138,.15),0 0 40px rgba(196,117,138,.12),0 20px 60px rgba(0,0,0,.5);
+      margin-bottom:20px;
+      position:relative;
+      animation:avatarIn .6s ease;
+    }
+    .bio-avatar::before{
+      content:'';position:absolute;inset:-3px;border-radius:50%;
+      background:linear-gradient(135deg,var(--primary),var(--gold));
+      z-index:-1;
+    }
     .bio-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    @keyframes avatarIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 
     /* Name & Bio */
-    .bio-name{font-size:1.5rem;font-weight:800;text-align:center;background:linear-gradient(135deg,var(--primary-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
-    .bio-desc{font-size:.88rem;color:var(--text-muted);text-align:center;max-width:300px;line-height:1.55;margin-bottom:8px}
-    .bio-city{font-size:.8rem;color:var(--text-muted);margin-bottom:32px;display:flex;align-items:center;gap:4px}
+    .bio-name{
+      font-family:'Playfair Display',serif;
+      font-size:1.7rem;font-weight:800;text-align:center;
+      background:linear-gradient(135deg,#fff 30%,var(--primary-light) 50%,var(--gold-light) 80%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      margin-bottom:8px;letter-spacing:-.5px;
+      animation:fadeIn .6s ease .1s both;
+    }
+    .bio-desc{font-size:.88rem;color:var(--text-muted);text-align:center;max-width:320px;line-height:1.6;margin-bottom:8px;animation:fadeIn .6s ease .15s both}
+    .bio-city{font-size:.8rem;color:var(--text-muted);margin-bottom:28px;display:flex;align-items:center;gap:5px;animation:fadeIn .6s ease .2s both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Social row */
+    .bio-socials{display:flex;gap:12px;margin-bottom:28px;animation:fadeIn .6s ease .22s both}
+    .bio-social{
+      width:40px;height:40px;border-radius:50%;
+      background:var(--surface-2);border:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;
+      text-decoration:none;color:var(--text-muted);font-size:1.1rem;
+      transition:all .25s;
+    }
+    .bio-social:hover{background:var(--primary);color:#fff;border-color:transparent;transform:translateY(-3px);box-shadow:0 8px 20px rgba(196,117,138,.3)}
 
     /* Links */
     .bio-links{display:flex;flex-direction:column;gap:12px;width:100%}
@@ -53,68 +103,96 @@
       color:var(--text);
       font-weight:600;font-size:.95rem;
       border:1px solid var(--border);
-      background:var(--surface);
-      transition:transform .18s,box-shadow .18s,background .18s,border-color .18s;
+      background:rgba(255,255,255,.03);
+      backdrop-filter:blur(10px);
+      transition:all .25s cubic-bezier(.4,0,.2,1);
       position:relative;overflow:hidden;
     }
     .bio-link::before{
       content:'';position:absolute;inset:0;opacity:0;
-      background:linear-gradient(135deg,rgba(196,117,138,.08),rgba(201,169,110,.04));
-      transition:opacity .2s;
+      background:linear-gradient(135deg,rgba(196,117,138,.1),rgba(201,169,110,.05));
+      transition:opacity .25s;
     }
-    .bio-link:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 12px 36px rgba(0,0,0,.35);border-color:rgba(196,117,138,.4)}
+    .bio-link:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 16px 48px rgba(0,0,0,.35);border-color:rgba(196,117,138,.35)}
     .bio-link:hover::before{opacity:1}
     .bio-link:active{transform:translateY(0) scale(.99)}
 
-    /* Variantes de cor */
-    .bio-link.primary{background:linear-gradient(135deg,var(--primary),#a85570);border-color:transparent;box-shadow:0 8px 28px rgba(196,117,138,.4)}
-    .bio-link.primary:hover{box-shadow:0 12px 40px rgba(196,117,138,.6)}
-    .bio-link.gold{background:linear-gradient(135deg,rgba(201,169,110,.15),rgba(201,169,110,.05));border-color:rgba(201,169,110,.35)}
-    .bio-link.gold:hover{border-color:var(--gold)}
-    .bio-link.whatsapp{background:linear-gradient(135deg,rgba(37,211,102,.1),rgba(37,211,102,.04));border-color:rgba(37,211,102,.25)}
-    .bio-link.whatsapp:hover{border-color:rgba(37,211,102,.55)}
+    /* CTA Principal */
+    .bio-link.cta{
+      background:linear-gradient(135deg,var(--primary),#a85570);
+      border-color:transparent;
+      box-shadow:0 8px 32px rgba(196,117,138,.35);
+      position:relative;
+    }
+    .bio-link.cta::after{
+      content:'';position:absolute;top:0;left:-100%;width:200%;height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shine 3s ease-in-out infinite;
+    }
+    .bio-link.cta:hover{box-shadow:0 16px 48px rgba(196,117,138,.5)}
+    @keyframes shine{0%{left:-100%}50%{left:100%}100%{left:100%}}
 
-    .bio-link-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;background:rgba(255,255,255,.06)}
-    .bio-link.primary .bio-link-icon{background:rgba(255,255,255,.15)}
+    /* Variantes */
+    .bio-link.gold{background:linear-gradient(135deg,rgba(201,169,110,.12),rgba(201,169,110,.04));border-color:rgba(201,169,110,.25)}
+    .bio-link.gold:hover{border-color:var(--gold);box-shadow:0 16px 48px rgba(201,169,110,.2)}
+    .bio-link.whatsapp{background:linear-gradient(135deg,rgba(37,211,102,.1),rgba(37,211,102,.03));border-color:rgba(37,211,102,.2)}
+    .bio-link.whatsapp:hover{border-color:rgba(37,211,102,.5);box-shadow:0 16px 48px rgba(37,211,102,.15)}
+    .bio-link.review{background:linear-gradient(135deg,rgba(250,204,21,.08),rgba(250,204,21,.02));border-color:rgba(250,204,21,.2)}
+    .bio-link.review:hover{border-color:rgba(250,204,21,.45);box-shadow:0 16px 48px rgba(250,204,21,.1)}
 
-    .bio-link-content{flex:1}
-    .bio-link-title{font-weight:700;color:var(--text);line-height:1.2}
-    .bio-link.primary .bio-link-title{color:#fff}
-    .bio-link-sub{font-size:.78rem;color:var(--text-muted);font-weight:400;margin-top:2px}
-    .bio-link.primary .bio-link-sub{color:rgba(255,255,255,.7)}
+    .bio-link-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;background:rgba(255,255,255,.06)}
+    .bio-link.cta .bio-link-icon{background:rgba(255,255,255,.15)}
 
-    .bio-link-arrow{color:var(--text-muted);font-size:1.1rem;flex-shrink:0}
-    .bio-link.primary .bio-link-arrow{color:rgba(255,255,255,.7)}
+    .bio-link-content{flex:1;min-width:0}
+    .bio-link-title{font-weight:700;color:var(--text);line-height:1.2;font-size:.95rem}
+    .bio-link.cta .bio-link-title{color:#fff}
+    .bio-link-sub{font-size:.78rem;color:var(--text-muted);font-weight:400;margin-top:3px;line-height:1.35}
+    .bio-link.cta .bio-link-sub{color:rgba(255,255,255,.7)}
 
-    /* Divisor */
-    .bio-divider{width:100%;height:1px;background:var(--border);margin:8px 0}
+    .bio-link-arrow{color:var(--text-muted);font-size:1.1rem;flex-shrink:0;transition:transform .2s}
+    .bio-link:hover .bio-link-arrow{transform:translateX(3px)}
+    .bio-link.cta .bio-link-arrow{color:rgba(255,255,255,.7)}
+
+    /* Animations stagger */
+    .bio-link{animation:slideUp .45s ease both}
+    .bio-link:nth-child(1){animation-delay:.08s}
+    .bio-link:nth-child(2){animation-delay:.14s}
+    .bio-link:nth-child(3){animation-delay:.2s}
+    .bio-link:nth-child(4){animation-delay:.26s}
+    .bio-link:nth-child(5){animation-delay:.32s}
+    .bio-link:nth-child(6){animation-delay:.38s}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Divider */
+    .bio-divider{width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:20px auto}
+
+    /* Stats mini */
+    .bio-stats{display:flex;gap:20px;margin-bottom:28px;animation:fadeIn .6s ease .25s both}
+    .bio-stat{text-align:center}
+    .bio-stat-value{font-size:1.1rem;font-weight:800;color:var(--gold-light)}
+    .bio-stat-label{font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
 
     /* Footer */
-    .bio-footer{margin-top:32px;font-size:.75rem;color:var(--text-muted);text-align:center;opacity:.6}
-    .bio-footer span{color:var(--primary-light)}
+    .bio-footer{margin-top:36px;font-size:.72rem;color:var(--text-muted);text-align:center;opacity:.5;animation:fadeIn .6s ease .4s both}
+    .bio-footer a{color:var(--primary-light);text-decoration:none}
+    .bio-footer a:hover{text-decoration:underline}
 
-    /* Animação de entrada */
-    .bio-link{animation:slideUp .4s ease both}
-    .bio-link:nth-child(1){animation-delay:.05s}
-    .bio-link:nth-child(2){animation-delay:.1s}
-    .bio-link:nth-child(3){animation-delay:.15s}
-    .bio-link:nth-child(4){animation-delay:.2s}
-    .bio-link:nth-child(5){animation-delay:.25s}
-    .bio-link:nth-child(6){animation-delay:.3s}
-    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-
-    #bio-app.visible{display:flex}
+    /* Responsive */
+    @media(max-width:480px){
+      #bio-app{padding:36px 20px 48px}
+      .bio-avatar{width:96px;height:96px}
+      .bio-name{font-size:1.45rem}
+    }
   </style>
 </head>
 <body>
 
 <div id="bio-loading">
-  <div class="logo-text">LashBrow</div>
+  <div class="logo-text">Studio Beauty</div>
   <div class="spin"></div>
 </div>
 
 <div id="bio-app">
-
   <div class="bio-avatar" id="bio-avatar">✨</div>
   <div class="bio-name"   id="bio-name">Studio</div>
   <div class="bio-desc"   id="bio-desc"></div>
@@ -123,9 +201,15 @@
     <span id="bio-city-text"></span>
   </div>
 
+  <!-- Social Icons -->
+  <div class="bio-socials" id="bio-socials" style="display:none"></div>
+
+  <!-- Stats mini -->
+  <div class="bio-stats" id="bio-stats" style="display:none"></div>
+
   <div class="bio-links" id="bio-links"></div>
 
-  <div class="bio-footer">Powered by <span>LashBrow</span> ✨</div>
+  <div class="bio-footer">Powered by <a href="https://studiobeauty.clientehub.app.br" target="_blank">Studio Beauty</a> ✨</div>
 </div>
 
 <script src="js/firebase-config.js"></script>
@@ -133,6 +217,7 @@
 'use strict';
 const Bio = {
   studioData: null,
+  studioId: null,
 
   async init() {
     const slug = window.location.pathname.split('/').pop();
@@ -141,15 +226,16 @@ const Bio = {
     try {
       const snap = await db.collection('studios').where('bookingSlug','==',slug).limit(1).get();
       if (snap.empty) { Bio.notFound(); return; }
+      Bio.studioId = snap.docs[0].id;
       Bio.studioData = snap.docs[0].data();
-      Bio._render();
+      await Bio._render();
     } catch(e) {
       console.error(e);
       Bio.notFound();
     }
   },
 
-  _render() {
+  async _render() {
     const d   = Bio.studioData;
     const slug = d.bookingSlug;
 
@@ -162,31 +248,70 @@ const Bio = {
       document.getElementById('bio-avatar').innerHTML = `<img src="${d.logoUrl}" alt="Logo">`;
     }
     document.getElementById('bio-name').textContent = d.studioName || d.companyName || 'Studio';
-    document.getElementById('bio-desc').textContent = d.bio || d.tagline || 'Especialista em cílios e sobrancelhas';
+    document.getElementById('bio-desc').textContent = d.bio || d.tagline || 'Especialista em cílios e sobrancelhas ✨';
 
-    if (d.city) {
+    if (d.city || d.studioCity) {
       document.getElementById('bio-city').style.display = 'flex';
-      document.getElementById('bio-city-text').textContent = d.city;
+      document.getElementById('bio-city-text').textContent = d.city || d.studioCity;
     }
 
-    // Whatsapp
-    const wa = d.whatsapp ? d.whatsapp.replace(/\D/g,'') : null;
-    const waLink = wa ? `https://wa.me/55${wa}?text=${encodeURIComponent('Olá! Vi seu perfil e queria mais informações 😊')}` : null;
+    // Social icons
+    const socials = [];
+    if (d.instagram) socials.push({ href: `https://instagram.com/${d.instagram}`, icon: '📸', title: 'Instagram' });
+    if (d.tiktok) socials.push({ href: `https://tiktok.com/@${d.tiktok}`, icon: '🎵', title: 'TikTok' });
+
+    if (socials.length > 0) {
+      const socialsEl = document.getElementById('bio-socials');
+      socialsEl.style.display = 'flex';
+      socialsEl.innerHTML = socials.map(s =>
+        `<a class="bio-social" href="${s.href}" target="_blank" rel="noopener" title="${s.title}">${s.icon}</a>`
+      ).join('');
+    }
+
+    // Stats mini (portfolio count + rating)
+    try {
+      const [reviewSnap, portfolioSnap] = await Promise.all([
+        db.collection('reviews').where('studioId','==',Bio.studioId).get().catch(() => ({ size: 0, docs: [] })),
+        db.collection('portfolio').where('userId','==',Bio.studioId).get().catch(() => ({ size: 0 }))
+      ]);
+
+      const reviews = reviewSnap.docs || [];
+      const avgRating = reviews.length > 0
+        ? (reviews.reduce((s, r) => s + (r.data().rating || 0), 0) / reviews.length).toFixed(1)
+        : null;
+
+      const stats = [];
+      if (portfolioSnap.size > 0) stats.push({ value: portfolioSnap.size, label: 'Trabalhos' });
+      if (avgRating) stats.push({ value: `⭐ ${avgRating}`, label: 'Avaliação' });
+      if (reviews.length > 0) stats.push({ value: reviews.length, label: 'Avaliações' });
+
+      if (stats.length > 0) {
+        const statsEl = document.getElementById('bio-stats');
+        statsEl.style.display = 'flex';
+        statsEl.innerHTML = stats.map(s =>
+          `<div class="bio-stat"><div class="bio-stat-value">${s.value}</div><div class="bio-stat-label">${s.label}</div></div>`
+        ).join('');
+      }
+    } catch(e) {}
+
+    // WhatsApp
+    const wa = (d.whatsapp || d.studioPhone || '').replace(/\D/g,'');
+    const waLink = wa ? `https://wa.me/55${wa}?text=${encodeURIComponent(`Olá! Vi seu perfil e queria mais informações 😊`)}` : null;
 
     // Links
     const links = [
       {
         href: `/booking/${slug}`,
-        cls: 'primary',
+        cls: 'cta',
         icon: '📅',
         title: 'Agendar agora',
-        sub: 'Reserve seu horário online em segundos',
+        sub: 'Reserve seu horário online em poucos toques',
       },
       {
         href: `/portfolio/${slug}`,
-        cls: 'default',
+        cls: 'gold',
         icon: '📸',
-        title: 'Veja meu trabalho',
+        title: 'Veja meu portfólio',
         sub: 'Galeria de antes & depois dos procedimentos',
       },
       waLink ? {
@@ -197,6 +322,13 @@ const Bio = {
         sub: 'Tire dúvidas ou agende direto pelo chat',
         external: true,
       } : null,
+      {
+        href: `/avaliacao.html?studio=${Bio.studioId}`,
+        cls: 'review',
+        icon: '⭐',
+        title: 'Deixar avaliação',
+        sub: 'Conte como foi sua experiência',
+      },
     ].filter(Boolean);
 
     document.getElementById('bio-links').innerHTML = links.map(l => `
