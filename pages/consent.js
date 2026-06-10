@@ -420,7 +420,7 @@ const Consent = {
         }
 
         const baseUrl = location.origin;
-        const signUrl = `${baseUrl}/assinar-termo.html?id=${id}&token=${token}`;
+        const signUrl = `${baseUrl}/assinar-termo.html?id=${id}&token=${token}&_=${Date.now()}`;
         const client = Consent.currentClients.find(c => c.id === item.clientId);
         const clientName = client?.name?.split(' ')[0] || 'Cliente';
 
