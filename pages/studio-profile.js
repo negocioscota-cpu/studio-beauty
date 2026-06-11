@@ -170,21 +170,44 @@ const StudioProfile = {
         const uid = firebase.auth().currentUser?.uid;
         if (!uid) return;
         const emailVal = document.getElementById('s-email')?.value.trim() || '';
+        const nameVal = document.getElementById('s-name')?.value.trim() || '';
+        const phoneVal = document.getElementById('s-phone')?.value.trim() || '';
+        const cityVal = document.getElementById('s-city')?.value.trim() || '';
+        const stateVal = document.getElementById('s-state')?.value.trim().toUpperCase() || '';
+        const addressVal = document.getElementById('s-address')?.value.trim() || '';
+        const pixVal = document.getElementById('s-pix')?.value.trim() || '';
         const bookingSlug = emailVal.replace(/[@.]/g, '').toLowerCase() || uid.slice(0, 8);
-        const data = {
-            studioName:  document.getElementById('s-name')?.value.trim(),
-            companyName: document.getElementById('s-name')?.value.trim(),
-            ownerPhone:  document.getElementById('s-phone')?.value.trim(),
+        
+        const studioData = {
+            studioName:  nameVal,
+            companyName: nameVal,
+            ownerPhone:  phoneVal,
             ownerEmail:  emailVal,
-            city:        document.getElementById('s-city')?.value.trim(),
-            state:       document.getElementById('s-state')?.value.trim().toUpperCase(),
-            address:     document.getElementById('s-address')?.value.trim(),
-            pixKey:      document.getElementById('s-pix')?.value.trim(),
+            city:        cityVal,
+            state:       stateVal,
+            address:     addressVal,
+            pixKey:      pixVal,
             bookingSlug
         };
+
+        const configData = {
+            studioName:  nameVal,
+            studioPhone: phoneVal,
+            studioCity:  cityVal + (stateVal ? `, ${stateVal}` : '')
+        };
+
         try {
-            await db.collection('studios').doc(uid).set(data, { merge: true });
-            App.showToast('Perfil salvo com sucesso! ✅', 'success');
-        } catch(err) { App.showToast('Erro: ' + err.message, 'error'); }
+            const batch = firebase.firestore().batch();
+            const studioRef = db.collection('studios').doc(uid);
+            const configRef = db.collection('studioConfig').doc(uid);
+            
+            batch.set(studioRef, studioData, { merge: true });
+            batch.set(configRef, configData, { merge: true });
+            
+            await batch.commit();
+            App.showToast('Perfil salvo e sincronizado com sucesso! ✅', 'success');
+        } catch(err) { 
+            App.showToast('Erro: ' + err.message, 'error'); 
+        }
     }
 };

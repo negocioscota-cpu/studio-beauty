@@ -17,15 +17,20 @@ const Settings = {
         };
 
         try {
-            const sd = await firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null);
-            if (sd && sd.exists) {
-                studioData = sd.data();
-                if (studioData.asaasPaymentConfig) paymentConfig = { ...paymentConfig, ...studioData.asaasPaymentConfig };
-                if (studioData.focusNfeConfig) focusNfeConfig = { ...focusNfeConfig, ...studioData.focusNfeConfig };
-                if (studioData.communication) commConfig = { ...commConfig, ...studioData.communication };
-                if (studioData.smsTemplates) smsTemplatesData = studioData.smsTemplates;
-                if (studioData.emailTemplates) emailTemplatesData = studioData.emailTemplates;
-            }
+            const [studDoc, confDoc] = await Promise.all([
+                firebase.firestore().collection('studios').doc(Store._uid()).get().catch(() => null),
+                firebase.firestore().collection('studioConfig').doc(Store._uid()).get().catch(() => null)
+            ]);
+            let studioMainData = studDoc && studDoc.exists ? studDoc.data() : {};
+            let studioConfigData = confDoc && confDoc.exists ? confDoc.data() : {};
+            
+            studioData = { ...studioMainData, ...studioConfigData };
+            
+            if (studioConfigData.asaasPaymentConfig) paymentConfig = { ...paymentConfig, ...studioConfigData.asaasPaymentConfig };
+            if (studioConfigData.focusNfeConfig) focusNfeConfig = { ...focusNfeConfig, ...studioConfigData.focusNfeConfig };
+            if (studioConfigData.communication) commConfig = { ...commConfig, ...studioConfigData.communication };
+            if (studioConfigData.smsTemplates) smsTemplatesData = studioConfigData.smsTemplates;
+            if (studioConfigData.emailTemplates) emailTemplatesData = studioConfigData.emailTemplates;
         } catch(e) {}
 
         container.innerHTML = Settings._buildHTML(studioData, paymentConfig, focusNfeConfig, commConfig, smsTemplatesData, emailTemplatesData);
@@ -64,17 +69,17 @@ const Settings = {
               <div class="form-group">
                 <label class="form-label">Nome do Estúdio</label>
                 <input type="text" class="form-input" id="cfg-studio-name"
-                  value="${sd.studioName || ''}" placeholder="Ex: Studio Beauty by Ana">
+                  value="${sd.studioName || sd.companyName || ''}" placeholder="Ex: Studio Beauty by Ana">
               </div>
               <div class="form-group">
                 <label class="form-label">Telefone / WhatsApp do Estúdio</label>
                 <input type="tel" class="form-input" id="cfg-studio-phone"
-                  value="${sd.studioPhone || ''}" placeholder="(11) 99999-9999">
+                  value="${sd.studioPhone || sd.ownerPhone || ''}" placeholder="(11) 99999-9999">
               </div>
               <div class="form-group">
                 <label class="form-label">Cidade / Estado</label>
                 <input type="text" class="form-input" id="cfg-studio-city"
-                  value="${sd.studioCity || ''}" placeholder="São Paulo, SP">
+                  value="${sd.studioCity || sd.city || ''}" placeholder="São Paulo, SP">
               </div>
               <div class="form-group">
                 <label class="form-label">Instagram (sem @)</label>
@@ -546,14 +551,34 @@ const Settings = {
         const btn = document.getElementById('btn-save-studio');
         Settings._setBtnLoading(btn, true);
         try {
-            await firebase.firestore().collection('studioConfig').doc(Store._uid()).set({
-                studioName:  document.getElementById('cfg-studio-name')?.value.trim() || '',
-                studioPhone: document.getElementById('cfg-studio-phone')?.value.trim() || '',
-                studioCity:  document.getElementById('cfg-studio-city')?.value.trim() || '',
-                instagram:   document.getElementById('cfg-studio-instagram')?.value.trim() || '',
-                updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+            const name = document.getElementById('cfg-studio-name')?.value.trim() || '';
+            const phone = document.getElementById('cfg-studio-phone')?.value.trim() || '';
+            const city = document.getElementById('cfg-studio-city')?.value.trim() || '';
+            const instagram = document.getElementById('cfg-studio-instagram')?.value.trim() || '';
+            
+            const batch = firebase.firestore().batch();
+            const studioRef = firebase.firestore().collection('studios').doc(Store._uid());
+            const configRef = firebase.firestore().collection('studioConfig').doc(Store._uid());
+            
+            batch.set(studioRef, {
+                studioName: name,
+                companyName: name,
+                ownerPhone: phone,
+                city: city,
+                instagram: instagram,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
-            App.showToast('Dados do estúdio salvos! ✅', 'success');
+            
+            batch.set(configRef, {
+                studioName: name,
+                studioPhone: phone,
+                studioCity: city,
+                instagram: instagram,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            
+            await batch.commit();
+            App.showToast('Dados do estúdio salvos e sincronizados! ✅', 'success');
         } catch(e) {
             App.showToast('Erro ao salvar: ' + e.message, 'error');
         }
@@ -834,7 +859,8 @@ const Settings = {
 
         try {
             const group = document.getElementById('custom-email-group').value;
-            const clientsSnap = await db.collection('studios').doc(uid).collection('clients').get();
+            // Carrega da coleção raiz 'clients' com filtro userId
+            const clientsSnap = await db.collection('clients').where('userId', '==', uid).get();
             const allClients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.email && c.email.includes('@'));
 
             const now = new Date();
@@ -844,15 +870,32 @@ const Settings = {
                 filtered = allClients;
             } else if (group === 'upcoming') {
                 const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-                const bookingsSnap = await db.collection('studios').doc(uid).collection('bookings')
+                // Carrega da coleção raiz 'appointments' com filtro de datas
+                const bookingsSnap = await db.collection('appointments')
+                    .where('userId', '==', uid)
                     .where('date', '>=', now.toISOString().slice(0, 10))
                     .where('date', '<=', in7Days.toISOString().slice(0, 10)).get();
-                const bookedClientIds = new Set(bookingsSnap.docs.map(d => d.data().clientId));
+                const bookedClientIds = new Set(bookingsSnap.docs.map(d => d.data().clientId).filter(Boolean));
                 filtered = allClients.filter(c => bookedClientIds.has(c.id));
             } else if (group === 'inactive') {
+                // Para inativas, busca agendamentos concluídos e calcula a última visita em memória
+                const apptsSnap = await db.collection('appointments')
+                    .where('userId', '==', uid)
+                    .where('status', '==', 'done').get();
+                
+                const clientLastVisit = {};
+                apptsSnap.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (!data.clientId || !data.date) return;
+                    const date = new Date(data.date + 'T00:00:00');
+                    if (!clientLastVisit[data.clientId] || clientLastVisit[data.clientId] < date) {
+                        clientLastVisit[data.clientId] = date;
+                    }
+                });
+
                 const cutoff = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
                 filtered = allClients.filter(c => {
-                    const lastVisit = c.lastVisit?.toDate ? c.lastVisit.toDate() : (c.lastVisit ? new Date(c.lastVisit) : null);
+                    const lastVisit = clientLastVisit[c.id];
                     return !lastVisit || lastVisit < cutoff;
                 });
             } else if (group === 'birthday') {
@@ -864,7 +907,12 @@ const Settings = {
                     return bMonth === currentMonth;
                 });
             } else if (group === 'loyalty') {
-                filtered = allClients.filter(c => c.loyaltyVisits && c.loyaltyVisits > 0);
+                // Para fidelidade ativa, busca clientes que possuem pelo menos 1 atendimento concluído
+                const apptsSnap = await db.collection('appointments')
+                    .where('userId', '==', uid)
+                    .where('status', '==', 'done').get();
+                const activeClientIds = new Set(apptsSnap.docs.map(d => d.data().clientId).filter(Boolean));
+                filtered = allClients.filter(c => activeClientIds.has(c.id));
             }
 
             Settings._customEmailRecipients = filtered;
