@@ -1084,7 +1084,47 @@ Tratamento que cria microlesões controladas na epiderme e derme para estimular 
 
 ---
 
-## 16. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
+## 16. CUIDADOS LABIAIS & LINHA LASH AND BEAUTY LIPS (LIPS)
+
+### O que é o Kit Lips:
+Solução de cuidados completa e versátil para todos os tipos de lábios (uso doméstico/home care e em cabine). É composto por 4 passos essenciais para o tratamento:
+1. **Esfoliação (Scrub)**: Remove células mortas e suaviza a superfície dos lábios.
+2. **Hidratação e Nutrição (Sérum)**: Óleos naturais para maciez e saúde labial diária.
+3. **Proteção Antioxidante (Butter)**: Previne danos causados por sol, vento e frio.
+4. **Finalização (Gloss)**: Sela a hidratação e os benefícios dos passos anteriores.
+
+### A Técnica Hidragloss & Spa dos Lábios:
+* **Hidragloss**: Procedimento estético que realça a beleza natural dos lábios, combinando hidratação profunda e brilho luxuoso com aplicação de séruns nutritivos, ácido hialurônico e glosses especiais.
+* **Spa dos Lábios**: Tratamento de regeneração profunda ideal como *overdelivery* (serviço agregado) a outros procedimentos faciais.
+
+### Ativos e Composição da Linha Lips (8 Ingredientes):
+1. **Manteiga de Cacau**: Altamente hidratante, forma barreira física protetora e combate radicais livres (envelhecimento).
+2. **Manteiga de Karité**: Nutrição de longa duração, ação emoliente, regeneradora e anti-inflamatória em lábios secos/rachados.
+3. **Óleo de Coco**: Hidratante natural com propriedades antibacterianas e protetoras.
+4. **Óleo de Pracaxi**: Óleo amazônico regenerador que restaura a elasticidade e trata rachaduras.
+5. **Óleo de Macadâmia**: Rico em ácidos graxos, promove regeneração celular rápida devido à sua textura leve.
+6. **Óleo de Semente de Uva**: Melhora a elasticidade, regenera e protege os lábios dos danos solares.
+7. **Vitamina E**: Antioxidante poderoso, retém a umidade, auxilia na cicatrização e previne descamações.
+8. **Squalane**: Emoliente nobre que restaura a barreira lipídica e retém a hidratação por longos períodos.
+
+### O Gloss Labial Lash and Beauty Lips:
+Formulado com Ácido Hialurônico, Squalane e Vitamina E. Mantém a elasticidade e sela a Butter Labial com brilho duradouro e confortável. Duas versões comerciais (ideais para revenda home care):
+* **Fresh Mint**: Translúcido e refrescante (não altera o tom natural dos lábios).
+* **Coco & Vanilla**: Avermelhado translúcido com aroma e gosto de sorvete de coco e baunilha.
+
+### Protocolos e Associações Avançadas:
+* **Higienização**: Sempre iniciar os procedimentos com a *Espuma Total Care* para remover resíduos, células mortas e maquiagem.
+* **Afinamento e Permeação**: Usar equipamentos de esfoliação profunda no Spa dos Lábios para afinar o estrato córneo e aumentar a absorção.
+* **Nano Agulhamento**: Associar microagulhamento com agulha nano ao uso do *Sérum Coco Boost* para maximizar a permeação celular dos ativos.
+
+### Dicas Práticas e Vendas:
+💡 **Ajuste Climático**: Climas secos/frios exigem maior uso do sérum + butter. Climas quentes pedem gloss para evitar desidratação.
+💡 **Cuidado Noturno**: Instruir a cliente a aplicar o Sérum e a Butter juntos à noite para uma regeneração celular intensa durante o sono.
+💡 **Cupom de Desconto**: Indicar o cupom **LIPS10** para aquisição de kits pelos clientes.
+
+---
+
+## 17. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
 
 ### Alongamento em Gel & Fibra de Vidro
 Procedimentos técnicos voltados para o aumento da extensão e resistência da lâmina ungueal através da aplicação de géis acrílicos fotoativados por luz UV/LED.
@@ -1110,7 +1150,7 @@ Procedimentos técnicos voltados para o aumento da extensão e resistência da l
 
 ---
 
-## 17. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
+## 18. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
 
 Você, LashBot, reside e atua dentro da plataforma **Studio Beauty**. Sempre que a profissional usuária perguntar sobre melhorias de gestão, custos ou automação operacional, você deve ensiná-la a usar as seguintes ferramentas do sistema:
 
