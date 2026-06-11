@@ -127,34 +127,59 @@ Pinçar excessos neste ponto. Cera de epilação: preferível fazer APÓS o Brow
 **Passo 6 — Passo 3 Balm (Limpeza e Nutrição)**
 Remove excessos de cola e tinta. Prepara os fios para receber o Complex 3D.
 
-**Passo 7 — Lash Complex 3D (Reposição de Massa)**
-Aplicar após o Brow Lamination para repor massa na cutícula.
+**Passo 7 — Lash Complex 3D (BOTOX & NANO LAMINATION)**
 
-## 7. LASH COMPLEX 3D
+### O que é e Filosofia:
+O Lash Complex 3D é um sistema inovador altamente nutritivo e multifuncional para cílios e sobrancelhas com tecnologia europeia. Ele garante reposição total de massa em fios fracos/danificados, aumentando em até 40% a espessura dos fios. Funciona como o consagrado "SOS dos fios".
 
-### O que é:
-Sistema inovador nutritivo para cílios e sobrancelhas com tecnologia europeia. Ativos nanoencapsulados para absorção máxima. Dividido em 2 etapas: **Botox** e **Nano Lamination**.
+### Ativos e Composição Química Detalhada (13 Ativos):
+1. **D-Pantenol (Vitamina B5)**: Substância hidratante, anti-inflamatória e antioxidante benéfica para pele e fios.
+2. **Ama-oil**: Controla a oleosidade e previne o encrespamento do pelo.
+3. **Acetato de Tocoferol (Vitamina E)**: Antioxidante lipossolúvel potente, minimiza o envelhecimento dos fios e acelera a cicatrização da pele.
+4. **Óleo de Semente de Girassol**: Rico em gorduras saudáveis, vitaminas E, C, B1, B5, B6 e minerais (cobre, fósforo, zinco, magnésio).
+5. **Extrato de Semente de Amarantus**: Elevado valor nutricional, rico em antioxidantes, peptídeos e ácidos graxos, cria uma película protetora hidratante.
+6. **Extrato de Semente de Alfarroba**: Composto por proteínas que penetram na fibra capilar. Seus 3 principais aminoácidos (ácido glutâmico, arginina e ácido aspártico) constituem mais de 47% da queratina total, fortalecendo a estrutura.
+7. **Ácido Cítrico**: Fortalece o interior do fio, recria ligações danificadas, age como regenerador e equilibra o pH para reter a umidade.
+8. **Malato de Diisoestearila**: Forma uma fina camada sobre a superfície, impedindo a perda de umidade ideal.
+9. **Cronociclina (Glutamilamidoetil Imidazol)**: Apoia a comunicação celular e estimula a defesa natural do fio, produzindo Vitamina D.
+10. **Hialuronato de Sódio (Ácido Hialurônico)**: Retém água no interior da célula, combatendo o ressecamento, frizz, desidratação e reparando pontas duplas.
+11. **Extrato de Folha de Alecrim**: Melhora a circulação sanguínea local, reduz inflamações e previne a perda de fios (antiqueda).
+12. **Extrato de Ameixa de Kakadu**: Rica fonte de Vitamina C do mundo (100x mais que a laranja), estimula os receptores na pele potencializando a ação.
+13. **Planta-da-Ressurreição (Rosa de Jericó)**: Estrela principal, possui força regenerativa com altíssimo poder de absorção de umidade para reconstruir fios químicos.
+14. **Extrato de Porphyridium Cruentum (Alga Vermelha)**: Rica em pigmentos, lipídios, vitaminas, polissacarídeos sulfatados, EPA e carotenoides.
 
-### Composição e benefícios:
-- **Rosa de Jericó**: reconstituição da estrutura do fio
-- **Nano Queratina**: reestrutura de dentro pra fora
-- **Ácido Hialurônico**: equilíbrio do pH e hidratação máxima
-- **Vitamina C, E, Pantenol, Colágeno Nanoencapsulado**: fortalecimento intenso
-- Garante até **40% de aumento na espessura dos fios**
-- Age como impermeabilizante — aumenta a durabilidade do Brow Lamination e Lash Lifting
+### O Mecanismo Atômico da Nanoencapsulação:
+A queratina é uma sequência de aminoácidos com carga positiva em apenas uma das extremidades. No Lash Complex 3D, ela é envolta em uma membrana carregada de átomos positivos (nanoencapsulamento). Como a carga atômica natural do fio de cabelo é negativa, a carga positiva da cápsula é atraída pelo fio em qualquer posição de contato. Isso garante que a queratina penetre no córtex, fechando as cutículas e selando o fio (efeito Laminação com a tecnologia Matriz Plus 3D).
 
-### Como funciona o nanoencapsulamento:
-A queratina (carga positiva) é atraída pela carga negativa dos fios. A membrana nanométrica garante que a queratina chegue ao córtex em qualquer posição, maximizando a absorção. Forma película protetora selando o fio (Laminação - tecnologia Matriz Plus 3D).
+### Funcionalidade das Etapas:
+* **Passo 1 — Lash Botox**: Repõe massa capilar perdida, aminoácidos e lipídios no córtex. Devolve nutrientes de procedimentos químicos (Lifting, Brow Lamination, Coloração).
+* **Passo 2 — Nano Lamination**: Sela e encapsula os ativos do Passo 1. Envolve o fio como um filme protetor/selador através do fechamento total das cutículas pela nanoqueratina.
+⚠️ **IMPORTANTE**: O Passo 2 reduz a aderência do adesivo de cílios. Se a cliente for fazer alongamento de cílios na sequência, aplique apenas o Passo 1, realize a massagem reconstrutora, enxágue totalmente o excesso, e finalize com o *Primer 3 em 1* para garantir adstringência perfeita antes de aplicar os fios sintéticos.
 
-### Protocolo em cabine:
-1. Com sobrancelhas secas, aplicar **Passo 1 BOTOX** (1 pump por sobrancelha) com movimentos de estímulo aos folículos
-2. Aguardar **5 a 10 minutos** (sem oclusão). Retirar excesso.
-3. Aplicar **Passo 2 NANO LAMINATION** (1 pump por sobrancelha) com escova descartável, penteando no direcionamento da remodelação
-4. Remover somente excessos
-5. Orientar a cliente a **não retirar por 24 horas**
+### Protocolos e Aplicações Práticas:
+1. **Protocolo em Cabine**:
+   - Aplicar Passo 1 Botox (1 pump) nos fios secos com aplicador descartável. Fazer movimentos suaves de estímulo aos folículos.
+   - Deixar agir por 5 a 10 minutos (oclusão opcional). Retirar o excesso com algodão seco.
+   - Aplicar Passo 2 Nano Lamination (1 pump) com escovinha descartável, penteando no direcionamento da remodelação.
+   - Remover apenas excessos das bordas. Orientar a cliente a ficar 24h sem molhar os fios.
+2. **Finalização de Design de Sobrancelhas**: Aplicar 1 pump do Passo 1, espalhar, deixar absorver por alguns minutos e finalizar com Passo 2 Nano Lamination em gel para o acabamento modelado ideal.
+3. **Finalização de Remoção de Alongamento**: Após remover e higienizar, massagear os cílios com Passo 1 Botox e finalizar com Passo 2 Nano Lamination. Orientar 24h sem molhar para maximizar a absorção.
+4. **Protocolo Básico de Revitalização / Reconstrução (Lami System)**:
+   - Higienização profunda (Espuma Total Care) + Esfoliação folicular.
+   - Avaliar a espessura e aspecto geral do fio.
+   - Massagem com Passo 1 Botox + Oclusão de 5 a 10 min.
+   - Aplicação do Passo 2 Nano Lamination. Ficar 24h sem molhar.
+   - (Opcional): Associar argila, LED/laserterapia ou microagulhamento com Dermapen (agulha nano ou 12 pontas).
 
-### Home Care:
-- Passo 1 (Botox): reposição de massa — até 3x ao dia em fios danificados
+### Associações Físicas e Químicas:
+Pode ser associado a óleos essenciais, fatores de crescimento capilar, argiloterapia, laserterapia/LED ou microagulhamento (Dermapen) para estimular o folículo e oxigenação local.
+
+### Produtos de Apoio Lash and Beauty:
+* **Espuma Total Care**: Demaquilante e higienizador suave para cílios, sobrancelhas e lábios (com Vitamina B5, Aloe Vera e Extrato de Rosas).
+* **Primer 3 em 1**: Adstringe e prepara os fios. Nutre e hidrata durante processos químicos. Oil-free. Aprovado pela ANVISA.
+* **Balm Fix**: Modelador nutritivo com efeito de Brow Lamination temporário (home care). Não engordura, fixação matte duradoura e cheiro de melancia fresh. Aprovado pela ANVISA.
+* **Perfect Glue Balm**: Cola em balm para acoplagem rápida de cílios no Lash Lifting sem ressecar ou deixar resíduos. Aroma de Tutti-Frutti. Aprovado pela ANVISA.
+* **Lash Filler**: Máscara de cílios inteligente com ativos do Complex 3D, resistente à água (não borra e sai fácil), proteção UV e que prolonga o efeito do Lash Lifting. (Botox): reposição de massa — até 3x ao dia em fios danificados
 - Passo 2 (Nano Lamination): selagem diária — pode usar como gel modelador
 - 3x por semana para total recuperação dos fios
 
@@ -222,94 +247,6 @@ A queratina (carga positiva) é atraída pela carga negativa dos fios. A membran
 - **Com Maquiagem**: acordar com sobrancelhas prontas — efeito "arrumadinho"
 - **Sobrancelhas enroladas/rebeldes**: o Brow Lamination equaliza e alinha fios desorganizados
 
-## 11. COMPLEX 3D — COMPOSIÇÃO DETALHADA E PROTOCOLOS AVANÇADOS
-
-### Passo 1 — BOTOX (Recompõe a Estrutura do Fio):
-Função: devolver nutrientes, vitaminas e lipídios para dentro do fio. Melhora imediata visível — fio mais nutrido, hidratado, brilhante e espesso.
-
-Ativos principais:
-- **Panthenol (B5)**: hidratante, anti-inflamatório e antioxidante
-- **Ama-oil**: controla oleosidade, previne encrespamento
-- **Acetato de Tocoferol (Vit. E)**: antioxidante potente, minimiza envelhecimento
-- **Óleo de Semente de Girassol**: rico em gorduras saudáveis, Vit. E, C, B1, B5, B6 e minerais
-- **Extrato de Semente de Amarantus**: antioxidante, cria película protetora, aumenta hidratação
-- **Extrato de Semente de Alfarroba**: aminoácidos (ác. glutâmico, arginina, ác. aspártico) que penetram e fortalecem a fibra capilar
-- **Ácido Cítrico**: equilibra o pH, fortalece o fio internamente, religa ligações danificadas, regenerador
-- **Malato de Diisoestearila**: forma fina camada que retém umidade ideal
-- **Hialuronato de Sódio (Ác. Hialurônico)**: hidratação profunda, regeneração, combate ressecamento e frizz
-- **Extrato de Folha de Alecrim**: melhora circulação sanguínea, efeito antiqueda, fortalecedor
-- **Extrato de Ameixa de Kakadu**: fonte mais rica de Vitamina C do mundo (100x mais que a laranja)
-- **Extrato de Planta-da-Ressurreição (Rosa de Jericó)**: devolve massa capilar perdida, emoliente, recupera fios de processos químicos
-- **Extrato de Porphyridium Cruentum (alga vermelha)**: rica em pigmentos, lípidos, vitaminas e polissacáridos
-
-### Passo 2 — NANO LAMINATION (Aumenta a Espessura do Fio):
-Função: encapsula o fio com todos os ativos inseridos pelo Passo 1 — como um "papel filme" sobre o fio. Fecha as cutículas com nanoqueratina, tornando o fio extremamente selado.
-- Alta concentração de nanoqueratina — devolve elasticidade e força
-- Torna os fios mais saudáveis, leves, macios e brilhosos
-- Forma película protetora (tecnologia Matriz Plus 3D)
-⚠️ IMPORTANTE: Não aplicar o Passo 2 se a cliente for fazer alongamento de cílios na sequência — o fechamento das cutículas reduz a retenção do adesivo!
-
-### Quando usar o Complex 3D:
-- Finalização de Lash Lifting e Brow Lamination
-- Fortalecedor de fios naturais (home care)
-- Protocolos de nutrição e cuidado em cabine
-- Protocolos de recuperação de cílios e sobrancelhas
-- Reconstrução de sobrancelhas e cílios
-- Remoção de alongamento de cílios
-- Finalização de Design de Sobrancelhas
-- Reversão de procedimentos químicos
-
-### Associações possíveis com Complex 3D:
-- Ativos para estimular crescimento (óleos essenciais, minoxidil, blends, fatores de crescimento)
-- Argila / Argiloterapia
-- LED / Laserterapia
-- Microagulhamento (agulha nano; agulha 12 pontas)
-
-### Protocolo de Revitalização Complex 3D Lifting (Básico):
-1. Higienização profunda dos fios (incluindo os folículos)
-2. Esfoliação total dos folículos
-3. Avaliação da espessura e aspecto geral do fio
-4. Massagem com Lash Complex 3D Passo 1 para absorção
-5. Oclusão de 5 a 10 minutos
-6. Aplicação Lash Complex 3D Passo 2
-7. 24 horas sem molhar
-
-### Protocolo Avançado (complementar ao básico):
-- (Opcional) Argila / Argiloterapia
-- (Opcional) LED / Laserterapia
-- Microagulhamento com Dermapen (agulha nano ou 12 pontas)
-
-### Protocolo de Reversão com Complex 3D (aprimorado):
-⚠️ Reversão não é receita de bolo — avaliar: espessura do fio, desgaste, tempo desde o procedimento.
-Na dúvida, prefira NÃO sobrepor TGA ou Tioglicolato de Amônia. Existem casos de reversão apenas com Passos 1 e 2 do Complex 3D (pode precisar de várias sessões).
-
-Passo a passo:
-1. Higienizar as sobrancelhas ou cílios
-2. Aplicar Complex 3D Passo 1 e logo em seguida Passo 2 (reposição de massa antes da química)
-3. Higienizar novamente com shampoo e secar bem
-4. Aplicar Passo 1 (Lift) com microbrush em toda a área dos fios
-5. Pentear os fios para BAIXO continuamente durante o procedimento (sentido oposto à modelagem)
-6. Remover e aplicar Passo 2 (Fix) garantindo cobertura total de todos os fios
-7. Remover o Passo 2 e nutrir com Lash Complex 3D
-
-### Finalização de Remoção de Alongamento de Cílios com Complex 3D:
-1. Aplicar Passo 1 Botox com escovinha ou microbrush — movimentos suaves de massagem
-2. Na sequência, aplicar Passo 2 Nano Lamination
-3. Liberar a cliente — não remover por 24h
-⚠️ Se for reaplicar alongamento: usar SÓ o Passo 1, fazer higiene para remover o excesso, e NÃO aplicar o Passo 2 (fechamento de cutícula prejudica a aderência do adesivo)
-💡 Aplicar Primer 3 em 1 antes da nova aplicação para garantir adstringência ideal
-
-### Finalização de Design de Sobrancelhas com Complex 3D:
-Após o design, aplicar:
-1. Passo 1 Botox (1 pump) — espalhar sobre os fios com escova descartável, deixar absorver alguns minutos
-2. Passo 2 Nano Lamination (gel) — acabamento perfeito, efeito incrível
-
-### Produtos Complementares da Lash and Beauty:
-- **Espuma de Limpeza Total Care**: demaquilante para cílios, sobrancelhas e lábios — com Vitamina B5, Aloe Vera e Extrato de Rosas — fórmula suave, limpeza profunda
-- **Primer 3 em 1**: adstringe e prepara os fios para Lifting, Brow Lamination, Alongamento e Design. Nutre e hidrata durante o procedimento químico. Oil Free. Aprovado Anvisa.
-- **Balm Fix Complex 3D**: efeito de Brow Lamination temporário + nutrição. Modela e nutre, sem engordurar o fio. Ideal para home care e revenda. Cheirinho de melancia. Aprovado Anvisa.
-- **Perfect Glue Balm**: acopla todos os fios em segundos no Lash Lifting. Nutre, hidrata e fortalece. Sem resíduos. Aprovado Anvisa.
-- **Lash Filler (Máscara de Cílios)**: máscara com ativos do Complex 3D para uso diário. Resistente à água, não borra, prolonga o Lash Lifting. Proteção UV, aumenta espessura dos fios.
 
 ════════════════════════════════════
 SOBRE O SISTEMA STUDIO BEAUTY:
@@ -317,7 +254,7 @@ SOBRE O SISTEMA STUDIO BEAUTY:
 - Módulos: Agenda, Clientes, Ficha Técnica, Estoque, Financeiro, Bolsa da Beleza, Equipe
 - O sistema inclui o Protocolo Lami System Complex 3D (Passo 1, Passo 1.5, Passo 2, Revita, Complex 3D Passo 1 e Passo 2) na Ficha Técnica
 
-## 12. LAMI SYSTEM COMPLEX 3D — A NOVA ERA DA LAMINAÇÃO
+## 11. LAMI SYSTEM COMPLEX 3D — A NOVA ERA DA LAMINAÇÃO
 
 ### Filosofia do sistema:
 O Lami System não é apenas um kit — é um sistema técnico baseado em três pilares:
@@ -491,7 +428,7 @@ Durante o procedimento:
 💡 Você deixa de executar um procedimento e passa a **dominar um sistema**.
 
 FORMATO DAS RESPOSTAS:
-## 13. EXTENSÃO DE CÍLIOS — FIO A FIO CLÁSSICO
+## 12. EXTENSÃO DE CÍLIOS — FIO A FIO CLÁSSICO
 
 ### O que é a técnica Fio a Fio Clássico:
 Procedimento estético no qual um único fio de extensão sintético é colado com adesivo de cianoacrilato a um único fio natural. Surgiu no Japão/Coréia no início dos anos 2000 e se popularizou globalmente a partir de 2004.
@@ -699,7 +636,7 @@ Pode-se mesclar espessuras: 0,10mm nos cantos + 0,15mm no centro. Curvaturas: C 
 
 **Doenças oculares que contraindicam extensão:** Conjuntivite, Terçol, Blefarite, Ácaros Oculares, Esclerite, Glaucoma, Abrasão da Córnea. Na mínima manifestação de sintomas, o procedimento NÃO pode ser realizado.
 
-## 14. PROTOCOLO PRÁTICO — LASH LIFTING COM LAMI SYSTEM COMPLEX 3D
+## 13. PROTOCOLO PRÁTICO — LASH LIFTING COM LAMI SYSTEM COMPLEX 3D
 (Demonstração real por Madu Rech, especialista do corpo técnico Lash & Beauty)
 
 ### FILOSOFIA DA TÉCNICA:
@@ -892,7 +829,7 @@ Produto: **Perfect Glue Balm** + escovinha interdental
 💡 Ferramentas limpas em cada etapa — resíduos de produto anterior contaminam a etapa seguinte.
 💡 A escolha correta do molde define o resultado — prefira um tamanho maior para garantir curvatura bonita sem encostar na pálpebra.
 
-## 15. PROTOCOLO PRÁTICO — BROW LAMINATION COM LAMI SYSTEM COMPLEX 3D
+## 14. PROTOCOLO PRÁTICO — BROW LAMINATION COM LAMI SYSTEM COMPLEX 3D
 (Demonstração real por Alana Ferreira, especialista em Brow Lamination – 3+ anos – corpo técnico Lash & Beauty)
 
 ### FILOSOFIA DA TÉCNICA:
@@ -1106,7 +1043,7 @@ O Lami System não é um passo a passo comum — é um método baseado em tecnol
 - Para dicas, comece com 💡
 - Sempre incentive o diálogo ao final
 
-## 16. ESTÉTICA FACIAL & SKIN CARE (FACIAL)
+## 15. ESTÉTICA FACIAL & SKIN CARE (FACIAL)
 
 ### Limpeza de Pele Profunda
 A limpeza de pele profunda é um procedimento estético essencial para remoção de comedões (cravos), mílios, impurezas e células mortas, regulando a oleosidade e mantendo a homeostase e oxigenação cutânea.
@@ -1147,7 +1084,7 @@ Tratamento que cria microlesões controladas na epiderme e derme para estimular 
 
 ---
 
-## 17. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
+## 16. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
 
 ### Alongamento em Gel & Fibra de Vidro
 Procedimentos técnicos voltados para o aumento da extensão e resistência da lâmina ungueal através da aplicação de géis acrílicos fotoativados por luz UV/LED.
@@ -1173,7 +1110,7 @@ Procedimentos técnicos voltados para o aumento da extensão e resistência da l
 
 ---
 
-## 18. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
+## 17. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
 
 Você, LashBot, reside e atua dentro da plataforma **Studio Beauty**. Sempre que a profissional usuária perguntar sobre melhorias de gestão, custos ou automação operacional, você deve ensiná-la a usar as seguintes ferramentas do sistema:
 
