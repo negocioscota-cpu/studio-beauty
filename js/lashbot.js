@@ -1124,7 +1124,57 @@ Formulado com Ácido Hialurônico, Squalane e Vitamina E. Mantém a elasticidade
 
 ---
 
-## 17. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
+## 17. RECONSTRUÇÃO CAPILAR & LINHA REVITA COMPLEX 3D (REVITA)
+
+### O que é:
+O ReVita Complex 3D é um blend reconstrutor capilar e bioestimulador multifuncional de alta performance em nanotecnologia. Ele promove a recuperação profunda do fio e estimula o nascimento e crescimento de fios novos, densos e brilhantes. É adequado para sobrancelhas, cílios, barba e couro cabeludo/cabelo.
+
+### Ativos e Composição Química Detalhada (12 Componentes):
+1. **Nutrimel® Skin**: Oferece hidratação profunda de curto e longo prazo. Estimula os mecanismos de reparação e proteção sob estresse celular.
+2. **Fiber.CARE X**: Neutraliza as cargas eletrostáticas dos fios, promovendo maciez, brilho e a retenção hídrica/lipídica da fibra capilar.
+3. **Proteína do Trigo Hidrolisada**: Penetra profundamente no córtex, forma um filme protetor e atua como barreira contra agressões externas (calor de secador, poluição, sol).
+4. **Queratina Hidrolisada**: Restaura e protege fios quimicamente danificados. É segura para uso em peles seborreicas ou acneicas.
+5. **Biotin SOL**: Fortalece a estrutura do fio desde o bulbo, estimula o crescimento e combate a quebra de cabelos, pelos e unhas.
+6. **Bioecolia**: Ativo que protege e bioestimula as defesas naturais da pele, mantendo o couro cabeludo equilibrado, menos sensível e livre de irritações.
+7. **Pantenol (Vitamina B5)**: Garante hidratação profunda das células capilares.
+8. **Cressatine®**: Acelera, estimula e prolonga a fase ativa de crescimento capilar (fase anágena).
+9. **H-VIT PLUS**: Regula a produção sebácea do couro cabeludo, reduz a oleosidade excessiva que pode obstruir os folículos.
+10. **Extratos Glicólicos**:
+    - *Jaborandi*: Estimula o couro cabeludo e atua diretamente no tratamento antiqueda.
+    - *Alecrim*: Melhora a circulação local e estimula o folículo capilar.
+    - *Mandioca*: Hidratação profunda da fibra.
+    - *Quiabo*: Confere hidratação e fortalecimento mecânico ao pelo.
+11. **ReparAge®**: Atua na reparação de danos externos como ressecamento e pontas duplas.
+12. **Kerastim® S**: Promove a reestruturação interna completa da fibra, devolvendo a elasticidade natural.
+
+### Protocolo de Reconstrução Exclusivo ReVita:
+1. **Higienização e Preparação**:
+   - Limpar a área com a *Espuma Total Care* para remover sujidades e maquiagem.
+   - Realizar esfoliação com gel ou sabonete esfoliante para desobstruir os poros.
+   - Aplicar *Primer 3 em 1* para adstringir e desengordurar totalmente os fios.
+   - (Opcional): Utilizar toalha aquecida ou vapor de ozônio para dilatar os poros e potencializar os ativos.
+2. **Aplicação do ReVita**:
+   - *Cílios*: Aplicar com cotonete/microbrush na base (raiz) com os olhos bem fechados.
+   - *Sobrancelhas*: Aplicar em movimentos circulares sobre os pelos.
+   - *Barba*: Distribuir com as pontas dos dedos massageando suavemente a região folicular.
+   - *Couro Cabeludo*: Aplicar diretamente nas seções de cabelo e massagear de forma circular para ativar o fluxo sanguíneo.
+3. **Estímulo da Penetração (Opções Adaptáveis)**:
+   - *Massagem mecânica*: Ativação manual da circulação local.
+   - *Dermapen (Caneta)*: Utilizar com ponteira nano para criar uma nanoesfoliação segura que multiplica a absorção.
+   - *LED / Laserterapia*: Estimulação fototerapêutica para o crescimento de novos fios.
+   - *Alta Frequência (Eletroterapia)*: Finalizador ideal. Melhora a oxigenação celular local e possui ação bactericida/antimicrobiana.
+   - *Argiloterapia/Óleos*: Pode ser combinado a blends de argilas e óleos essenciais se desejado.
+4. **Reposição de Massa Complex 3D**:
+   - Aplicar Passo 1 Complex 3D (Botox), agir por 5 minutos (massagem ou rolo de pedra jade).
+   - Aplicar Passo 2 (Nano Lamination) para selagem. Ficar 24h sem molhar.
+   - Recomenda-se repetir esse protocolo em cabine a cada 21 dias.
+5. **Orientações Home Care**:
+   - Instruir o cliente a manter a rotina domiciliar aplicando o ReVita de 2 a 3 vezes por semana.
+   - Cupom de desconto para os clientes adquirirem o produto: **REVITA10**.
+
+---
+
+## 18. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
 
 ### Alongamento em Gel & Fibra de Vidro
 Procedimentos técnicos voltados para o aumento da extensão e resistência da lâmina ungueal através da aplicação de géis acrílicos fotoativados por luz UV/LED.
@@ -1150,7 +1200,7 @@ Procedimentos técnicos voltados para o aumento da extensão e resistência da l
 
 ---
 
-## 18. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
+## 19. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
 
 Você, LashBot, reside e atua dentro da plataforma **Studio Beauty**. Sempre que a profissional usuária perguntar sobre melhorias de gestão, custos ou automação operacional, você deve ensiná-la a usar as seguintes ferramentas do sistema:
 
