@@ -1174,7 +1174,52 @@ O ReVita Complex 3D é um blend reconstrutor capilar e bioestimulador multifunci
 
 ---
 
-## 18. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
+## 18. MICROAGULHAMENTO EM CREME & LINHA BIOSPIK THERAPY (BIOSPIK)
+
+### O que é:
+O BioSpik é um peeling bioativo inteligente e microagulhamento em creme (sem agulhas e indolor). Utiliza espículas vegetais altamente purificadas combinadas com ativos nanotecnológicos para estimular a renovação celular, colágeno e elastina de forma segura e confortável. Indicado para rejuvenescimento, revitalização e clareamento em rosto, lábios e sobrancelhas.
+
+### Ativos Chave da Fórmula (4 Componentes):
+1. **Micro PDRN**: Fragmentos de DNA de salmão que regeneram a pele a nível celular profunda. Estimula fibroblastos a produzir colágeno tipo I, acelerando a cicatrização e clareando manchas (ideal para peles sensíveis ou opacas).
+2. **MoistShield™**: Ceramidas, ácidos graxos e lipídios biomiméticos que formam uma barreira contra perda de água e promovem efeito calmante pós-procedimento.
+3. **Nano Hyaluronic Acid**: Ácido hialurônico nanoencapsulado de baixo peso molecular. Penetra nas camadas profundas da epiderme, retendo a água e promovendo preenchimento de viço imediato.
+4. **Needle Renew™**: Peptídeo biomimético que simula a ação mecânica do microagulhamento físico, ativando colágeno, firmeza e suavização de cicatrizes superficiais e poros dilatados.
+
+### Protocolos Práticos em Cabine:
+1. **Aplicação Facial Padrão**:
+   - Limpar a pele e aplicar o creme sobre a pele seca (usar luvas).
+   - Massagear circularmente e com movimentos ascendentes por 3 a 5 minutos.
+   - (Opcional): Associar LED âmbar ou vermelho durante a massagem. Finalizar com protetor solar.
+2. **Protocolo Hidra Gloss Labial**:
+   - Higienizar com *Espuma Total Care* -> Esfoliar com *Scrub Lash and Beauty*.
+   - Aplicar pequena quantidade de BioSpik em movimentos circulares (oclusão e LED opcionais).
+   - Aplicar *Sérum Coco Boost* -> Finalizar com *Gloss Lash and Beauty* ou *Butter Deslizante*.
+3. **Protocolo Rejuvenescimento Facial**:
+   - Higienizar com *Total Care* -> Aplicar BioSpik com movimentos firmes.
+   - (Opcional): Aplicar LED vermelho por 20 minutos.
+   - Aplicar ativos sequenciais (Vitamina C, clareadores, retinol) que terão sua ação profundamente potencializada pelo BioSpik.
+   - Finalizar com máscara calmante.
+4. **Protocolo Uniformização de Sobrancelhas**:
+   - Higienizar com *Total Care* -> Esfoliar sobrancelhas.
+   - Aplicar de forma controlada na região com pincel fino.
+   - Massagear suavemente em movimentos direcionais -> Aplicar LED pontual (vermelho ou azul) por 3 a 5 minutos.
+
+### Tabela de Compatibilidade de Procedimentos:
+* **Peeling Enzimático**: Sim (aplicar antes do BioSpik).
+* **Peeling Químico Leve**: Sim, com intervalo de 48h (nunca no mesmo dia).
+* **LED (Vermelho/Âmbar)**: Sim (potencializa a ativação do produto).
+* **Microcorrentes**: Sim (aplicar após o BioSpik).
+* **Limpeza de Pele**: Sim (aplicar após as extrações).
+* **Dermaplaning**: Sim (aplicar após a remoção do estrato córneo).
+
+### Dicas Práticas e Vendas:
+💡 **Argumento de Vendas**: "Os resultados do microagulhamento tradicional, mas sem agulhas, sem dor e sem tempo de recuperação".
+💡 **Potencializador Skincare**: Recomendar para home care 2x por semana antes do uso de séruns ou ácidos de tratamento para duplicar a permeação deles (ex. Vitamina C ou clareadores).
+⚠️ **Contraindicações**: Não usar sobre pele lesionada/queimada, acne ativa inflamatória (com pústulas), herpes ativa, rosácea em crise ou gestantes sem liberação profissional. Provoca pinicação leve e temporária (uso de luvas recomendado para o profissional).
+
+---
+
+## 19. MANICURE & ALONGAMENTO DE UNHAS (NAILS)
 
 ### Alongamento em Gel & Fibra de Vidro
 Procedimentos técnicos voltados para o aumento da extensão e resistência da lâmina ungueal através da aplicação de géis acrílicos fotoativados por luz UV/LED.
@@ -1200,7 +1245,7 @@ Procedimentos técnicos voltados para o aumento da extensão e resistência da l
 
 ---
 
-## 19. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
+## 20. RECURSOS DO SISTEMA STUDIO BEAUTY (COMO INSTRUIR A USUÁRIA)
 
 Você, LashBot, reside e atua dentro da plataforma **Studio Beauty**. Sempre que a profissional usuária perguntar sobre melhorias de gestão, custos ou automação operacional, você deve ensiná-la a usar as seguintes ferramentas do sistema:
 
