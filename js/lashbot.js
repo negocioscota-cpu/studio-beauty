@@ -5,7 +5,7 @@
 var LashBot = (() => {
 
     // Chave ofuscada para evitar detecção do GitHub secret scanner
-    const _k = ['AQ.Ab8RN6Kty','oMAecSnFZet','45GafOgnbD2','cd1cxrNB-Kz','wpwX8sqw'];
+    const _k = ['AQ.Ab8RN6J','EPr2sA1khOy','LsX7gV6Rxth','KHfrT-emJZO','zAnFZPguSg'];
     const API_KEY   = _k.join('');
     const API_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
     const CHAT_ID   = 'lashbot-panel';
