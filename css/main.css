@@ -696,13 +696,14 @@ tr:hover td { background: var(--primary-xlight); transition: background 0.15s; }
   padding: 20px 16px; border-bottom: 1px solid rgba(240,220,226,0.08);
 }
 .sidebar-logo-icon {
-  width: 42px; height: 42px;
+  width: 46px; height: 46px;
   border-radius: var(--radius-sm);
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   flex-shrink: 0;
   box-shadow: var(--shadow-rose);
   background: #fff;
+  padding: 2px;
 }
 .sidebar-logo-name { font-size: 1.1rem; font-weight: 800; color: #fff; }
 .sidebar-logo-sub { font-size: 0.65rem; color: var(--text-muted); margin-top: -2px; }
